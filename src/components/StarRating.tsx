@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { StarScore, TicketRating } from "@/lib/types";
 import { formatRating } from "@/lib/types";
 import styles from "./StarRating.module.css";
@@ -24,7 +25,7 @@ const SCORES: StarScore[] = [1, 2, 3, 4, 5];
 
 /**
  * 1–5 star rating: average + count; click count for who-voted panel.
- * Persistence comes later with Supabase — mock only alerts on star click.
+ * Panel portals to document.body so list overflow/stacking cannot clip it.
  */
 export function StarRating({
   average,
@@ -36,8 +37,13 @@ export function StarRating({
 }: StarRatingProps) {
   const [hover, setHover] = useState<StarScore | null>(null);
   const [open, setOpen] = useState(false);
+  const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(
+    null,
+  );
   const panelId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const displayScore = hover ?? myRating;
 
   const sorted = [...beoordelingen].sort((a, b) => {
@@ -45,13 +51,46 @@ export function StarRating({
     return a.naam.localeCompare(b.naam, "nl");
   });
 
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) {
+      setPanelPos(null);
+      return;
+    }
+
+    function place() {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const width = Math.min(288, window.innerWidth - 16);
+      const left = Math.min(
+        Math.max(8, rect.right - width),
+        window.innerWidth - width - 8,
+      );
+      const top = rect.bottom + 6;
+      setPanelPos({ top, left });
+    }
+
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
 
     function onPointerDown(event: MouseEvent) {
-      if (!wrapRef.current?.contains(event.target as Node)) {
-        setOpen(false);
+      const target = event.target as Node;
+      if (
+        panelRef.current?.contains(target) ||
+        wrapRef.current?.contains(target)
+      ) {
+        return;
       }
+      setOpen(false);
     }
 
     function onKey(event: KeyboardEvent) {
@@ -74,6 +113,47 @@ export function StarRating({
         : `Demo: je zou dit ticket ${score}★ geven. Het gemiddelde wordt dan herberekend over alle beoordelingen.`,
     );
   }
+
+  const panel =
+    typeof document !== "undefined" && open && panelPos && sorted.length > 0
+      ? createPortal(
+          <div
+            ref={panelRef}
+            id={panelId}
+            className={styles.panel}
+            role="dialog"
+            aria-label="Wie heeft beoordeeld"
+            style={{ top: panelPos.top, left: panelPos.left }}
+          >
+            <header className={styles.panelHeader}>
+              <strong>Beoordelingen</strong>
+              <span>
+                gem. {formatRating(average)} · {count}
+              </span>
+            </header>
+            <ul className={styles.panelList}>
+              {sorted.map((entry) => (
+                <li key={`${entry.userId}-${entry.score}`}>
+                  <div className={styles.person}>
+                    <span className={styles.personName}>{entry.naam}</span>
+                    <span className={styles.personDept}>{entry.afdeling}</span>
+                  </div>
+                  <span
+                    className={styles.personScore}
+                    aria-label={`${entry.score} sterren`}
+                  >
+                    {"★".repeat(entry.score)}
+                    <span className={styles.personScoreEmpty}>
+                      {"★".repeat(5 - entry.score)}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div
@@ -125,6 +205,7 @@ export function StarRating({
           <span className={styles.count}>nog geen beoordelingen</span>
         ) : (
           <button
+            ref={triggerRef}
             type="button"
             className={styles.countBtn}
             aria-expanded={open}
@@ -143,37 +224,7 @@ export function StarRating({
         ) : null}
       </p>
 
-      {open && sorted.length > 0 ? (
-        <div
-          id={panelId}
-          className={styles.panel}
-          role="dialog"
-          aria-label="Wie heeft beoordeeld"
-        >
-          <header className={styles.panelHeader}>
-            <strong>Beoordelingen</strong>
-            <span>
-              gem. {formatRating(average)} · {count}
-            </span>
-          </header>
-          <ul className={styles.panelList}>
-            {sorted.map((entry) => (
-              <li key={`${entry.userId}-${entry.score}`}>
-                <div className={styles.person}>
-                  <span className={styles.personName}>{entry.naam}</span>
-                  <span className={styles.personDept}>{entry.afdeling}</span>
-                </div>
-                <span className={styles.personScore} aria-label={`${entry.score} sterren`}>
-                  {"★".repeat(entry.score)}
-                  <span className={styles.personScoreEmpty}>
-                    {"★".repeat(5 - entry.score)}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      {panel}
     </div>
   );
 }
