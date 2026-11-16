@@ -1,0 +1,74 @@
+/* Login: one composition, brand-dominant, no dashboard preview. */
+
+.wrap {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+  background:
+    linear-gradient(160deg, #d7e5e8 0%, transparent 42%),
+    linear-gradient(340deg, #cfe0dc 0%, transparent 40%),
+    var(--bg);
+}
+
+.panel {
+  width: min(100%, 24rem);
+  padding: var(--space-6) var(--space-5);
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: var(--shadow-soft);
+}
+
+.brand {
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.brandName {
+  font-family: var(--font-brand);
+  font-size: clamp(2.4rem, 8vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--brand-ink);
+  line-height: 1;
+}
+
+.product {
+  margin-top: var(--space-2);
+  font-family: var(--font-ui);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.tagline {
+  margin-top: var(--space-3);
+  color: var(--ink-muted);
+  font-size: 0.9375rem;
+}
+
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.form .btn {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.error {
+  color: var(--spoed);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.help {
+  margin-top: var(--space-5);
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
