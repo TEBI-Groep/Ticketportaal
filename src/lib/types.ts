@@ -33,6 +33,17 @@ export interface TicketRating {
   score: StarScore;
 }
 
+/** Public comment on a ticket (MVP: one shared thread, no internal split yet). */
+export interface TicketComment {
+  id: string;
+  ticketId: string;
+  userId: string;
+  auteurNaam: string;
+  auteurRol: UserRole;
+  tekst: string;
+  createdAt: string;
+}
+
 export interface Ticket {
   id: string;
   ticketnummer: string;

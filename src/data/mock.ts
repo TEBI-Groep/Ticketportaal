@@ -1,6 +1,6 @@
 /** Static mock users and tickets for the first UI shell — no backend yet. */
 
-import type { Ticket, TicketRating, User } from "@/lib/types";
+import type { Ticket, TicketComment, TicketRating, User } from "@/lib/types";
 import { ratingAantal, ratingGemiddelde } from "@/lib/types";
 
 /** Demo user shown in the shell after “login”. */
@@ -337,4 +337,82 @@ export function getAfgerondeTickets(): Ticket[] {
   return MOCK_TICKETS.filter(
     (t) => t.status === "afgerond" || t.status === "afgewezen",
   ).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+/** Seed public comments for a few tickets (MVP: one shared thread). */
+export const MOCK_COMMENTS: TicketComment[] = [
+  {
+    id: "c-1",
+    ticketId: "t-1",
+    userId: "u-5",
+    auteurNaam: "Noor Smits",
+    auteurRol: "uitvoerder",
+    tekst:
+      "We kijken naar een Suitelet-export. Kunnen jullie een voorbeeld-CSV meesturen van de gewenste kolommen?",
+    createdAt: "2026-11-08",
+  },
+  {
+    id: "c-2",
+    ticketId: "t-1",
+    userId: "u-2",
+    auteurNaam: "Mark Jansen",
+    auteurRol: "manager",
+    tekst:
+      "Voorbeeld staat in de gedeelde Finance-map (FactuurExport_gewenst.xlsx). BTW per regel is het belangrijkst.",
+    createdAt: "2026-11-09",
+  },
+  {
+    id: "c-3",
+    ticketId: "t-1",
+    userId: "u-5",
+    auteurNaam: "Noor Smits",
+    auteurRol: "uitvoerder",
+    tekst: "Top, dank. Concept staat gepland voor week 48.",
+    createdAt: "2026-11-10",
+  },
+  {
+    id: "c-4",
+    ticketId: "t-6",
+    userId: "u-5",
+    auteurNaam: "Noor Smits",
+    auteurRol: "uitvoerder",
+    tekst:
+      "Permissions opnieuw gezet op it@tebi.nl. Kunnen Verkoop en Magazijn even testen of ze erbij kunnen?",
+    createdAt: "2026-11-16",
+  },
+  {
+    id: "c-5",
+    ticketId: "t-6",
+    userId: "u-4",
+    auteurNaam: "Tom Vermeer",
+    auteurRol: "manager",
+    tekst: "Sales kan er weer bij — werkt hier.",
+    createdAt: "2026-11-16",
+  },
+  {
+    id: "c-6",
+    ticketId: "t-8",
+    userId: "u-5",
+    auteurNaam: "Noor Smits",
+    auteurRol: "uitvoerder",
+    tekst:
+      "We hebben een screenshot nodig van de picklijst wanneer de regel ontbreekt. Kun je die plaatsen?",
+    createdAt: "2026-11-14",
+  },
+  {
+    id: "c-7",
+    ticketId: "t-3",
+    userId: "u-1",
+    auteurNaam: "Sara de Vries",
+    auteurRol: "manager",
+    tekst:
+      "Drempel mag later configureerbaar zijn, maar start met €5.000 zoals Directie vroeg.",
+    createdAt: "2026-11-11",
+  },
+];
+
+export function getCommentsForTicket(ticketId: string): TicketComment[] {
+  return MOCK_COMMENTS.filter((c) => c.ticketId === ticketId).sort((a, b) =>
+    a.createdAt.localeCompare(b.createdAt),
+  );
 }

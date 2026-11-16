@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { BackLink } from "@/components/BackLink";
+import { CommentThread } from "@/components/CommentThread";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
-import { getTicketById, MOCK_USER } from "@/data/mock";
+import { getCommentsForTicket, getTicketById, MOCK_USER } from "@/data/mock";
 import {
   IMPACT_LABEL,
   TYPE_LABEL,
@@ -42,6 +43,7 @@ export default async function TicketDetailPage({ params }: PageProps) {
   const avg = ratingGemiddelde(ticket);
   const count = ratingAantal(ticket);
   const mine = mijnRating(ticket, MOCK_USER.id);
+  const comments = getCommentsForTicket(ticket.id);
 
   return (
     <div className="page">
@@ -108,6 +110,8 @@ export default async function TicketDetailPage({ params }: PageProps) {
               <p style={{ color: "var(--ink-soft)" }}>{ticket.oplossingSamenvatting}</p>
             </>
           ) : null}
+
+          <CommentThread ticketId={ticket.id} initialComments={comments} />
 
           {canVote ? (
             <div style={{ marginTop: "1.5rem" }}>
