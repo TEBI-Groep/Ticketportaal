@@ -3,14 +3,15 @@
 import Link from "next/link";
 import type { Ticket } from "@/lib/types";
 import { isStembaar } from "@/lib/types";
-import { IMPACT_LABEL, STATUS_LABEL, formatDate } from "@/lib/labels";
+import { IMPACT_LABEL, formatDate } from "@/lib/labels";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
+import { StarRating } from "@/components/StarRating";
 
 interface TicketListProps {
   tickets: Ticket[];
   /** Show leaderboard rank numbers (#1, #2, …). */
   showRank?: boolean;
-  /** Show inline stem actie where voting is allowed. */
+  /** Show 1–5 star rating where voting is allowed. */
   showVote?: boolean;
   /** Extra empty-state copy. */
   emptyMessage?: string;
@@ -20,7 +21,7 @@ interface TicketListProps {
 
 /**
  * List-first ticket presentation (wireframe direction A).
- * Rows navigate to detail; vote buttons stop propagation via nested control.
+ * Rows navigate to detail; star rating stays outside the link hit-area.
  */
 export function TicketList({
   tickets,
@@ -46,7 +47,7 @@ export function TicketList({
   return (
     <ul className={`ticket-list ${showRank ? "" : "list-compact"}`}>
       {tickets.map((ticket, index) => {
-        const canVote = showVote && isStembaar(ticket);
+        const canRate = showVote && isStembaar(ticket);
 
         return (
           <li
@@ -84,28 +85,22 @@ export function TicketList({
 
             {showVote ? (
               <div className="ticket-actions">
-                <span className="vote-count" title="Aantal stemmen">
-                  ▲ {ticket.stemmen}
-                </span>
-                {canVote ? (
-                  <button
-                    type="button"
-                    className={`btn btn-vote ${ticket.gestemdDoorMij ? "is-active" : ""}`}
-                    /* Mock-only: visual toggle hint; no persistence yet. */
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.alert(
-                        ticket.gestemdDoorMij
-                          ? "In de echte app zou je stem hier worden ingetrokken."
-                          : "In de echte app zou je hier 1 stem plaatsen (max 5).",
-                      );
-                    }}
-                  >
-                    {ticket.gestemdDoorMij ? "Intrekken" : "Stem"}
-                  </button>
-                ) : (
-                  <span className="form-hint">{STATUS_LABEL[ticket.status]}</span>
-                )}
+                {canRate ? (
+                  <StarRating
+                    average={ticket.ratingGemiddelde}
+                    count={ticket.ratingAantal}
+                    myRating={ticket.mijnRating}
+                    interactive
+                    compact
+                  />
+                ) : ticket.ratingAantal > 0 ? (
+                  <StarRating
+                    average={ticket.ratingGemiddelde}
+                    count={ticket.ratingAantal}
+                    myRating={ticket.mijnRating}
+                    compact
+                  />
+                ) : null}
               </div>
             ) : null}
           </li>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
+import { StarRating } from "@/components/StarRating";
 import { getTicketById } from "@/data/mock";
 import {
   IMPACT_LABEL,
@@ -94,13 +95,17 @@ export default async function TicketDetailPage({ params }: PageProps) {
 
           {canVote ? (
             <div style={{ marginTop: "1.5rem" }}>
-              <h2>Stemmen</h2>
+              <h2>Beoordeling</h2>
               <p className="form-hint" style={{ marginBottom: "0.75rem" }}>
-                ▲ {ticket.stemmen} stemmen · advies aan IT
+                Beoordeel dit verzoek met 1–5 sterren. Het gemiddelde bepaalt de
+                plek op de ranglijst (advies aan IT).
               </p>
-              <button type="button" className={`btn btn-vote ${ticket.gestemdDoorMij ? "is-active" : ""}`} disabled>
-                {ticket.gestemdDoorMij ? "Je hebt gestemd (demo)" : "Stem (demo)"}
-              </button>
+              <StarRating
+                average={ticket.ratingGemiddelde}
+                count={ticket.ratingAantal}
+                myRating={ticket.mijnRating}
+                interactive
+              />
             </div>
           ) : null}
         </section>

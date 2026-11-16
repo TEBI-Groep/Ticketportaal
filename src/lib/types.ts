@@ -14,14 +14,15 @@ export type TicketPriority = "spoed" | "voorrang" | "belangrijk" | "normaal";
 export type TicketSize = "S" | "M" | "L";
 export type UserRole = "gebruiker" | "manager" | "uitvoerder";
 
+/** Star rating scale: 1 (laag) … 5 (hoog). */
+export type StarScore = 1 | 2 | 3 | 4 | 5;
+
 export interface User {
   id: string;
   naam: string;
   email: string;
   rol: UserRole;
   afdeling: string;
-  /** How many of the max 5 votes this user still has available. */
-  stemmenOver: number;
 }
 
 export interface Ticket {
@@ -40,19 +41,28 @@ export interface Ticket {
   eigenaarNaam?: string;
   streefdatum?: string;
   omvang?: TicketSize;
-  stemmen: number;
-  /** Whether the current mock user has voted on this ticket. */
-  gestemdDoorMij: boolean;
+  /** Average of all 1–5 ratings (0 if nobody rated yet). */
+  ratingGemiddelde: number;
+  /** How many people rated this ticket. */
+  ratingAantal: number;
+  /** Current mock user’s rating, or null if not rated. */
+  mijnRating: StarScore | null;
   createdAt: string;
   updatedAt: string;
   /** Short solution blurb for completed tickets (UI-only for now). */
   oplossingSamenvatting?: string;
 }
 
-/** True when voting is allowed: NetSuite + wijziging/idee + not closed. */
+/** True when rating is allowed: NetSuite + wijziging/idee + not closed. */
 export function isStembaar(ticket: Ticket): boolean {
   const open =
     ticket.status !== "afgerond" && ticket.status !== "afgewezen";
   const typeOk = ticket.type === "wijziging" || ticket.type === "idee";
   return open && typeOk && ticket.systeem === "NetSuite";
+}
+
+/** Display helper: one decimal for averages, e.g. 4.3. */
+export function formatRating(avg: number): string {
+  if (avg <= 0) return "—";
+  return avg.toFixed(1);
 }

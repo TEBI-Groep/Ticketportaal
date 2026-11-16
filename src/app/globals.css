@@ -476,7 +476,7 @@ img {
   }
 
   .ticket-row.with-vote {
-    grid-template-columns: 2.5rem 1fr 7.5rem;
+    grid-template-columns: 2.5rem 1fr 9.5rem;
   }
 }
 

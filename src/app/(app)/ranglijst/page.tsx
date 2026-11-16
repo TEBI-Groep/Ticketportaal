@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "Ranglijst",
 };
 
-/** Post-login home: NetSuite wishes ranked by votes (leaderboard-first). */
+/** Post-login home: NetSuite wishes ranked by average star rating. */
 export default function RanglijstPage() {
   const tickets = getRanglijstTickets();
 
@@ -15,13 +15,14 @@ export default function RanglijstPage() {
       <header className="page-header">
         <h1>Ranglijst</h1>
         <p>
-          NetSuite-wijzigingen en ideeën, gesorteerd op stemmen. Managers zien
-          hier meteen de topwensen.
+          NetSuite-wijzigingen en ideeën, gesorteerd op gemiddelde beoordeling
+          (1–5 sterren). Managers zien hier meteen de topwensen.
         </p>
       </header>
 
       <p className="disclaimer">
-        Stemmen zijn advies — IT bepaalt de definitieve prioriteit.
+        Beoordelingen zijn advies — IT bepaalt de definitieve prioriteit. Geef
+        1–5 sterren; de ranglijst gebruikt het gemiddelde van alle beoordelingen.
       </p>
 
       <div className="toolbar">

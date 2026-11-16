@@ -9,10 +9,7 @@ export const MOCK_USER: User = {
   email: "sara.devries@tebi.nl",
   rol: "manager",
   afdeling: "Finance",
-  stemmenOver: 3,
 };
-
-export const MAX_STEMMEN = 5;
 
 /** Seed tickets covering ranglijst, spoed, mijn tickets, and afgerond. */
 export const MOCK_TICKETS: Ticket[] = [
@@ -33,8 +30,9 @@ export const MOCK_TICKETS: Ticket[] = [
     eigenaarNaam: "IT · Alex",
     streefdatum: "2026-12-01",
     omvang: "M",
-    stemmen: 24,
-    gestemdDoorMij: true,
+    ratingGemiddelde: 4.6,
+    ratingAantal: 18,
+    mijnRating: 5,
     createdAt: "2026-10-02",
     updatedAt: "2026-11-10",
   },
@@ -52,8 +50,9 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "normaal",
     melderId: "u-3",
     melderNaam: "Lisa Bakker",
-    stemmen: 18,
-    gestemdDoorMij: false,
+    ratingGemiddelde: 4.2,
+    ratingAantal: 14,
+    mijnRating: null,
     createdAt: "2026-10-14",
     updatedAt: "2026-11-08",
   },
@@ -74,8 +73,9 @@ export const MOCK_TICKETS: Ticket[] = [
     eigenaarNaam: "IT · Jordan",
     streefdatum: "2026-11-28",
     omvang: "L",
-    stemmen: 15,
-    gestemdDoorMij: false,
+    ratingGemiddelde: 3.9,
+    ratingAantal: 11,
+    mijnRating: null,
     createdAt: "2026-10-20",
     updatedAt: "2026-11-12",
   },
@@ -93,8 +93,9 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "normaal",
     melderId: "u-4",
     melderNaam: "Tom Vermeer",
-    stemmen: 12,
-    gestemdDoorMij: true,
+    ratingGemiddelde: 3.5,
+    ratingAantal: 8,
+    mijnRating: 3,
     createdAt: "2026-10-28",
     updatedAt: "2026-11-05",
   },
@@ -112,8 +113,9 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "normaal",
     melderId: "u-1",
     melderNaam: "Sara de Vries",
-    stemmen: 9,
-    gestemdDoorMij: false,
+    ratingGemiddelde: 3.1,
+    ratingAantal: 6,
+    mijnRating: null,
     createdAt: "2026-11-01",
     updatedAt: "2026-11-09",
   },
@@ -133,8 +135,9 @@ export const MOCK_TICKETS: Ticket[] = [
     melderNaam: "Noor Smits",
     eigenaarNaam: "IT · Alex",
     omvang: "S",
-    stemmen: 0,
-    gestemdDoorMij: false,
+    ratingGemiddelde: 0,
+    ratingAantal: 0,
+    mijnRating: null,
     createdAt: "2026-11-16",
     updatedAt: "2026-11-16",
   },
@@ -152,8 +155,9 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "spoed",
     melderId: "u-3",
     melderNaam: "Lisa Bakker",
-    stemmen: 0,
-    gestemdDoorMij: false,
+    ratingGemiddelde: 0,
+    ratingAantal: 0,
+    mijnRating: null,
     createdAt: "2026-11-16",
     updatedAt: "2026-11-16",
   },
@@ -173,8 +177,9 @@ export const MOCK_TICKETS: Ticket[] = [
     melderNaam: "Sara de Vries",
     eigenaarNaam: "IT · Jordan",
     omvang: "M",
-    stemmen: 0,
-    gestemdDoorMij: false,
+    ratingGemiddelde: 0,
+    ratingAantal: 0,
+    mijnRating: null,
     createdAt: "2026-09-18",
     updatedAt: "2026-11-14",
   },
@@ -194,8 +199,9 @@ export const MOCK_TICKETS: Ticket[] = [
     melderNaam: "Lisa Bakker",
     eigenaarNaam: "IT · Alex",
     omvang: "S",
-    stemmen: 0,
-    gestemdDoorMij: false,
+    ratingGemiddelde: 0,
+    ratingAantal: 0,
+    mijnRating: null,
     createdAt: "2026-08-12",
     updatedAt: "2026-08-13",
     oplossingSamenvatting: "Driver X herinstalleren en printspooler resetten op de terminal-pc’s.",
@@ -216,8 +222,9 @@ export const MOCK_TICKETS: Ticket[] = [
     melderNaam: "Tom Vermeer",
     eigenaarNaam: "IT · Jordan",
     omvang: "S",
-    stemmen: 6,
-    gestemdDoorMij: false,
+    ratingGemiddelde: 4.0,
+    ratingAantal: 5,
+    mijnRating: null,
     createdAt: "2026-09-01",
     updatedAt: "2026-09-20",
     oplossingSamenvatting: "Permissieset bijgewerkt; documentatie in Confluence gezet.",
@@ -236,8 +243,9 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "normaal",
     melderId: "u-2",
     melderNaam: "Mark Jansen",
-    stemmen: 4,
-    gestemdDoorMij: false,
+    ratingGemiddelde: 2.4,
+    ratingAantal: 4,
+    mijnRating: null,
     createdAt: "2026-09-05",
     updatedAt: "2026-10-01",
     oplossingSamenvatting: "Afgewezen: dekt bestaande saved-search + SuiteAnalytics al voldoende.",
@@ -259,7 +267,10 @@ export function getTicketById(id: string): Ticket | undefined {
   return MOCK_TICKETS.find((t) => t.id === id);
 }
 
-/** NetSuite wishes/ideas sorted by vote count (ranglijst). */
+/**
+ * NetSuite wishes/ideas sorted by average rating (desc),
+ * then by number of ratings as a light tie-breaker.
+ */
 export function getRanglijstTickets(): Ticket[] {
   return MOCK_TICKETS.filter(
     (t) =>
@@ -267,7 +278,12 @@ export function getRanglijstTickets(): Ticket[] {
       (t.type === "wijziging" || t.type === "idee") &&
       t.status !== "afgerond" &&
       t.status !== "afgewezen",
-  ).sort((a, b) => b.stemmen - a.stemmen);
+  ).sort((a, b) => {
+    if (b.ratingGemiddelde !== a.ratingGemiddelde) {
+      return b.ratingGemiddelde - a.ratingGemiddelde;
+    }
+    return b.ratingAantal - a.ratingAantal;
+  });
 }
 
 /** High-urgency open tickets (impact stil and/or priority spoed). */

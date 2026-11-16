@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MAX_STEMMEN, MOCK_USER } from "@/data/mock";
+import { MOCK_USER } from "@/data/mock";
 import styles from "./shell.module.css";
 
 /** Primary destinations from the wireframe IA. */
@@ -18,8 +18,8 @@ function isActive(pathname: string, href: string): boolean {
 }
 
 /**
- * Shared chrome: Tebi brand, four tabs, + Ticket CTA, subtle stemsaldo.
- * Desktop uses top nav; mobile adds a bottom bar for thumb reach.
+ * Shared chrome: Tebi brand, four tabs, + Ticket CTA.
+ * Stemsaldo removed — ratings are 1–5 stars without a limited pool.
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -47,15 +47,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className={styles.actions}>
-          {/* Stemsaldo stays subtle — not a hero metric strip. */}
-          <p className={styles.stemsaldo} title="Maximaal 5 actieve stemmen">
-            Stemmen:{" "}
-            <strong>
-              {MOCK_USER.stemmenOver}/{MAX_STEMMEN}
-            </strong>{" "}
-            over
-          </p>
-
           <Link href="/ticket/nieuw" className={styles.createBtn}>
             <span aria-hidden>+</span> Ticket
           </Link>
