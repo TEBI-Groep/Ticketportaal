@@ -1,0 +1,86 @@
+/* Public ticket updates — list-first, no chat bubbles / card clutter. */
+
+.thread {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+.header {
+  margin-bottom: var(--space-4);
+}
+
+.header h2 {
+  margin-bottom: var(--space-2);
+}
+
+.empty {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  margin-bottom: var(--space-4);
+}
+
+.list {
+  list-style: none;
+  display: grid;
+  gap: 0;
+  margin-bottom: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+
+.item {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  align-items: baseline;
+  margin-bottom: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.author {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--ink);
+}
+
+.role {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-weight: 600;
+}
+
+.body {
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.compose {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.input {
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
