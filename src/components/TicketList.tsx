@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { Ticket } from "@/lib/types";
 import {
   isStembaar,
@@ -37,6 +38,11 @@ export function TicketList({
   emptyHref = "/ticket/nieuw",
   emptyCta = "Ticket aanmaken",
 }: TicketListProps) {
+  const pathname = usePathname();
+  /* Remember which list opened the ticket so detail “Terug” can return here. */
+  const ticketHref = (id: string) =>
+    `/ticket/${id}?van=${encodeURIComponent(pathname)}`;
+
   if (tickets.length === 0) {
     return (
       <div className="empty-state">
@@ -64,7 +70,7 @@ export function TicketList({
             key={ticket.id}
             className={`ticket-row ${showVote ? "with-vote" : ""}`}
           >
-            <Link href={`/ticket/${ticket.id}`} className="ticket-row-link">
+            <Link href={ticketHref(ticket.id)} className="ticket-row-link">
               {showRank ? (
                 <span className="ticket-rank" aria-label={`Positie ${index + 1}`}>
                   {index + 1}

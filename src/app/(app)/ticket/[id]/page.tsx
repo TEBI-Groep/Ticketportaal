@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { BackLink } from "@/components/BackLink";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
 import { getTicketById, MOCK_USER } from "@/data/mock";
@@ -45,9 +46,16 @@ export default async function TicketDetailPage({ params }: PageProps) {
   return (
     <div className="page">
       <p style={{ marginBottom: "1rem" }}>
-        <Link href="/ranglijst" className="btn btn-ghost">
-          ← Terug
-        </Link>
+        {/* Suspense: BackLink reads ?van= via useSearchParams. */}
+        <Suspense
+          fallback={
+            <span className="btn btn-ghost" aria-hidden>
+              ← Terug
+            </span>
+          }
+        >
+          <BackLink />
+        </Suspense>
       </p>
 
       <div className="detail-grid split">
