@@ -1,41 +1,62 @@
-/* Tebi Ticketportaal — calm business design tokens (no purple AI-slop). */
+/* Tebi Ticketportaal — design tokens.
+   Merkkleuren afgeleid van tebi.nl / gardenlux.nl (Tebi-groen, Gardenlux-blauwgrijs, logo-geel),
+   toegepast in een rustige, Apple-achtige stijl: veel wit, zachte grijzen, één accentkleur. */
 :root {
-  /* Surfaces: cool slate wash, not flat white or cream. */
-  --bg: #e8eef2;
-  --bg-accent: #dce6ec;
-  --surface: #f7fafb;
+  /* Merkpalet (bron) */
+  --tebi-green: #16a34a;      /* tebi.nl knoppen/iconen */
+  --tebi-green-dark: #0d8038; /* tebi.nl hover */
+  --tebi-yellow: #fce003;     /* logo-geel (Tebi + Gardenlux) */
+  --tebi-slate: #395465;      /* Gardenlux blauwgrijs */
+  --tebi-orange: #ec670d;     /* navigatie-accent tebi.nl */
+
+  /* Oppervlakken: Apple-achtig lichtgrijs met witte kaarten. */
+  --bg: #f5f5f7;
+  --bg-accent: #ececf0;
+  --surface: #fbfbfd;
   --surface-raised: #ffffff;
-  --ink: #15202b;
-  --ink-soft: #3d4f5f;
-  --ink-muted: #6a7d8c;
-  --border: #c9d5de;
-  --border-strong: #9aafbd;
 
-  /* Brand accent: deep teal — calm, businesslike. */
-  --brand: #0a5c58;
-  --brand-hover: #084944;
-  --brand-soft: #d5ebe9;
-  --brand-ink: #063e3b;
+  /* Tekst */
+  --ink: #1d1d1f;
+  --ink-soft: var(--tebi-slate);
+  --ink-muted: #6e6e73;
 
-  /* Semantic (used sparingly). */
-  --spoed: #a33b28;
-  --spoed-soft: #f6e4df;
-  --ok: #1f6b4a;
-  --ok-soft: #dceee5;
-  --warn: #8a6a1f;
-  --warn-soft: #f3ecd7;
+  /* Lijnen: haarfijn, nauwelijks zichtbaar. */
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.16);
+
+  /* Accent: Tebi-groen (iets donkerder voor leesbaar contrast met witte tekst). */
+  --brand: #15803d;
+  --brand-hover: var(--tebi-green-dark);
+  --brand-soft: #eaf6ee;
+  --brand-ink: #14532d;
+
+  /* Highlight (spaarzaam, bv. top-3 / markering) */
+  --highlight: var(--tebi-yellow);
+  --highlight-soft: #fff9d1;
+
+  /* Semantisch */
+  --spoed: #c4161c;
+  --spoed-soft: #fdecec;
+  --ok: #15803d;
+  --ok-soft: #eaf6ee;
+  --warn: #b45309;
+  --warn-soft: #fef3e2;
 
   /* Layout */
-  --radius: 10px;
-  --radius-sm: 6px;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-pill: 980px;
   --nav-height: 3.5rem;
   --bottom-nav-height: 4rem;
-  --content-max: 56rem;
-  --shadow-soft: 0 1px 0 rgba(21, 32, 43, 0.04);
+  --content-max: 60rem;
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
+  --focus-ring: 0 0 0 4px rgba(21, 128, 61, 0.18);
 
-  /* Typography — set via next/font variables on <html>. */
-  --font-ui: var(--font-plus-jakarta), "Segoe UI", sans-serif;
-  --font-brand: var(--font-bricolage), Georgia, serif;
+  /* Typografie: systeemfont (SF Pro op Apple, Segoe UI Variable op Windows). */
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text",
+    "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-brand: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display",
+    "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -64,11 +85,9 @@ body {
   font-family: var(--font-ui);
   font-size: 0.9375rem;
   line-height: 1.5;
+  letter-spacing: -0.005em;
   color: var(--ink);
-  background:
-    radial-gradient(1200px 600px at 10% -10%, #d5e4ea 0%, transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, #d0e2df 0%, transparent 50%),
-    var(--bg);
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -105,9 +124,9 @@ img {
 
 .page-header h1 {
   font-family: var(--font-brand);
-  font-size: clamp(1.5rem, 2.5vw, 1.85rem);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
   color: var(--ink);
 }
 
@@ -143,7 +162,7 @@ img {
 .textarea-input:focus {
   outline: none;
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px var(--brand-soft);
+  box-shadow: var(--focus-ring);
 }
 
 .search-input {
@@ -163,12 +182,21 @@ img {
   justify-content: center;
   gap: 0.4rem;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  padding: 0.55rem 1rem;
+  border-radius: var(--radius-pill);
+  padding: 0.55rem 1.1rem;
   min-height: 2.5rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .btn:disabled {
@@ -193,7 +221,7 @@ img {
 
 .btn-secondary:hover:not(:disabled) {
   border-color: var(--border-strong);
-  background: var(--bg-accent);
+  background: var(--surface);
 }
 
 .btn-ghost {
@@ -287,7 +315,7 @@ img {
   grid-template-columns: 2.5rem 1fr auto;
   gap: var(--space-3);
   align-items: center;
-  padding: 0.9rem 1rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border);
   transition: background 0.12s ease;
 }
@@ -297,7 +325,7 @@ img {
 }
 
 .ticket-row:hover {
-  background: color-mix(in srgb, var(--brand-soft) 35%, var(--surface-raised));
+  background: var(--surface);
 }
 
 .ticket-row-link {
@@ -384,9 +412,9 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.45rem 0.75rem;
+  padding: 0.45rem 0.9rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   background: var(--surface-raised);
   cursor: pointer;
   font-weight: 500;
@@ -418,7 +446,8 @@ img {
 }
 
 .detail-panel h2 {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-muted);
@@ -455,7 +484,7 @@ img {
 }
 
 .kv dd {
-  font-weight: 600;
+  font-weight: 500;
   margin-top: 0.15rem;
 }
 
@@ -463,10 +492,9 @@ img {
   font-size: 0.875rem;
   color: var(--ink-muted);
   padding: var(--space-3) var(--space-4);
-  background: color-mix(in srgb, var(--brand-soft) 55%, var(--surface));
+  background: var(--brand-soft);
   border-radius: var(--radius-sm);
   margin-bottom: var(--space-4);
-  border-left: 3px solid var(--brand);
 }
 
 @media (min-width: 720px) {
