@@ -1,15 +1,19 @@
 /** Static mock users and tickets for the first UI shell — no backend yet. */
 
-import type { Ticket, TicketComment, TicketRating, User } from "@/lib/types";
+import type { ItNote, Ticket, TicketComment, TicketRating, User } from "@/lib/types";
 import { ratingAantal, ratingGemiddelde } from "@/lib/types";
 
-/** Demo user shown in the shell after “login”. */
+/**
+ * Demo user after “login”.
+ * Rol uitvoerder so the IT-only notes panel is visible in the UI shell;
+ * switch to "manager" / "gebruiker" to verify those roles cannot see notes.
+ */
 export const MOCK_USER: User = {
   id: "u-1",
   naam: "Sara de Vries",
   email: "sara.devries@tebi.nl",
-  rol: "manager",
-  afdeling: "Finance",
+  rol: "uitvoerder",
+  afdeling: "IT",
 };
 
 function r(
@@ -413,6 +417,60 @@ export const MOCK_COMMENTS: TicketComment[] = [
 
 export function getCommentsForTicket(ticketId: string): TicketComment[] {
   return MOCK_COMMENTS.filter((c) => c.ticketId === ticketId).sort((a, b) =>
+    a.createdAt.localeCompare(b.createdAt),
+  );
+}
+
+/** Internal IT notes — only returned/rendered for uitvoerders. */
+export const MOCK_IT_NOTES: ItNote[] = [
+  {
+    id: "n-1",
+    ticketId: "t-1",
+    userId: "u-5",
+    auteurNaam: "Noor Smits",
+    tekst:
+      "Saved search prototype in sandbox. Let op: BTW-groep mapping wijkt af van Exact — even met Mark checken vóór go-live.",
+    createdAt: "2026-11-09",
+  },
+  {
+    id: "n-2",
+    ticketId: "t-1",
+    userId: "u-1",
+    auteurNaam: "Sara de Vries",
+    tekst: "Omvang M bevestigd. Streefdatum blijft 1 dec tenzij regressie in WMS.",
+    createdAt: "2026-11-10",
+  },
+  {
+    id: "n-3",
+    ticketId: "t-6",
+    userId: "u-5",
+    auteurNaam: "Noor Smits",
+    tekst:
+      "Exchange shared mailbox ACL opnieuw gezet. Monitoring tot morgen 12:00; daarna ticket afronden als geen klachten.",
+    createdAt: "2026-11-16",
+  },
+  {
+    id: "n-4",
+    ticketId: "t-8",
+    userId: "u-5",
+    auteurNaam: "Noor Smits",
+    tekst:
+      "Wacht op screenshot van melder. Reproduceert niet in test-wave — mogelijk alleen split over DC2.",
+    createdAt: "2026-11-14",
+  },
+  {
+    id: "n-5",
+    ticketId: "t-3",
+    userId: "u-5",
+    auteurNaam: "Noor Smits",
+    tekst:
+      "Workflow in draft. Goedkeurder = afdelingsmanager uit employee record; fallback Directie.",
+    createdAt: "2026-11-12",
+  },
+];
+
+export function getItNotesForTicket(ticketId: string): ItNote[] {
+  return MOCK_IT_NOTES.filter((n) => n.ticketId === ticketId).sort((a, b) =>
     a.createdAt.localeCompare(b.createdAt),
   );
 }

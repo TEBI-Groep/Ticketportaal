@@ -3,9 +3,15 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { BackLink } from "@/components/BackLink";
 import { CommentThread } from "@/components/CommentThread";
+import { ItNotes } from "@/components/ItNotes";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
-import { getCommentsForTicket, getTicketById, MOCK_USER } from "@/data/mock";
+import {
+  getCommentsForTicket,
+  getItNotesForTicket,
+  getTicketById,
+  MOCK_USER,
+} from "@/data/mock";
 import {
   IMPACT_LABEL,
   TYPE_LABEL,
@@ -44,6 +50,7 @@ export default async function TicketDetailPage({ params }: PageProps) {
   const count = ratingAantal(ticket);
   const mine = mijnRating(ticket, MOCK_USER.id);
   const comments = getCommentsForTicket(ticket.id);
+  const itNotes = getItNotesForTicket(ticket.id);
 
   return (
     <div className="page">
@@ -155,6 +162,12 @@ export default async function TicketDetailPage({ params }: PageProps) {
               <dd>{formatDate(ticket.updatedAt)}</dd>
             </div>
           </dl>
+
+          <ItNotes
+            ticketId={ticket.id}
+            initialNotes={itNotes}
+            viewerRol={MOCK_USER.rol}
+          />
         </aside>
       </div>
     </div>

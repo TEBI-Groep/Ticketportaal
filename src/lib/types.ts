@@ -33,13 +33,23 @@ export interface TicketRating {
   score: StarScore;
 }
 
-/** Public comment on a ticket (MVP: one shared thread, no internal split yet). */
+/** Public comment on a ticket (MVP: one shared thread for melder ↔ IT). */
 export interface TicketComment {
   id: string;
   ticketId: string;
   userId: string;
   auteurNaam: string;
   auteurRol: UserRole;
+  tekst: string;
+  createdAt: string;
+}
+
+/** Internal IT-only note — never shown to melder/manager in the real app. */
+export interface ItNote {
+  id: string;
+  ticketId: string;
+  userId: string;
+  auteurNaam: string;
   tekst: string;
   createdAt: string;
 }
