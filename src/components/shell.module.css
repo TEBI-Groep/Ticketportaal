@@ -1,0 +1,184 @@
+/* App chrome: top bar + mobile bottom nav. */
+
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 860px) {
+  .shell {
+    padding-bottom: 0;
+  }
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--nav-height);
+  padding: 0.5rem 1rem;
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.brandName {
+  font-family: var(--font-brand);
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.03em;
+  color: var(--brand-ink);
+}
+
+.brandProduct {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.desktopNav {
+  display: none;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: var(--space-2);
+  flex: 1;
+}
+
+.navLink {
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.navLink:hover {
+  background: var(--bg-accent);
+  color: var(--ink);
+}
+
+.navLinkActive {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.stemsaldo {
+  display: none;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.stemsaldo strong {
+  color: var(--brand-ink);
+  font-weight: 700;
+}
+
+.createBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: var(--brand);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.createBtn:hover {
+  background: var(--brand-hover);
+}
+
+.userChip {
+  display: none;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.userChip strong {
+  color: var(--ink);
+  font-size: 0.8125rem;
+}
+
+.bottomNav {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.15rem;
+  min-height: var(--bottom-nav-height);
+  padding: 0.35rem 0.35rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border);
+}
+
+.bottomLink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.2rem;
+}
+
+.bottomLinkActive {
+  color: var(--brand-ink);
+  background: var(--brand-soft);
+}
+
+.bottomIcon {
+  font-size: 1rem;
+  line-height: 1;
+  font-family: var(--font-brand);
+  font-weight: 700;
+}
+
+@media (min-width: 860px) {
+  .desktopNav {
+    display: flex;
+  }
+
+  .stemsaldo,
+  .userChip {
+    display: flex;
+  }
+
+  .bottomNav {
+    display: none;
+  }
+}
