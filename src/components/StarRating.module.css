@@ -1,11 +1,13 @@
 /* Calm star rating — brand teal fill, no glow / purple sparkle. */
 
 .wrap {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 0.25rem;
   min-width: 7.5rem;
+  z-index: 1;
 }
 
 .compact {
@@ -67,9 +69,114 @@
   font-variant-numeric: tabular-nums;
 }
 
+.countBtn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--brand-ink);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+
+.countBtn:hover,
+.countBtn:focus-visible {
+  color: var(--brand);
+  outline: none;
+}
+
 .mine {
   color: var(--brand-ink);
   font-weight: 600;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 30;
+  width: min(18rem, 78vw);
+  max-height: 16rem;
+  overflow: auto;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(21, 32, 43, 0.12);
+  text-align: left;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  position: sticky;
+  top: 0;
+  background: var(--surface-raised);
+}
+
+.panelHeader strong {
+  color: var(--ink);
+  font-size: 0.8125rem;
+}
+
+.panelList {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+}
+
+.panelList li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.45rem 0.85rem;
+}
+
+.panelList li + li {
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.person {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.personName {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personDept {
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+}
+
+.personScore {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: var(--brand);
+  line-height: 1;
+}
+
+.personScoreEmpty {
+  color: var(--border-strong);
 }
 
 @media (max-width: 719px) {
@@ -79,5 +186,10 @@
 
   .meta {
     justify-content: flex-start;
+  }
+
+  .panel {
+    left: 0;
+    right: auto;
   }
 }

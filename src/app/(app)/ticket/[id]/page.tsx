@@ -3,13 +3,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
-import { getTicketById } from "@/data/mock";
+import { getTicketById, MOCK_USER } from "@/data/mock";
 import {
   IMPACT_LABEL,
   TYPE_LABEL,
   formatDate,
 } from "@/lib/labels";
-import { isStembaar } from "@/lib/types";
+import {
+  isStembaar,
+  mijnRating,
+  ratingAantal,
+  ratingGemiddelde,
+} from "@/lib/types";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -33,6 +38,9 @@ export default async function TicketDetailPage({ params }: PageProps) {
   }
 
   const canVote = isStembaar(ticket);
+  const avg = ratingGemiddelde(ticket);
+  const count = ratingAantal(ticket);
+  const mine = mijnRating(ticket, MOCK_USER.id);
 
   return (
     <div className="page">
@@ -101,9 +109,10 @@ export default async function TicketDetailPage({ params }: PageProps) {
                 plek op de ranglijst (advies aan IT).
               </p>
               <StarRating
-                average={ticket.ratingGemiddelde}
-                count={ticket.ratingAantal}
-                myRating={ticket.mijnRating}
+                average={avg}
+                count={count}
+                myRating={mine}
+                beoordelingen={ticket.beoordelingen}
                 interactive
               />
             </div>

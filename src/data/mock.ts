@@ -1,6 +1,7 @@
 /** Static mock users and tickets for the first UI shell — no backend yet. */
 
-import type { Ticket, User } from "@/lib/types";
+import type { Ticket, TicketRating, User } from "@/lib/types";
+import { ratingAantal, ratingGemiddelde } from "@/lib/types";
 
 /** Demo user shown in the shell after “login”. */
 export const MOCK_USER: User = {
@@ -10,6 +11,15 @@ export const MOCK_USER: User = {
   rol: "manager",
   afdeling: "Finance",
 };
+
+function r(
+  userId: string,
+  naam: string,
+  afdeling: string,
+  score: TicketRating["score"],
+): TicketRating {
+  return { userId, naam, afdeling, score };
+}
 
 /** Seed tickets covering ranglijst, spoed, mijn tickets, and afgerond. */
 export const MOCK_TICKETS: Ticket[] = [
@@ -30,9 +40,16 @@ export const MOCK_TICKETS: Ticket[] = [
     eigenaarNaam: "IT · Alex",
     streefdatum: "2026-12-01",
     omvang: "M",
-    ratingGemiddelde: 4.6,
-    ratingAantal: 18,
-    mijnRating: 5,
+    beoordelingen: [
+      r("u-1", "Sara de Vries", "Finance", 5),
+      r("u-2", "Mark Jansen", "Finance", 5),
+      r("u-3", "Lisa Bakker", "Magazijn", 4),
+      r("u-4", "Tom Vermeer", "Sales", 5),
+      r("u-5", "Noor Smits", "IT", 4),
+      r("u-6", "Peter de Boer", "Inkoop", 5),
+      r("u-7", "Anne Mulder", "Finance", 4),
+      r("u-8", "Chris Veld", "Directie", 5),
+    ],
     createdAt: "2026-10-02",
     updatedAt: "2026-11-10",
   },
@@ -50,9 +67,14 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "normaal",
     melderId: "u-3",
     melderNaam: "Lisa Bakker",
-    ratingGemiddelde: 4.2,
-    ratingAantal: 14,
-    mijnRating: null,
+    beoordelingen: [
+      r("u-3", "Lisa Bakker", "Magazijn", 5),
+      r("u-6", "Peter de Boer", "Inkoop", 4),
+      r("u-9", "Erik Vos", "Magazijn", 4),
+      r("u-4", "Tom Vermeer", "Sales", 4),
+      r("u-2", "Mark Jansen", "Finance", 3),
+      r("u-10", "Inge Kuipers", "Magazijn", 5),
+    ],
     createdAt: "2026-10-14",
     updatedAt: "2026-11-08",
   },
@@ -73,9 +95,13 @@ export const MOCK_TICKETS: Ticket[] = [
     eigenaarNaam: "IT · Jordan",
     streefdatum: "2026-11-28",
     omvang: "L",
-    ratingGemiddelde: 3.9,
-    ratingAantal: 11,
-    mijnRating: null,
+    beoordelingen: [
+      r("u-6", "Peter de Boer", "Inkoop", 5),
+      r("u-8", "Chris Veld", "Directie", 4),
+      r("u-2", "Mark Jansen", "Finance", 4),
+      r("u-11", "Marieke Bos", "Inkoop", 3),
+      r("u-4", "Tom Vermeer", "Sales", 3),
+    ],
     createdAt: "2026-10-20",
     updatedAt: "2026-11-12",
   },
@@ -93,9 +119,12 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "normaal",
     melderId: "u-4",
     melderNaam: "Tom Vermeer",
-    ratingGemiddelde: 3.5,
-    ratingAantal: 8,
-    mijnRating: 3,
+    beoordelingen: [
+      r("u-1", "Sara de Vries", "Finance", 3),
+      r("u-4", "Tom Vermeer", "Sales", 5),
+      r("u-12", "Sanne Hof", "Sales", 4),
+      r("u-2", "Mark Jansen", "Finance", 2),
+    ],
     createdAt: "2026-10-28",
     updatedAt: "2026-11-05",
   },
@@ -113,9 +142,11 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "normaal",
     melderId: "u-1",
     melderNaam: "Sara de Vries",
-    ratingGemiddelde: 3.1,
-    ratingAantal: 6,
-    mijnRating: null,
+    beoordelingen: [
+      r("u-2", "Mark Jansen", "Finance", 4),
+      r("u-7", "Anne Mulder", "Finance", 3),
+      r("u-8", "Chris Veld", "Directie", 2),
+    ],
     createdAt: "2026-11-01",
     updatedAt: "2026-11-09",
   },
@@ -135,9 +166,7 @@ export const MOCK_TICKETS: Ticket[] = [
     melderNaam: "Noor Smits",
     eigenaarNaam: "IT · Alex",
     omvang: "S",
-    ratingGemiddelde: 0,
-    ratingAantal: 0,
-    mijnRating: null,
+    beoordelingen: [],
     createdAt: "2026-11-16",
     updatedAt: "2026-11-16",
   },
@@ -155,9 +184,7 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "spoed",
     melderId: "u-3",
     melderNaam: "Lisa Bakker",
-    ratingGemiddelde: 0,
-    ratingAantal: 0,
-    mijnRating: null,
+    beoordelingen: [],
     createdAt: "2026-11-16",
     updatedAt: "2026-11-16",
   },
@@ -177,9 +204,7 @@ export const MOCK_TICKETS: Ticket[] = [
     melderNaam: "Sara de Vries",
     eigenaarNaam: "IT · Jordan",
     omvang: "M",
-    ratingGemiddelde: 0,
-    ratingAantal: 0,
-    mijnRating: null,
+    beoordelingen: [],
     createdAt: "2026-09-18",
     updatedAt: "2026-11-14",
   },
@@ -199,9 +224,7 @@ export const MOCK_TICKETS: Ticket[] = [
     melderNaam: "Lisa Bakker",
     eigenaarNaam: "IT · Alex",
     omvang: "S",
-    ratingGemiddelde: 0,
-    ratingAantal: 0,
-    mijnRating: null,
+    beoordelingen: [],
     createdAt: "2026-08-12",
     updatedAt: "2026-08-13",
     oplossingSamenvatting: "Driver X herinstalleren en printspooler resetten op de terminal-pc’s.",
@@ -222,9 +245,12 @@ export const MOCK_TICKETS: Ticket[] = [
     melderNaam: "Tom Vermeer",
     eigenaarNaam: "IT · Jordan",
     omvang: "S",
-    ratingGemiddelde: 4.0,
-    ratingAantal: 5,
-    mijnRating: null,
+    beoordelingen: [
+      r("u-4", "Tom Vermeer", "Sales", 4),
+      r("u-12", "Sanne Hof", "Sales", 5),
+      r("u-8", "Chris Veld", "Directie", 3),
+      r("u-2", "Mark Jansen", "Finance", 4),
+    ],
     createdAt: "2026-09-01",
     updatedAt: "2026-09-20",
     oplossingSamenvatting: "Permissieset bijgewerkt; documentatie in Confluence gezet.",
@@ -243,9 +269,11 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "normaal",
     melderId: "u-2",
     melderNaam: "Mark Jansen",
-    ratingGemiddelde: 2.4,
-    ratingAantal: 4,
-    mijnRating: null,
+    beoordelingen: [
+      r("u-6", "Peter de Boer", "Inkoop", 2),
+      r("u-11", "Marieke Bos", "Inkoop", 3),
+      r("u-2", "Mark Jansen", "Finance", 2),
+    ],
     createdAt: "2026-09-05",
     updatedAt: "2026-10-01",
     oplossingSamenvatting: "Afgewezen: dekt bestaande saved-search + SuiteAnalytics al voldoende.",
@@ -279,10 +307,9 @@ export function getRanglijstTickets(): Ticket[] {
       t.status !== "afgerond" &&
       t.status !== "afgewezen",
   ).sort((a, b) => {
-    if (b.ratingGemiddelde !== a.ratingGemiddelde) {
-      return b.ratingGemiddelde - a.ratingGemiddelde;
-    }
-    return b.ratingAantal - a.ratingAantal;
+    const avgDiff = ratingGemiddelde(b) - ratingGemiddelde(a);
+    if (avgDiff !== 0) return avgDiff;
+    return ratingAantal(b) - ratingAantal(a);
   });
 }
 

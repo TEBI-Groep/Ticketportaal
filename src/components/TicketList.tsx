@@ -2,10 +2,16 @@
 
 import Link from "next/link";
 import type { Ticket } from "@/lib/types";
-import { isStembaar } from "@/lib/types";
+import {
+  isStembaar,
+  mijnRating,
+  ratingAantal,
+  ratingGemiddelde,
+} from "@/lib/types";
 import { IMPACT_LABEL, formatDate } from "@/lib/labels";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
+import { MOCK_USER } from "@/data/mock";
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -48,6 +54,10 @@ export function TicketList({
     <ul className={`ticket-list ${showRank ? "" : "list-compact"}`}>
       {tickets.map((ticket, index) => {
         const canRate = showVote && isStembaar(ticket);
+        const avg = ratingGemiddelde(ticket);
+        const count = ratingAantal(ticket);
+        const mine = mijnRating(ticket, MOCK_USER.id);
+        const showStars = showVote && (canRate || count > 0);
 
         return (
           <li
@@ -83,24 +93,16 @@ export function TicketList({
               </div>
             </Link>
 
-            {showVote ? (
+            {showStars ? (
               <div className="ticket-actions">
-                {canRate ? (
-                  <StarRating
-                    average={ticket.ratingGemiddelde}
-                    count={ticket.ratingAantal}
-                    myRating={ticket.mijnRating}
-                    interactive
-                    compact
-                  />
-                ) : ticket.ratingAantal > 0 ? (
-                  <StarRating
-                    average={ticket.ratingGemiddelde}
-                    count={ticket.ratingAantal}
-                    myRating={ticket.mijnRating}
-                    compact
-                  />
-                ) : null}
+                <StarRating
+                  average={avg}
+                  count={count}
+                  myRating={mine}
+                  beoordelingen={ticket.beoordelingen}
+                  interactive={canRate}
+                  compact
+                />
               </div>
             ) : null}
           </li>
