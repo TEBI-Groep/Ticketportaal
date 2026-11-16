@@ -14,14 +14,23 @@ export type TicketPriority = "spoed" | "voorrang" | "belangrijk" | "normaal";
 export type TicketSize = "S" | "M" | "L";
 export type UserRole = "gebruiker" | "manager" | "uitvoerder";
 
+/** Star rating scale: 1 (laag) … 5 (hoog). */
+export type StarScore = 1 | 2 | 3 | 4 | 5;
+
 export interface User {
   id: string;
   naam: string;
   email: string;
   rol: UserRole;
   afdeling: string;
-  /** How many of the max 5 votes this user still has available. */
-  stemmenOver: number;
+}
+
+/** One person’s rating on a ticket (shown in the beoordelingen breakdown). */
+export interface TicketRating {
+  userId: string;
+  naam: string;
+  afdeling: string;
+  score: StarScore;
 }
 
 export interface Ticket {
@@ -40,19 +49,44 @@ export interface Ticket {
   eigenaarNaam?: string;
   streefdatum?: string;
   omvang?: TicketSize;
-  stemmen: number;
-  /** Whether the current mock user has voted on this ticket. */
-  gestemdDoorMij: boolean;
+  /** Individual ratings; average/count are derived. */
+  beoordelingen: TicketRating[];
   createdAt: string;
   updatedAt: string;
   /** Short solution blurb for completed tickets (UI-only for now). */
   oplossingSamenvatting?: string;
 }
 
-/** True when voting is allowed: NetSuite + wijziging/idee + not closed. */
+/** Average of all scores, or 0 when empty. */
+export function ratingGemiddelde(ticket: Ticket): number {
+  const list = ticket.beoordelingen;
+  if (list.length === 0) return 0;
+  const sum = list.reduce((acc, r) => acc + r.score, 0);
+  return sum / list.length;
+}
+
+export function ratingAantal(ticket: Ticket): number {
+  return ticket.beoordelingen.length;
+}
+
+/** Current user’s score on this ticket, if any. */
+export function mijnRating(
+  ticket: Ticket,
+  userId: string,
+): StarScore | null {
+  return ticket.beoordelingen.find((r) => r.userId === userId)?.score ?? null;
+}
+
+/** True when rating is allowed: NetSuite + wijziging/idee + not closed. */
 export function isStembaar(ticket: Ticket): boolean {
   const open =
     ticket.status !== "afgerond" && ticket.status !== "afgewezen";
   const typeOk = ticket.type === "wijziging" || ticket.type === "idee";
   return open && typeOk && ticket.systeem === "NetSuite";
+}
+
+/** Display helper: one decimal for averages, e.g. 4.3. */
+export function formatRating(avg: number): string {
+  if (avg <= 0) return "—";
+  return avg.toFixed(1);
 }
