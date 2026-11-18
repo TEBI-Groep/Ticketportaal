@@ -101,17 +101,20 @@ export function mijnRating(
   return ticket.beoordelingen.find((r) => r.userId === userId)?.score ?? null;
 }
 
-/** True when rating is allowed: NetSuite + wijziging/idee + not spoed + not closed. */
+/**
+ * NetSuite wijziging/idee — belongs on the public Ranglijst when open and
+ * not marked Spoed. Everything else operational goes to Werkvoorraad.
+ */
+export function isRanglijstKandidaat(ticket: Ticket): boolean {
+  const typeOk = ticket.type === "wijziging" || ticket.type === "idee";
+  return typeOk && ticket.systeem === "NetSuite";
+}
+
+/** True when rating is allowed: ranglijst-eligible + not spoed + not closed. */
 export function isStembaar(ticket: Ticket): boolean {
   const open =
     ticket.status !== "afgerond" && ticket.status !== "afgewezen";
-  const typeOk = ticket.type === "wijziging" || ticket.type === "idee";
-  return (
-    open &&
-    typeOk &&
-    ticket.systeem === "NetSuite" &&
-    ticket.prioriteit !== "spoed"
-  );
+  return open && isRanglijstKandidaat(ticket) && ticket.prioriteit !== "spoed";
 }
 
 /** Display helper: one decimal for averages, e.g. 4.3. */

@@ -1,7 +1,11 @@
 /** Static mock users and tickets for the first UI shell — no backend yet. */
 
 import type { ItNote, Ticket, TicketComment, TicketRating, User } from "@/lib/types";
-import { ratingAantal, ratingGemiddelde } from "@/lib/types";
+import {
+  isRanglijstKandidaat,
+  ratingAantal,
+  ratingGemiddelde,
+} from "@/lib/types";
 
 /**
  * Demo user after “login”.
@@ -371,6 +375,17 @@ export function getSpoedTickets(): Ticket[] {
       t.status !== "afgerond" &&
       t.status !== "afgewezen" &&
       t.prioriteit === "spoed",
+  ).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+/** Open operational tickets outside Ranglijst and Spoed. */
+export function getWerkvoorraadTickets(): Ticket[] {
+  return MOCK_TICKETS.filter(
+    (t) =>
+      t.status !== "afgerond" &&
+      t.status !== "afgewezen" &&
+      t.prioriteit !== "spoed" &&
+      !isRanglijstKandidaat(t),
   ).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 

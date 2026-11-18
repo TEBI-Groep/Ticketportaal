@@ -10,8 +10,13 @@ import {
   getRanglijstTickets as mockRanglijst,
   getSpoedTickets as mockSpoed,
   getTicketById as mockTicketById,
+  getWerkvoorraadTickets as mockWerkvoorraad,
 } from "@/data/mock";
-import { ratingAantal, ratingGemiddelde } from "@/lib/types";
+import {
+  isRanglijstKandidaat,
+  ratingAantal,
+  ratingGemiddelde,
+} from "@/lib/types";
 
 type TicketRow = {
   id: string;
@@ -136,6 +141,29 @@ export async function getSpoedTickets(): Promise<Ticket[]> {
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } catch {
     return mockSpoed();
+  }
+}
+
+/**
+ * Open operational tickets: not Spoed, not on the public NetSuite Ranglijst
+ * (storingen, vragen, Outlook/WMS/hardware, etc.).
+ */
+export async function getWerkvoorraadTickets(): Promise<Ticket[]> {
+  if (!isSupabaseConfigured()) return mockWerkvoorraad();
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("tickets")
+      .select(TICKET_SELECT)
+      .neq("prioriteit", "spoed")
+      .not("status", "in", '("afgerond","afgewezen")');
+    if (error || !data) return mockWerkvoorraad();
+    return (data as unknown as TicketRow[])
+      .map(mapTicket)
+      .filter((t) => !isRanglijstKandidaat(t))
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  } catch {
+    return mockWerkvoorraad();
   }
 }
 

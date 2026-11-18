@@ -78,6 +78,7 @@ export async function rateTicketAction(
 function revalidateRatingPaths(ticketId: string) {
   revalidatePath(`/ticket/${ticketId}`);
   revalidatePath("/ranglijst");
+  revalidatePath("/werkvoorraad");
   revalidatePath("/spoed");
   revalidatePath("/mijn-tickets");
   revalidatePath("/afgerond");

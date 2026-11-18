@@ -19,6 +19,7 @@ function LogoutButton() {
 /** Primary destinations from the wireframe IA. */
 const NAV_ITEMS = [
   { href: "/ranglijst", label: "Ranglijst", short: "Rang" },
+  { href: "/werkvoorraad", label: "Werkvoorraad", short: "Werk" },
   { href: "/spoed", label: "Spoed", short: "Spoed" },
   { href: "/mijn-tickets", label: "Mijn tickets", short: "Mijn" },
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
@@ -111,7 +112,9 @@ export function AppShell({
       <nav
         className={styles.bottomNav}
         aria-label="Mobiele navigatie"
-        style={isIt ? { gridTemplateColumns: "repeat(5, 1fr)" } : undefined}
+        style={{
+          gridTemplateColumns: `repeat(${desktopItems.length}, 1fr)`,
+        }}
       >
         {desktopItems.map((item) => (
           <Link

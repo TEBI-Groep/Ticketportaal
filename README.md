@@ -41,7 +41,8 @@ On **Vercel**, set at least `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE
 
 - `/login` — Supabase Auth
 - `/ranglijst` — NetSuite-wensen op sterrenrating
-- `/spoed` — urgente storingen
+- `/werkvoorraad` — open storingen/vragen/overig (niet-ranglijst)
+- `/spoed` — tickets met IT-prioriteit Spoed
 - `/mijn-tickets` — eigen open tickets
 - `/afgerond` — gesloten tickets
 - `/ticket/nieuw` — aanmaakformulier (UI; opslag volgt)

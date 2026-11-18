@@ -107,6 +107,7 @@ export async function createTicketAction(
     }
 
     revalidatePath("/ranglijst");
+    revalidatePath("/werkvoorraad");
     revalidatePath("/spoed");
     revalidatePath("/mijn-tickets");
     revalidatePath(`/ticket/${data.id}`);
@@ -183,6 +184,7 @@ export async function updateTicketItAction(
 
     revalidatePath(`/ticket/${input.id}`);
     revalidatePath("/ranglijst");
+    revalidatePath("/werkvoorraad");
     revalidatePath("/spoed");
     revalidatePath("/mijn-tickets");
     revalidatePath("/afgerond");
