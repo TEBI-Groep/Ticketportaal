@@ -56,12 +56,9 @@ export async function setUserPasswordAction(
   userId: string,
   password: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const me = await getCurrentUser();
-  if (me.rol !== "uitvoerder") {
-    return {
-      ok: false,
-      error: "Alleen uitvoerders mogen wachtwoorden wijzigen.",
-    };
+  const gate = await requireUitvoerderAction();
+  if (!gate.ok) {
+    return { ok: false, error: gate.error };
   }
 
   const result = await setUserPassword(userId, password);
