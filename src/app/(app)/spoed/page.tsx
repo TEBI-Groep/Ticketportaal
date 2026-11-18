@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { TicketList } from "@/components/TicketList";
-import { getSpoedTickets } from "@/data/mock";
+import { getSpoedTickets } from "@/data/tickets";
 
 export const metadata: Metadata = {
   title: "Spoed",
 };
 
-/** Urgent outages / high-impact tickets — kept separate from the wish ranking. */
-export default function SpoedPage() {
-  const tickets = getSpoedTickets();
+async function SpoedContent() {
+  const tickets = await getSpoedTickets();
 
   return (
-    <div className="page">
+    <>
       <header className="page-header">
         <h1>Spoed</h1>
         <p>
@@ -29,6 +29,17 @@ export default function SpoedPage() {
         emptyMessage="Geen spoedtickets — mooi."
         emptyCta="Storing melden"
       />
+    </>
+  );
+}
+
+/** Urgent outages / high-impact tickets — kept separate from the wish ranking. */
+export default function SpoedPage() {
+  return (
+    <div className="page">
+      <Suspense fallback={<p className="form-hint">Spoedtickets laden…</p>}>
+        <SpoedContent />
+      </Suspense>
     </div>
   );
 }

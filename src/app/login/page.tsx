@@ -2,18 +2,20 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import styles from "./login.module.css";
 
 /**
- * Login is brand-first and single-purpose (wireframe §4.1).
- * Submit navigates to Ranglijst; no real auth backend yet.
+ * Login is brand-first. Uses Supabase Auth when configured;
+ * otherwise any non-empty credentials unlock the mock shell.
  */
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
@@ -26,11 +28,32 @@ export default function LoginPage() {
       return;
     }
 
-    // Mock gate: any non-empty credentials work for the UI demo.
     setLoading(true);
-    window.setTimeout(() => {
+
+    if (!isSupabaseConfigured()) {
+      window.setTimeout(() => {
+        router.push("/ranglijst");
+      }, 350);
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+      const { error: signError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (signError) {
+        setError(signError.message);
+        setLoading(false);
+        return;
+      }
       router.push("/ranglijst");
-    }, 350);
+      router.refresh();
+    } catch {
+      setError("Inloggen mislukt. Probeer het opnieuw.");
+      setLoading(false);
+    }
   }
 
   return (
@@ -67,7 +90,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               className="text-input"
               placeholder="••••••••"
-              defaultValue="demo"
+              defaultValue="TebiDemo2026!"
             />
           </div>
 
@@ -79,7 +102,7 @@ export default function LoginPage() {
         </form>
 
         <p className={styles.help}>
-          Hulp nodig? Neem contact op met IT.
+          Demo: <code>sara.devries@tebi.nl</code> / <code>TebiDemo2026!</code>
         </p>
       </div>
     </div>

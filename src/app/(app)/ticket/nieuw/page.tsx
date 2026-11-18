@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { AFDELINGEN } from "@/data/mock";
+import { FALLBACK_AFDELINGEN as AFDELINGEN } from "@/lib/departments";
 
 /**
  * Simple create form (MVP fields). No similar-ticket panel yet — that is fase 2.
@@ -18,7 +18,8 @@ export default function NieuwTicketPage() {
     setSubmitting(true);
     // Demo: land on an existing detail page so the flow feels complete.
     window.setTimeout(() => {
-      router.push("/ticket/t-5");
+      // Demo: land on a seeded detail until create-ticket is wired to Supabase.
+      router.push("/ticket/b0000000-0000-4000-8000-000000000005");
     }, 400);
   }
 

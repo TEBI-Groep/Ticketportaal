@@ -339,15 +339,7 @@ export const MOCK_TICKETS: Ticket[] = [
 ];
 
 /** Departments available on the create form. */
-export const AFDELINGEN = [
-  "Finance",
-  "Sales",
-  "Magazijn",
-  "Inkoop",
-  "IT",
-  "HR",
-  "Directie",
-] as const;
+export { FALLBACK_AFDELINGEN as AFDELINGEN } from "@/lib/departments";
 
 export function getTicketById(id: string): Ticket | undefined {
   return MOCK_TICKETS.find((t) => t.id === id);

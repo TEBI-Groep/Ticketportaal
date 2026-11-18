@@ -7,6 +7,11 @@ security definer
 set search_path = public
 as $$
 begin
+  -- auth.uid() is null for migrations / service-role SQL — allow
+  if auth.uid() is null then
+    return new;
+  end if;
+
   if not public.is_uitvoerder() then
     if new.rol is distinct from old.rol
        or new.actief is distinct from old.actief

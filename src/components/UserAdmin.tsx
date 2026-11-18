@@ -3,7 +3,10 @@
 import { FormEvent, useMemo, useState } from "react";
 import type { User, UserRole } from "@/lib/types";
 import { ROLE_LABEL } from "@/lib/labels";
-import { AFDELINGEN } from "@/data/mock";
+import {
+  createUserAction,
+  updateUserAction,
+} from "@/app/actions/users";
 import styles from "./UserAdmin.module.css";
 
 export interface UserDraft {
@@ -12,35 +15,40 @@ export interface UserDraft {
   rol: UserRole;
   afdeling: string;
   actief: boolean;
-  /** Only used when creating — temporary password for the demo shell. */
+  /** Only used when creating — temporary password. */
   wachtwoord?: string;
 }
 
 interface UserAdminProps {
   initialUsers: User[];
-  /** Current signed-in user — cannot deactivate or demote self in the shell. */
+  departments: string[];
+  /** Current signed-in user — cannot deactivate or demote self. */
   currentUserId: string;
 }
 
 type Mode = { kind: "list" } | { kind: "create" } | { kind: "edit"; userId: string };
 
-const EMPTY_DRAFT: UserDraft = {
-  naam: "",
-  email: "",
-  rol: "gebruiker",
-  afdeling: "Finance",
-  actief: true,
-  wachtwoord: "",
-};
-
 /**
- * IT user directory: list, create, and edit accounts.
- * Mock-backed for the UI shell; maps 1:1 to Supabase profiles later.
+ * IT user directory: list, create, and edit accounts via Supabase Auth/profiles.
  */
-export function UserAdmin({ initialUsers, currentUserId }: UserAdminProps) {
+export function UserAdmin({
+  initialUsers,
+  departments,
+  currentUserId,
+}: UserAdminProps) {
+  const defaultAfdeling = departments[0] ?? "Finance";
+  const emptyDraft: UserDraft = {
+    naam: "",
+    email: "",
+    rol: "gebruiker",
+    afdeling: defaultAfdeling,
+    actief: true,
+    wachtwoord: "",
+  };
+
   const [users, setUsers] = useState(initialUsers);
   const [mode, setMode] = useState<Mode>({ kind: "list" });
-  const [draft, setDraft] = useState<UserDraft>(EMPTY_DRAFT);
+  const [draft, setDraft] = useState<UserDraft>(emptyDraft);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -66,7 +74,7 @@ export function UserAdmin({ initialUsers, currentUserId }: UserAdminProps) {
   function openCreate() {
     setError(null);
     setNotice(null);
-    setDraft({ ...EMPTY_DRAFT, wachtwoord: suggestPassword() });
+    setDraft({ ...emptyDraft, wachtwoord: suggestPassword() });
     setMode({ kind: "create" });
   }
 
@@ -88,7 +96,7 @@ export function UserAdmin({ initialUsers, currentUserId }: UserAdminProps) {
     setError(null);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setNotice(null);
@@ -116,22 +124,26 @@ export function UserAdmin({ initialUsers, currentUserId }: UserAdminProps) {
       }
 
       setSaving(true);
-      window.setTimeout(() => {
-        const next: User = {
-          id: `u-local-${Date.now()}`,
-          naam,
-          email,
-          rol: draft.rol,
-          afdeling: draft.afdeling,
-          actief: draft.actief,
-        };
-        setUsers((prev) => [...prev, next]);
-        setSaving(false);
-        setNotice(
-          `Account aangemaakt. Tijdelijk wachtwoord: ${wachtwoord} (deel dit veilig met de collega; in de echte app via uitnodigingsmail).`,
-        );
-        setMode({ kind: "list" });
-      }, 200);
+      const result = await createUserAction({
+        naam,
+        email,
+        rol: draft.rol,
+        afdeling: draft.afdeling,
+        wachtwoord,
+        actief: draft.actief,
+      });
+      setSaving(false);
+
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      setUsers((prev) => [...prev, result.user]);
+      setNotice(
+        `Account aangemaakt. Tijdelijk wachtwoord: ${wachtwoord} (deel dit veilig met de collega).`,
+      );
+      setMode({ kind: "list" });
       return;
     }
 
@@ -142,30 +154,41 @@ export function UserAdmin({ initialUsers, currentUserId }: UserAdminProps) {
           return;
         }
         if (draft.rol !== "uitvoerder") {
-          setError("Je kunt je eigen rol niet wijzigen in deze demo.");
+          setError("Je kunt je eigen rol niet wijzigen.");
           return;
         }
       }
 
       setSaving(true);
-      window.setTimeout(() => {
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.id === editing.id
-              ? {
-                  ...u,
-                  naam,
-                  rol: draft.rol,
-                  afdeling: draft.afdeling,
-                  actief: draft.actief,
-                }
-              : u,
-          ),
-        );
-        setSaving(false);
-        setNotice(`Gebruiker ${naam} bijgewerkt.`);
-        setMode({ kind: "list" });
-      }, 200);
+      const result = await updateUserAction({
+        id: editing.id,
+        naam,
+        rol: draft.rol,
+        afdeling: draft.afdeling,
+        actief: draft.actief,
+      });
+      setSaving(false);
+
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === editing.id
+            ? {
+                ...u,
+                naam,
+                rol: draft.rol,
+                afdeling: draft.afdeling,
+                actief: draft.actief,
+              }
+            : u,
+        ),
+      );
+      setNotice(`Gebruiker ${naam} bijgewerkt.`);
+      setMode({ kind: "list" });
     }
   }
 
@@ -238,7 +261,7 @@ export function UserAdmin({ initialUsers, currentUserId }: UserAdminProps) {
               value={draft.afdeling}
               onChange={(e) => setDraft((d) => ({ ...d, afdeling: e.target.value }))}
             >
-              {AFDELINGEN.map((a) => (
+              {departments.map((a) => (
                 <option key={a} value={a}>
                   {a}
                 </option>
@@ -262,8 +285,7 @@ export function UserAdmin({ initialUsers, currentUserId }: UserAdminProps) {
                 autoComplete="new-password"
               />
               <p className="form-hint">
-                Minimaal 8 tekens. De collega wijzigt dit bij eerste login (fase
-                Auth).
+                Minimaal 8 tekens. De collega wijzigt dit bij eerste login.
               </p>
             </div>
           ) : (

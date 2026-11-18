@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import type { ItNote, UserRole } from "@/lib/types";
 import { formatDate } from "@/lib/labels";
-import { MOCK_USER } from "@/data/mock";
+import { addItNoteAction } from "@/app/actions/it-notes";
 import styles from "./ItNotes.module.css";
 
 interface ItNotesProps {
@@ -22,27 +22,25 @@ export function ItNotes({ ticketId, initialNotes, viewerRol }: ItNotesProps) {
   const [notes, setNotes] = useState(initialNotes);
   const [tekst, setTekst] = useState("");
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = tekst.trim();
     if (!trimmed || sending || !isIt) return;
 
     setSending(true);
-    const next: ItNote = {
-      id: `n-local-${Date.now()}`,
-      ticketId,
-      userId: MOCK_USER.id,
-      auteurNaam: MOCK_USER.naam,
-      tekst: trimmed,
-      createdAt: new Date().toISOString().slice(0, 10),
-    };
+    setError(null);
+    const result = await addItNoteAction(ticketId, trimmed);
+    setSending(false);
 
-    window.setTimeout(() => {
-      setNotes((prev) => [...prev, next]);
-      setTekst("");
-      setSending(false);
-    }, 200);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    setNotes((prev) => [...prev, result.note]);
+    setTekst("");
   }
 
   return (
@@ -93,6 +91,11 @@ export function ItNotes({ ticketId, initialNotes, viewerRol }: ItNotesProps) {
               placeholder="Interne aantekening…"
               maxLength={2000}
             />
+            {error ? (
+              <p className={styles.hint} role="alert" style={{ color: "var(--danger, #b42318)" }}>
+                {error}
+              </p>
+            ) : null}
             <div className={styles.actions}>
               <button
                 type="submit"

@@ -12,7 +12,6 @@ import {
 import { IMPACT_LABEL, formatDate } from "@/lib/labels";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
-import { MOCK_USER } from "@/data/mock";
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -20,6 +19,8 @@ interface TicketListProps {
   showRank?: boolean;
   /** Show 1–5 star rating where voting is allowed. */
   showVote?: boolean;
+  /** Current user id for “Jij: n★”. */
+  currentUserId?: string;
   /** Extra empty-state copy. */
   emptyMessage?: string;
   emptyHref?: string;
@@ -34,6 +35,7 @@ export function TicketList({
   tickets,
   showRank = false,
   showVote = false,
+  currentUserId = "",
   emptyMessage = "Geen tickets gevonden.",
   emptyHref = "/ticket/nieuw",
   emptyCta = "Ticket aanmaken",
@@ -62,7 +64,7 @@ export function TicketList({
         const canRate = showVote && isStembaar(ticket);
         const avg = ratingGemiddelde(ticket);
         const count = ratingAantal(ticket);
-        const mine = mijnRating(ticket, MOCK_USER.id);
+        const mine = mijnRating(ticket, currentUserId);
         const showStars = showVote && (canRate || count > 0);
 
         return (
