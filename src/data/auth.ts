@@ -75,14 +75,37 @@ async function clearSessionQuietly(): Promise<void> {
   }
 }
 
+/** True when Auth has a session but the profile is marked inactive. */
+async function hasInactiveSession(): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("actief")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    return Boolean(profile && !profile.actief);
+  } catch {
+    return false;
+  }
+}
+
 /** Redirect to login when there is no signed-in user. */
 export async function requireUser(): Promise<AppUser> {
   const user = await getCurrentUser();
   if (!user) {
     // Auth cookie without a usable profile (e.g. inactive) would otherwise
     // loop: requireUser → /login ← middleware (session present) → /ranglijst.
+    const inactive = await hasInactiveSession();
     await clearSessionQuietly();
-    redirect("/login");
+    redirect(inactive ? "/login?reason=inactive" : "/login");
   }
   return user;
 }

@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
+const INACTIVE_ACCOUNT_MESSAGE =
+  "Dit account is inactief. Neem contact op met IT.";
+
 export async function loginAction(
   email: string,
   password: string,
@@ -23,12 +26,26 @@ export async function loginAction(
 
   try {
     const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: trimmed,
       password,
     });
     if (error) {
       return { ok: false, error: error.message };
+    }
+
+    const userId = data.user?.id;
+    if (userId) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("actief")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (profile && !profile.actief) {
+        await supabase.auth.signOut();
+        return { ok: false, error: INACTIVE_ACCOUNT_MESSAGE };
+      }
     }
   } catch (err) {
     return {
