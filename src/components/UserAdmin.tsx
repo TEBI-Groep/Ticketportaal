@@ -5,6 +5,7 @@ import type { User, UserRole } from "@/lib/types";
 import { ROLE_LABEL } from "@/lib/labels";
 import {
   createUserAction,
+  setUserPasswordAction,
   updateUserAction,
 } from "@/app/actions/users";
 import styles from "./UserAdmin.module.css";
@@ -15,7 +16,7 @@ export interface UserDraft {
   rol: UserRole;
   afdeling: string;
   actief: boolean;
-  /** Only used when creating — temporary password. */
+  /** Create: required temp password. Edit: optional new password. */
   wachtwoord?: string;
 }
 
@@ -87,6 +88,7 @@ export function UserAdmin({
       rol: user.rol,
       afdeling: user.afdeling,
       actief: user.actief,
+      wachtwoord: "",
     });
     setMode({ kind: "edit", userId: user.id });
   }
@@ -159,6 +161,12 @@ export function UserAdmin({
         }
       }
 
+      const newPassword = (draft.wachtwoord ?? "").trim();
+      if (newPassword && newPassword.length < 8) {
+        setError("Nieuw wachtwoord moet minimaal 8 tekens zijn.");
+        return;
+      }
+
       setSaving(true);
       const result = await updateUserAction({
         id: editing.id,
@@ -167,13 +175,56 @@ export function UserAdmin({
         afdeling: draft.afdeling,
         actief: draft.actief,
       });
-      setSaving(false);
 
       if (!result.ok) {
+        setSaving(false);
         setError(result.error);
         return;
       }
 
+      if (newPassword) {
+        const pwResult = await setUserPasswordAction(editing.id, newPassword);
+        setSaving(false);
+        if (!pwResult.ok) {
+          setError(
+            `Profiel opgeslagen, maar wachtwoord niet gewijzigd: ${pwResult.error}`,
+          );
+          setUsers((prev) =>
+            prev.map((u) =>
+              u.id === editing.id
+                ? {
+                    ...u,
+                    naam,
+                    rol: draft.rol,
+                    afdeling: draft.afdeling,
+                    actief: draft.actief,
+                  }
+                : u,
+            ),
+          );
+          return;
+        }
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === editing.id
+              ? {
+                  ...u,
+                  naam,
+                  rol: draft.rol,
+                  afdeling: draft.afdeling,
+                  actief: draft.actief,
+                }
+              : u,
+          ),
+        );
+        setNotice(
+          `Gebruiker ${naam} bijgewerkt. Nieuw wachtwoord: ${newPassword} (deel dit veilig met de collega).`,
+        );
+        setMode({ kind: "list" });
+        return;
+      }
+
+      setSaving(false);
       setUsers((prev) =>
         prev.map((u) =>
           u.id === editing.id
@@ -269,26 +320,7 @@ export function UserAdmin({
             </select>
           </div>
 
-          {isCreate ? (
-            <div className="form-field">
-              <label htmlFor="user-wachtwoord">Tijdelijk wachtwoord</label>
-              <input
-                id="user-wachtwoord"
-                type="text"
-                className="text-input"
-                value={draft.wachtwoord ?? ""}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, wachtwoord: e.target.value }))
-                }
-                required
-                minLength={8}
-                autoComplete="new-password"
-              />
-              <p className="form-hint">
-                Minimaal 8 tekens. De collega wijzigt dit bij eerste login.
-              </p>
-            </div>
-          ) : (
+          {!isCreate ? (
             <label className={styles.checkRow}>
               <input
                 type="checkbox"
@@ -299,7 +331,42 @@ export function UserAdmin({
               />
               Account actief
             </label>
-          )}
+          ) : null}
+
+          <div className="form-field">
+            <label htmlFor="user-wachtwoord">
+              {isCreate ? "Tijdelijk wachtwoord" : "Nieuw wachtwoord"}
+            </label>
+            <div className={styles.passwordRow}>
+              <input
+                id="user-wachtwoord"
+                type="text"
+                className="text-input"
+                value={draft.wachtwoord ?? ""}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, wachtwoord: e.target.value }))
+                }
+                required={isCreate}
+                minLength={isCreate ? 8 : undefined}
+                autoComplete="new-password"
+                placeholder={isCreate ? undefined : "Leeg laten = niet wijzigen"}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() =>
+                  setDraft((d) => ({ ...d, wachtwoord: suggestPassword() }))
+                }
+              >
+                Genereer
+              </button>
+            </div>
+            <p className="form-hint">
+              {isCreate
+                ? "Minimaal 8 tekens. Deel dit veilig — er is nog geen wachtwoord-mail."
+                : "Optioneel. Minimaal 8 tekens. Deel het nieuwe wachtwoord veilig met de collega (geen e-mailreset)."}
+            </p>
+          </div>
 
           {error ? (
             <p className={styles.error} role="alert">

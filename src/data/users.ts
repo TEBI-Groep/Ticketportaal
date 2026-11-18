@@ -154,3 +154,32 @@ export async function updateUserAccount(
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+/**
+ * Set / reset an Auth password (no e-mail flow yet).
+ * Requires service role — used by uitvoerders in Gebruikersbeheer.
+ */
+export async function setUserPassword(
+  userId: string,
+  password: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const trimmed = password.trim();
+  if (trimmed.length < 8) {
+    return { ok: false, error: "Wachtwoord moet minimaal 8 tekens zijn." };
+  }
+
+  const admin = createAdminClient();
+  if (!admin) {
+    return {
+      ok: false,
+      error:
+        "supabase_service_role_key ontbreekt — voeg die toe om wachtwoorden te wijzigen.",
+    };
+  }
+
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    password: trimmed,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

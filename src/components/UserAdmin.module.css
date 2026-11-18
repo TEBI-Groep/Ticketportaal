@@ -121,6 +121,19 @@
   color: var(--ink-soft);
 }
 
+.passwordRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.passwordRow .text-input,
+.passwordRow input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
 .formActions {
   display: flex;
   flex-wrap: wrap;
