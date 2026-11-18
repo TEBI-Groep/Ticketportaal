@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -9,8 +10,9 @@ export type AppUser = User & { afdelingId?: string | null };
 /**
  * Current signed-in profile from Supabase Auth + profiles.
  * Returns null when env is missing, there is no session, or the profile is inactive.
+ * Cached per request so layout + pages share one lookup.
  */
-export async function getCurrentUser(): Promise<AppUser | null> {
+export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
   if (!isSupabaseConfigured()) {
     return null;
   }
@@ -60,12 +62,26 @@ export async function getCurrentUser(): Promise<AppUser | null> {
   } catch {
     return null;
   }
+});
+
+/** Drop a stale Auth session so middleware does not bounce /login → /ranglijst. */
+async function clearSessionQuietly(): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+  } catch {
+    // Ignore — redirect to login anyway.
+  }
 }
 
 /** Redirect to login when there is no signed-in user. */
 export async function requireUser(): Promise<AppUser> {
   const user = await getCurrentUser();
   if (!user) {
+    // Auth cookie without a usable profile (e.g. inactive) would otherwise
+    // loop: requireUser → /login ← middleware (session present) → /ranglijst.
+    await clearSessionQuietly();
     redirect("/login");
   }
   return user;

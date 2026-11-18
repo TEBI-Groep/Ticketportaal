@@ -6,12 +6,13 @@ function isPublicPath(pathname: string): boolean {
   return pathname === "/login" || pathname === "/";
 }
 
+/** Copy refreshed Auth cookies onto a redirect without dropping attributes. */
 function copyCookies(
   from: NextResponse,
   to: NextResponse,
 ): NextResponse {
   from.cookies.getAll().forEach((cookie) => {
-    to.cookies.set(cookie.name, cookie.value);
+    to.cookies.set(cookie);
   });
   return to;
 }
