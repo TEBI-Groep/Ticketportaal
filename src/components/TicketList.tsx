@@ -104,6 +104,8 @@ export function TicketList({
             {showStars ? (
               <div className="ticket-actions">
                 <StarRating
+                  key={`${ticket.id}-${mine ?? 0}-${count}`}
+                  ticketId={ticket.id}
                   average={avg}
                   count={count}
                   myRating={mine}

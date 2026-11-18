@@ -1,12 +1,23 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
+import { rateTicketAction } from "@/app/actions/ratings";
 import type { StarScore, TicketRating } from "@/lib/types";
 import { formatRating } from "@/lib/types";
 import styles from "./StarRating.module.css";
 
 interface StarRatingProps {
+  /** Ticket id — required when interactive. */
+  ticketId?: string;
   /** Community average (0 = none yet). */
   average: number;
   /** Number of ratings behind the average. */
@@ -15,7 +26,7 @@ interface StarRatingProps {
   myRating: StarScore | null;
   /** Who rated what — opens when “beoordelingen” is clicked. */
   beoordelingen?: TicketRating[];
-  /** When true, stars are clickable (mock alert for now). */
+  /** When true, stars are clickable and persist to Supabase. */
   interactive?: boolean;
   /** Compact layout for list rows. */
   compact?: boolean;
@@ -25,9 +36,11 @@ const SCORES: StarScore[] = [1, 2, 3, 4, 5];
 
 /**
  * 1–5 star rating: average + count; click count for who-voted panel.
- * Panel portals to document.body so list overflow/stacking cannot clip it.
+ * Interactive mode upserts/deletes the signed-in user’s rating.
+ * Parents should pass a `key` that includes myRating/count so a refresh remounts.
  */
 export function StarRating({
+  ticketId,
   average,
   count,
   myRating,
@@ -35,8 +48,14 @@ export function StarRating({
   interactive = false,
   compact = false,
 }: StarRatingProps) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
   const [hover, setHover] = useState<StarScore | null>(null);
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [mine, setMine] = useState(myRating);
+  const [avg, setAvg] = useState(average);
+  const [cnt, setCnt] = useState(count);
   const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(
     null,
   );
@@ -44,7 +63,7 @@ export function StarRating({
   const wrapRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const displayScore = hover ?? myRating;
+  const displayScore = hover ?? mine;
 
   const sorted = [...beoordelingen].sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
@@ -66,8 +85,7 @@ export function StarRating({
         Math.max(8, rect.right - width),
         window.innerWidth - width - 8,
       );
-      const top = rect.bottom + 6;
-      setPanelPos({ top, left });
+      setPanelPos({ top: rect.bottom + 6, left });
     }
 
     place();
@@ -106,12 +124,43 @@ export function StarRating({
   }, [open]);
 
   function handleRate(score: StarScore) {
-    if (!interactive) return;
-    window.alert(
-      myRating === score
-        ? `Demo: je beoordeling blijft ${score}★. Later kun je dit wijzigen of wissen in de database.`
-        : `Demo: je zou dit ticket ${score}★ geven. Het gemiddelde wordt dan herberekend over alle beoordelingen.`,
-    );
+    if (!interactive || !ticketId || pending) return;
+    setError(null);
+
+    const previousMine = mine;
+    const previousAvg = avg;
+    const previousCnt = cnt;
+    const removing = previousMine === score;
+
+    if (removing && previousMine !== null) {
+      const nextCount = Math.max(0, previousCnt - 1);
+      const sum = previousAvg * previousCnt - previousMine;
+      setMine(null);
+      setCnt(nextCount);
+      setAvg(nextCount > 0 ? sum / nextCount : 0);
+    } else if (previousMine !== null) {
+      const sum = previousAvg * previousCnt - previousMine + score;
+      setMine(score);
+      setAvg(previousCnt > 0 ? sum / previousCnt : score);
+    } else {
+      const nextCount = previousCnt + 1;
+      setMine(score);
+      setCnt(nextCount);
+      setAvg((previousAvg * previousCnt + score) / nextCount);
+    }
+
+    startTransition(async () => {
+      const result = await rateTicketAction(ticketId, score);
+      if (!result.ok) {
+        setMine(previousMine);
+        setAvg(previousAvg);
+        setCnt(previousCnt);
+        setError(result.error);
+        return;
+      }
+      setMine(result.myRating);
+      router.refresh();
+    });
   }
 
   const panel =
@@ -128,7 +177,7 @@ export function StarRating({
             <header className={styles.panelHeader}>
               <strong>Beoordelingen</strong>
               <span>
-                gem. {formatRating(average)} · {count}
+                gem. {formatRating(avg)} · {cnt}
               </span>
             </header>
             <ul className={styles.panelList}>
@@ -167,23 +216,23 @@ export function StarRating({
         aria-label={
           interactive
             ? "Beoordeel met 1 tot 5 sterren"
-            : `Gemiddelde ${formatRating(average)} van 5 (${count} beoordelingen)`
+            : `Gemiddelde ${formatRating(avg)} van 5 (${cnt} beoordelingen)`
         }
       >
         {SCORES.map((score) => {
           const filled =
             displayScore !== null
               ? score <= displayScore
-              : average > 0 && score <= Math.round(average);
+              : avg > 0 && score <= Math.round(avg);
 
           return (
             <button
               key={score}
               type="button"
               className={`${styles.star} ${filled ? styles.filled : ""}`}
-              disabled={!interactive}
+              disabled={!interactive || pending}
               aria-label={`${score} ster${score === 1 ? "" : "ren"}`}
-              aria-checked={interactive ? myRating === score : undefined}
+              aria-checked={interactive ? mine === score : undefined}
               role={interactive ? "radio" : undefined}
               onMouseEnter={() => interactive && setHover(score)}
               onFocus={() => interactive && setHover(score)}
@@ -200,8 +249,8 @@ export function StarRating({
       </div>
 
       <p className={styles.meta}>
-        <span className={styles.avg}>{formatRating(average)}</span>
-        {count === 0 ? (
+        <span className={styles.avg}>{formatRating(avg)}</span>
+        {cnt === 0 ? (
           <span className={styles.count}>nog geen beoordelingen</span>
         ) : (
           <button
@@ -216,13 +265,21 @@ export function StarRating({
               setOpen((v) => !v);
             }}
           >
-            {count} beoordeling{count === 1 ? "" : "en"}
+            {cnt} beoordeling{cnt === 1 ? "" : "en"}
           </button>
         )}
-        {myRating ? (
-          <span className={styles.mine}>Jij: {myRating}★</span>
-        ) : null}
+        {mine ? <span className={styles.mine}>Jij: {mine}★</span> : null}
       </p>
+
+      {error ? (
+        <p
+          role="alert"
+          className={styles.count}
+          style={{ color: "var(--danger, #b42318)" }}
+        >
+          {error}
+        </p>
+      ) : null}
 
       {panel}
     </div>
