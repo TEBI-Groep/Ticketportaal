@@ -23,6 +23,8 @@ export interface User {
   email: string;
   rol: UserRole;
   afdeling: string;
+  /** Soft-disable; inactive users cannot sign in (when auth is wired). */
+  actief: boolean;
 }
 
 /** One person’s rating on a ticket (shown in the beoordelingen breakdown). */

@@ -13,6 +13,11 @@ const NAV_ITEMS = [
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
 ] as const;
 
+/** IT-only destinations (shown when MOCK_USER is uitvoerder). */
+const IT_NAV_ITEMS = [
+  { href: "/gebruikers", label: "Gebruikers", short: "Users" },
+] as const;
+
 function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -23,6 +28,8 @@ function isActive(pathname: string, href: string): boolean {
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const isIt = MOCK_USER.rol === "uitvoerder";
+  const desktopItems = isIt ? [...NAV_ITEMS, ...IT_NAV_ITEMS] : [...NAV_ITEMS];
 
   return (
     <div className={styles.shell}>
@@ -33,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
 
         <nav className={styles.desktopNav} aria-label="Hoofdnavigatie">
-          {NAV_ITEMS.map((item) => (
+          {desktopItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -60,8 +67,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <main>{children}</main>
 
-      <nav className={styles.bottomNav} aria-label="Mobiele navigatie">
-        {NAV_ITEMS.map((item) => (
+      <nav
+        className={styles.bottomNav}
+        aria-label="Mobiele navigatie"
+        style={isIt ? { gridTemplateColumns: "repeat(5, 1fr)" } : undefined}
+      >
+        {desktopItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}

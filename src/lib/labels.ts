@@ -5,6 +5,7 @@ import type {
   TicketPriority,
   TicketStatus,
   TicketType,
+  UserRole,
 } from "@/lib/types";
 
 export const STATUS_LABEL: Record<TicketStatus, string> = {
@@ -34,6 +35,12 @@ export const PRIORITY_LABEL: Record<TicketPriority, string> = {
   voorrang: "Voorrang",
   belangrijk: "Belangrijk",
   normaal: "Normaal",
+};
+
+export const ROLE_LABEL: Record<UserRole, string> = {
+  gebruiker: "Gebruiker",
+  manager: "Manager",
+  uitvoerder: "Uitvoerder (IT)",
 };
 
 /** Format ISO date strings for Dutch UI (day month year). */

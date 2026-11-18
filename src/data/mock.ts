@@ -14,7 +14,61 @@ export const MOCK_USER: User = {
   email: "sara.devries@tebi.nl",
   rol: "uitvoerder",
   afdeling: "IT",
+  actief: true,
 };
+
+/** Directory of accounts for IT user admin (UI shell — not Auth yet). */
+export const MOCK_USERS: User[] = [
+  MOCK_USER,
+  {
+    id: "u-2",
+    naam: "Mark Jansen",
+    email: "mark.jansen@tebi.nl",
+    rol: "manager",
+    afdeling: "Finance",
+    actief: true,
+  },
+  {
+    id: "u-3",
+    naam: "Lisa Bakker",
+    email: "lisa.bakker@tebi.nl",
+    rol: "gebruiker",
+    afdeling: "Magazijn",
+    actief: true,
+  },
+  {
+    id: "u-4",
+    naam: "Tom de Wit",
+    email: "tom.dewit@tebi.nl",
+    rol: "manager",
+    afdeling: "Sales",
+    actief: true,
+  },
+  {
+    id: "u-5",
+    naam: "Noor Smits",
+    email: "noor.smits@tebi.nl",
+    rol: "uitvoerder",
+    afdeling: "IT",
+    actief: true,
+  },
+  {
+    id: "u-6",
+    naam: "Erik Vos",
+    email: "erik.vos@tebi.nl",
+    rol: "gebruiker",
+    afdeling: "Inkoop",
+    actief: false,
+  },
+];
+
+export function getUsers(): User[] {
+  return [...MOCK_USERS].sort((a, b) => a.naam.localeCompare(b.naam, "nl"));
+}
+
+export function getUserById(id: string): User | undefined {
+  return MOCK_USERS.find((u) => u.id === id);
+}
 
 function r(
   userId: string,
