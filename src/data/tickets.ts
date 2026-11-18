@@ -106,6 +106,7 @@ export async function getRanglijstTickets(): Promise<Ticket[]> {
       .select(TICKET_SELECT)
       .eq("systeem", "NetSuite")
       .in("type", ["wijziging", "idee"])
+      .neq("prioriteit", "spoed")
       .not("status", "in", '("afgerond","afgewezen")');
     if (error || !data) return mockRanglijst();
     return (data as unknown as TicketRow[])
@@ -131,7 +132,7 @@ export async function getSpoedTickets(): Promise<Ticket[]> {
     if (error || !data) return mockSpoed();
     return (data as unknown as TicketRow[])
       .map(mapTicket)
-      .filter((t) => t.impact === "stil" || t.prioriteit === "spoed")
+      .filter((t) => t.prioriteit === "spoed")
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } catch {
     return mockSpoed();

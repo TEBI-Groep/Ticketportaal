@@ -15,13 +15,12 @@ async function SpoedContent() {
       <header className="page-header">
         <h1>Spoed</h1>
         <p>
-          Storingen en urgente tickets waarbij werk stilligt of IT-prioriteit
-          Spoed is. Geen stemmen hier.
+          Open tickets met IT-prioriteit Spoed. Geen stemmen hier.
         </p>
       </header>
 
       <p className="disclaimer">
-        Stemmen gelden niet op spoedtickets — IT pakt deze op basis van impact.
+        Stemmen gelden niet op spoedtickets — IT pakt deze op via prioriteit.
       </p>
 
       <TicketList

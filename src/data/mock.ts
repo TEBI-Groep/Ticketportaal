@@ -354,6 +354,7 @@ export function getRanglijstTickets(): Ticket[] {
     (t) =>
       t.systeem === "NetSuite" &&
       (t.type === "wijziging" || t.type === "idee") &&
+      t.prioriteit !== "spoed" &&
       t.status !== "afgerond" &&
       t.status !== "afgewezen",
   ).sort((a, b) => {
@@ -363,13 +364,13 @@ export function getRanglijstTickets(): Ticket[] {
   });
 }
 
-/** High-urgency open tickets (impact stil and/or priority spoed). */
+/** Open tickets with IT priority Spoed (the Spoed handle). */
 export function getSpoedTickets(): Ticket[] {
   return MOCK_TICKETS.filter(
     (t) =>
       t.status !== "afgerond" &&
       t.status !== "afgewezen" &&
-      (t.impact === "stil" || t.prioriteit === "spoed"),
+      t.prioriteit === "spoed",
   ).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 

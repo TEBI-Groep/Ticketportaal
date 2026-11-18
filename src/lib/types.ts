@@ -101,12 +101,17 @@ export function mijnRating(
   return ticket.beoordelingen.find((r) => r.userId === userId)?.score ?? null;
 }
 
-/** True when rating is allowed: NetSuite + wijziging/idee + not closed. */
+/** True when rating is allowed: NetSuite + wijziging/idee + not spoed + not closed. */
 export function isStembaar(ticket: Ticket): boolean {
   const open =
     ticket.status !== "afgerond" && ticket.status !== "afgewezen";
   const typeOk = ticket.type === "wijziging" || ticket.type === "idee";
-  return open && typeOk && ticket.systeem === "NetSuite";
+  return (
+    open &&
+    typeOk &&
+    ticket.systeem === "NetSuite" &&
+    ticket.prioriteit !== "spoed"
+  );
 }
 
 /** Display helper: one decimal for averages, e.g. 4.3. */
