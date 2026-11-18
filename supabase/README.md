@@ -25,4 +25,10 @@ npx supabase link --project-ref rlnzhgkdaoewqiilnaaa
 npx supabase db push
 ```
 
-Do not commit secrets. App env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (and server-only service role when needed).
+Do not commit secrets. App env (see dashboard → Project Settings → API):
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://rlnzhgkdaoewqiilnaaa.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=   # publishable / anon key
+SUPABASE_SERVICE_ROLE_KEY=      # server-only
+```
