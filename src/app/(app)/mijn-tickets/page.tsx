@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { TicketList } from "@/components/TicketList";
+import { FilteredTicketList } from "@/components/FilteredTicketList";
 import { getCurrentUser } from "@/data/auth";
 import { getMijnTickets } from "@/data/tickets";
 
@@ -21,8 +21,9 @@ async function MijnTicketsContent() {
         </p>
       </header>
 
-      <TicketList
+      <FilteredTicketList
         tickets={tickets}
+        searchPlaceholder="Zoek in jouw tickets…"
         emptyMessage="Je hebt geen openstaande tickets."
       />
     </>

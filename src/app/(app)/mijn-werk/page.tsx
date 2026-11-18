@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { TicketList } from "@/components/TicketList";
+import { FilteredTicketList } from "@/components/FilteredTicketList";
 import { getCurrentUser } from "@/data/auth";
 import { getTicketsByEigenaar } from "@/data/tickets";
 
@@ -37,8 +37,9 @@ async function MijnWerkContent() {
         </p>
       </header>
 
-      <TicketList
+      <FilteredTicketList
         tickets={tickets}
+        searchPlaceholder="Zoek in jouw werk…"
         emptyMessage="Je bent nog nergens Eigenaar van."
         emptyCta=""
       />

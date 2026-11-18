@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { TicketList } from "@/components/TicketList";
+import { FilteredTicketList } from "@/components/FilteredTicketList";
 import { getAfgerondeTickets } from "@/data/tickets";
 
 export const metadata: Metadata = {
@@ -15,24 +15,15 @@ async function AfgerondContent() {
       <header className="page-header">
         <h1>Afgerond</h1>
         <p>
-          Afgeronde en afgewezen tickets ter naslag. Zoek later of iets al eens
-          is opgelost.
+          Afgeronde en afgewezen tickets ter naslag. Zoek of iets al eens is
+          opgelost.
         </p>
       </header>
 
-      <div className="toolbar">
-        <input
-          className="search-input"
-          type="search"
-          placeholder="Zoek in opgeloste tickets…"
-          aria-label="Zoeken in afgeronde tickets"
-          disabled
-          title="Zoeken komt in een latere iteratie"
-        />
-      </div>
-
-      <TicketList
+      <FilteredTicketList
         tickets={tickets}
+        searchPlaceholder="Zoek in opgeloste tickets…"
+        searchLabel="Zoeken in afgeronde tickets"
         emptyMessage="Nog geen afgeronde tickets."
         emptyCta=""
       />

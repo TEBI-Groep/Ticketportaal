@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { TicketList } from "@/components/TicketList";
+import { FilteredTicketList } from "@/components/FilteredTicketList";
 import { getCurrentUser } from "@/data/auth";
 import { getRanglijstTickets } from "@/data/tickets";
 
@@ -24,11 +24,12 @@ async function RanglijstContent() {
         </p>
       </header>
 
-      <TicketList
+      <FilteredTicketList
         tickets={tickets}
         showRank
         showVote
         currentUserId={user.id}
+        searchPlaceholder="Zoek in de ranglijst…"
         emptyMessage="Nog geen NetSuite-wensen. Maak de eerste aan."
       />
     </>

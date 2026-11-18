@@ -12,11 +12,18 @@ import {
   getTicketById as mockTicketById,
   getTicketsByEigenaar as mockEigenaar,
   getWerkvoorraadTickets as mockWerkvoorraad,
+  searchSimilarTickets as mockSearchSimilar,
 } from "@/data/mock";
+import {
+  escapeIlikePattern,
+  filterTicketsByQuery,
+  normalizeTicketQuery,
+} from "@/lib/ticket-search";
 import {
   isRanglijstKandidaat,
   ratingAantal,
   ratingGemiddelde,
+  type TicketSystem,
   type UserRole,
 } from "@/lib/types";
 
@@ -101,6 +108,64 @@ export async function getTicketById(id: string): Promise<Ticket | undefined> {
     return mapTicket(data as unknown as TicketRow);
   } catch {
     return mockTicketById(id);
+  }
+}
+
+/**
+ * Find tickets that look similar to a draft onderwerp (create-form helper).
+ * Prefers same systeem and open tickets; falls back to mock when offline.
+ */
+export async function searchSimilarTickets(
+  query: string,
+  options?: { systeem?: TicketSystem; limit?: number },
+): Promise<Ticket[]> {
+  const limit = options?.limit ?? 5;
+  const q = normalizeTicketQuery(query);
+  if (q.length < 3) return [];
+
+  if (!isSupabaseConfigured()) {
+    return mockSearchSimilar(query, options);
+  }
+
+  try {
+    const supabase = await createClient();
+    const pattern = `%${escapeIlikePattern(q.replace(/,/g, " "))}%`;
+    const { data, error } = await supabase
+      .from("tickets")
+      .select(TICKET_SELECT)
+      .or(
+        [
+          `ticketnummer.ilike."${pattern}"`,
+          `onderwerp.ilike."${pattern}"`,
+          `omschrijving.ilike."${pattern}"`,
+        ].join(","),
+      )
+      .order("updated_at", { ascending: false })
+      .limit(40);
+
+    if (error || !data) return mockSearchSimilar(query, options);
+
+    let list = (data as unknown as TicketRow[]).map(mapTicket);
+    list = filterTicketsByQuery(list, query);
+
+    if (options?.systeem) {
+      const same = list.filter((t) => t.systeem === options.systeem);
+      const other = list.filter((t) => t.systeem !== options.systeem);
+      list = [...same, ...other];
+    }
+
+    return list
+      .sort((a, b) => {
+        const aOpen =
+          a.status !== "afgerond" && a.status !== "afgewezen" ? 0 : 1;
+        const bOpen =
+          b.status !== "afgerond" && b.status !== "afgewezen" ? 0 : 1;
+        if (aOpen !== bOpen) return aOpen - bOpen;
+        return b.updatedAt.localeCompare(a.updatedAt);
+      })
+      .slice(0, limit);
+  } catch {
+    return mockSearchSimilar(query, options);
   }
 }
 

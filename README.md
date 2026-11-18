@@ -46,7 +46,7 @@ On **Vercel**, set at least `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE
 - `/mijn-tickets` — tickets die jij hebt aangemaakt
 - `/mijn-werk` — IT: tickets waar jij Eigenaar van bent
 - `/afgerond` — gesloten tickets
-- `/ticket/nieuw` — aanmaakformulier (UI; opslag volgt)
+- `/ticket/nieuw` — aanmaakformulier + vergelijkbare-ticket suggesties
 - `/ticket/[id]` — detail + comments + IT-notities
 - `/gebruikers` — IT: accounts aanmaken/bewerken (uitvoerder)
 
