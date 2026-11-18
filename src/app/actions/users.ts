@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/data/auth";
 import {
   createUserAccount,
+  setUserPassword,
   updateUserAccount,
   type CreateUserInput,
   type UpdateUserInput,
@@ -43,6 +44,26 @@ export async function updateUserAction(
   }
 
   const result = await updateUserAccount(input);
+  if (result.ok) {
+    revalidatePath("/gebruikers");
+  }
+  return result;
+}
+
+/** IT sets a new Auth password for a user (no mail reset yet). */
+export async function setUserPasswordAction(
+  userId: string,
+  password: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const me = await getCurrentUser();
+  if (me.rol !== "uitvoerder") {
+    return {
+      ok: false,
+      error: "Alleen uitvoerders mogen wachtwoorden wijzigen.",
+    };
+  }
+
+  const result = await setUserPassword(userId, password);
   if (result.ok) {
     revalidatePath("/gebruikers");
   }
