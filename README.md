@@ -1,15 +1,32 @@
 # Ticketportaal · Tebi
 
-Intern IT-ticketportaal (UI-shell). Next.js App Router + TypeScript + CSS variables. Mockdata — nog geen auth/database/API.
+Intern IT-ticketportaal. Next.js App Router + TypeScript + Supabase (Auth + Postgres).
 
 ## Lokaal draaien
 
 ```bash
 npm install
+cp .env.example .env.local   # vul keys uit Supabase-dashboard
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Login accepteert elke niet-lege combinatie en landt op **Ranglijst**.
+Open [http://localhost:3000](http://localhost:3000).
+
+**Demo-login:** `sara.devries@tebi.nl` / `TebiDemo2026!`
+
+Zonder env-keys valt de app terug op lokale mockdata (shell-demo).
+
+## Env
+
+| Variabele | Waarvoor |
+|-----------|----------|
+| `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_URL` | Project-URL (server reads both; browser needs `NEXT_PUBLIC_*` on Vercel) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `SUPABASE_ANON_KEY` | Anon/publishable key (RLS) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only: Auth admin (gebruikers aanmaken) |
+
+Comments, IT-notes and login need URL + anon key. The service-role key is only for creating users. Without URL/anon the UI falls back to mock data and writes show “Supabase is niet geconfigureerd.”
+
+On **Vercel**, set at least `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Project → Settings → Environment Variables), then redeploy.
 
 ## Scripts
 
@@ -20,20 +37,17 @@ Open [http://localhost:3000](http://localhost:3000). Login accepteert elke niet-
 | `npm start`     | Start productie    |
 | `npm run lint`  | ESLint             |
 
-## Pagina’s (MVP-shell)
+## Pagina’s
 
-- `/login` — inloggen (mock)
-- `/ranglijst` — NetSuite-wensen op stemmen (home)
+- `/login` — Supabase Auth
+- `/ranglijst` — NetSuite-wensen op sterrenrating
 - `/spoed` — urgente storingen
 - `/mijn-tickets` — eigen open tickets
 - `/afgerond` — gesloten tickets
-- `/ticket/nieuw` — aanmaakformulier
-- `/ticket/[id]` — detail
-- `/gebruikers` — IT: accounts aanmaken/bewerken (alleen uitvoerder)
+- `/ticket/nieuw` — aanmaakformulier (UI; opslag volgt)
+- `/ticket/[id]` — detail + comments + IT-notities
+- `/gebruikers` — IT: accounts aanmaken/bewerken (uitvoerder)
 
-Planningdocs staan in `docs/`.
+## Database
 
-## Database (Supabase)
-
-Postgres schema + RLS staat in `supabase/migrations/` (project `rlnzhgkdaoewqiilnaaa`, eu-west-1).  
-Kopieer `.env.example` → `.env.local` en vul de keys uit het Supabase-dashboard.
+Schema + RLS + seed in `supabase/migrations/` (project `rlnzhgkdaoewqiilnaaa`, eu-west-1).

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MOCK_USER } from "@/data/mock";
+import type { User } from "@/lib/types";
 import styles from "./shell.module.css";
 
 /** Primary destinations from the wireframe IA. */
@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
 ] as const;
 
-/** IT-only destinations (shown when MOCK_USER is uitvoerder). */
+/** IT-only destinations (shown when the signed-in user is uitvoerder). */
 const IT_NAV_ITEMS = [
   { href: "/gebruikers", label: "Gebruikers", short: "Users" },
 ] as const;
@@ -26,13 +26,38 @@ function isActive(pathname: string, href: string): boolean {
  * Shared chrome: Tebi brand, four tabs, + Ticket CTA.
  * Stemsaldo removed — ratings are 1–5 stars without a limited pool.
  */
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  user,
+  supabaseConfigured = true,
+}: {
+  children: React.ReactNode;
+  user: User;
+  /** False when URL/anon env is missing — UI uses mock data; writes will fail. */
+  supabaseConfigured?: boolean;
+}) {
   const pathname = usePathname();
-  const isIt = MOCK_USER.rol === "uitvoerder";
+  const isIt = user.rol === "uitvoerder";
   const desktopItems = isIt ? [...NAV_ITEMS, ...IT_NAV_ITEMS] : [...NAV_ITEMS];
 
   return (
     <div className={styles.shell}>
+      {!supabaseConfigured ? (
+        <p
+          role="status"
+          style={{
+            margin: 0,
+            padding: "0.5rem 1rem",
+            background: "#fff4e5",
+            color: "#8a5a00",
+            fontSize: "0.875rem",
+            borderBottom: "1px solid #f0d9a8",
+          }}
+        >
+          Demo-modus: Supabase URL/anon key ontbreken op deze omgeving. Tickets
+          komen uit mockdata; comments en notities kunnen niet worden opgeslagen.
+        </p>
+      ) : null}
       <header className={styles.topbar}>
         <Link href="/ranglijst" className={styles.brand} aria-label="Tebi Ticketportaal home">
           <span className={styles.brandName}>Tebi</span>
@@ -59,8 +84,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
 
           <div className={styles.userChip} aria-label="Ingelogde gebruiker">
-            <strong>{MOCK_USER.naam}</strong>
-            <span>{MOCK_USER.rol}</span>
+            <strong>{user.naam}</strong>
+            <span>{user.rol}</span>
           </div>
         </div>
       </header>

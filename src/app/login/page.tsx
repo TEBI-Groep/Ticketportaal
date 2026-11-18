@@ -1,36 +1,32 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { loginAction } from "@/app/actions/auth";
 import styles from "./login.module.css";
 
 /**
- * Login is brand-first and single-purpose (wireframe §4.1).
- * Submit navigates to Ranglijst; no real auth backend yet.
+ * Login is brand-first. Auth runs on the server so SUPABASE_URL /
+ * SUPABASE_ANON_KEY work without baking NEXT_PUBLIC_* into the client bundle.
  */
 export default function LoginPage() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
     const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") ?? "").trim();
+    const email = String(form.get("email") ?? "");
     const password = String(form.get("password") ?? "");
 
-    if (!email || !password) {
-      setError("Vul e-mail en wachtwoord in.");
-      return;
-    }
-
-    // Mock gate: any non-empty credentials work for the UI demo.
     setLoading(true);
-    window.setTimeout(() => {
-      router.push("/ranglijst");
-    }, 350);
+    const result = await loginAction(email, password);
+    // redirect() throws; only errors return here
+    if (result && !result.ok) {
+      setError(result.error);
+      setLoading(false);
+    }
   }
 
   return (
@@ -67,7 +63,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               className="text-input"
               placeholder="••••••••"
-              defaultValue="demo"
+              defaultValue="TebiDemo2026!"
             />
           </div>
 
@@ -79,7 +75,7 @@ export default function LoginPage() {
         </form>
 
         <p className={styles.help}>
-          Hulp nodig? Neem contact op met IT.
+          Demo: <code>sara.devries@tebi.nl</code> / <code>TebiDemo2026!</code>
         </p>
       </div>
     </div>

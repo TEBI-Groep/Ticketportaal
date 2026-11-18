@@ -30,5 +30,5 @@ Do not commit secrets. App env (see dashboard → Project Settings → API):
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://rlnzhgkdaoewqiilnaaa.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=   # publishable / anon key
-SUPABASE_SERVICE_ROLE_KEY=      # server-only
+supabase_service_role_key=      # server-only (lowercase for Cursor secrets)
 ```

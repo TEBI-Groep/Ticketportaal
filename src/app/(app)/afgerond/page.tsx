@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { TicketList } from "@/components/TicketList";
-import { getAfgerondeTickets } from "@/data/mock";
+import { getAfgerondeTickets } from "@/data/tickets";
 
 export const metadata: Metadata = {
   title: "Afgerond",
 };
 
-/** Closed / rejected tickets for lookup — foreshadows later knowledge base. */
-export default function AfgerondPage() {
-  const tickets = getAfgerondeTickets();
+async function AfgerondContent() {
+  const tickets = await getAfgerondeTickets();
 
   return (
-    <div className="page">
+    <>
       <header className="page-header">
         <h1>Afgerond</h1>
         <p>
@@ -36,6 +36,17 @@ export default function AfgerondPage() {
         emptyMessage="Nog geen afgeronde tickets."
         emptyCta=""
       />
+    </>
+  );
+}
+
+/** Closed / rejected tickets for lookup — foreshadows later knowledge base. */
+export default function AfgerondPage() {
+  return (
+    <div className="page">
+      <Suspense fallback={<p className="form-hint">Afgeronde tickets laden…</p>}>
+        <AfgerondContent />
+      </Suspense>
     </div>
   );
 }

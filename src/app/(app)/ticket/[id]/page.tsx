@@ -6,12 +6,12 @@ import { CommentThread } from "@/components/CommentThread";
 import { ItNotes } from "@/components/ItNotes";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
+import { getCurrentUser } from "@/data/auth";
 import {
   getCommentsForTicket,
   getItNotesForTicket,
   getTicketById,
-  MOCK_USER,
-} from "@/data/mock";
+} from "@/data/tickets";
 import {
   IMPACT_LABEL,
   TYPE_LABEL,
@@ -30,16 +30,22 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const ticket = getTicketById(id);
+  const ticket = await getTicketById(id);
   return {
     title: ticket ? `${ticket.ticketnummer}` : "Ticket",
   };
 }
 
-/** Basic ticket detail — requester fields + light IT panel (visual only). */
-export default async function TicketDetailPage({ params }: PageProps) {
+async function TicketDetailContent({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
-  const ticket = getTicketById(id);
+  const [ticket, user] = await Promise.all([
+    getTicketById(id),
+    getCurrentUser(),
+  ]);
 
   if (!ticket) {
     notFound();
@@ -48,14 +54,15 @@ export default async function TicketDetailPage({ params }: PageProps) {
   const canVote = isStembaar(ticket);
   const avg = ratingGemiddelde(ticket);
   const count = ratingAantal(ticket);
-  const mine = mijnRating(ticket, MOCK_USER.id);
-  const comments = getCommentsForTicket(ticket.id);
-  const itNotes = getItNotesForTicket(ticket.id);
+  const mine = mijnRating(ticket, user.id);
+  const [comments, itNotes] = await Promise.all([
+    getCommentsForTicket(ticket.id),
+    getItNotesForTicket(ticket.id),
+  ]);
 
   return (
-    <div className="page">
+    <>
       <p style={{ marginBottom: "1rem" }}>
-        {/* Suspense: BackLink reads ?van= via useSearchParams. */}
         <Suspense
           fallback={
             <span className="btn btn-ghost" aria-hidden>
@@ -141,8 +148,7 @@ export default async function TicketDetailPage({ params }: PageProps) {
         <aside className="detail-panel" aria-label="IT-gegevens">
           <h2>IT-paneel</h2>
           <p className="form-hint" style={{ marginBottom: "1rem" }}>
-            Alleen zichtbaar/bewerkbaar voor uitvoerders in de echte app. Nu
-            read-only mock.
+            IT-velden en interne notities zijn voor uitvoerders.
           </p>
           <dl className="kv-grid">
             <div className="kv">
@@ -166,10 +172,21 @@ export default async function TicketDetailPage({ params }: PageProps) {
           <ItNotes
             ticketId={ticket.id}
             initialNotes={itNotes}
-            viewerRol={MOCK_USER.rol}
+            viewerRol={user.rol}
           />
         </aside>
       </div>
+    </>
+  );
+}
+
+/** Ticket detail — requester fields + IT panel + comments / notes. */
+export default function TicketDetailPage({ params }: PageProps) {
+  return (
+    <div className="page">
+      <Suspense fallback={<p className="form-hint">Ticket laden…</p>}>
+        <TicketDetailContent params={params} />
+      </Suspense>
     </div>
   );
 }

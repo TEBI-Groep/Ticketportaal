@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import type { TicketComment } from "@/lib/types";
 import { formatDate } from "@/lib/labels";
-import { MOCK_USER } from "@/data/mock";
+import { addCommentAction } from "@/app/actions/comments";
 import styles from "./CommentThread.module.css";
 
 const ROL_LABEL: Record<TicketComment["auteurRol"], string> = {
@@ -19,7 +19,6 @@ interface CommentThreadProps {
 
 /**
  * Public comment thread on ticket detail — questions and extra context.
- * MVP: one shared thread (no internal/IT-only split yet). Submit is local mock.
  */
 export function CommentThread({
   ticketId,
@@ -28,29 +27,25 @@ export function CommentThread({
   const [comments, setComments] = useState(initialComments);
   const [tekst, setTekst] = useState("");
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = tekst.trim();
     if (!trimmed || sending) return;
 
     setSending(true);
-    const next: TicketComment = {
-      id: `c-local-${Date.now()}`,
-      ticketId,
-      userId: MOCK_USER.id,
-      auteurNaam: MOCK_USER.naam,
-      auteurRol: MOCK_USER.rol,
-      tekst: trimmed,
-      createdAt: new Date().toISOString().slice(0, 10),
-    };
+    setError(null);
+    const result = await addCommentAction(ticketId, trimmed);
+    setSending(false);
 
-    // Demo only — disappears on refresh until Supabase is wired.
-    window.setTimeout(() => {
-      setComments((prev) => [...prev, next]);
-      setTekst("");
-      setSending(false);
-    }, 200);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    setComments((prev) => [...prev, result.comment]);
+    setTekst("");
   }
 
   return (
@@ -95,6 +90,11 @@ export function CommentThread({
           placeholder="Vraag of aanvulling…"
           maxLength={2000}
         />
+        {error ? (
+          <p className="form-hint" role="alert" style={{ color: "var(--danger, #b42318)" }}>
+            {error}
+          </p>
+        ) : null}
         <div className={styles.actions}>
           <button
             type="submit"

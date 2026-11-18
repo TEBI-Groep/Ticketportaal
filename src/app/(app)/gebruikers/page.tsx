@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
-import { getUsers, MOCK_USER } from "@/data/mock";
+import { Suspense } from "react";
 import { UserAdmin } from "@/components/UserAdmin";
+import { getCurrentUser } from "@/data/auth";
+import { listDepartments, listUsers } from "@/data/users";
 
 export const metadata: Metadata = {
   title: "Gebruikers",
 };
 
-/**
- * IT user admin — create and edit accounts (rollen / afdeling / actief).
- * Only uitvoerders may open this page in the shell.
- */
-export default function GebruikersPage() {
-  if (MOCK_USER.rol !== "uitvoerder") {
+async function GebruikersContent() {
+  const me = await getCurrentUser();
+
+  if (me.rol !== "uitvoerder") {
     return (
-      <div className="page">
+      <>
         <header className="page-header">
           <h1>Gebruikers</h1>
           <p>Alleen uitvoerders (IT) mogen accounts beheren.</p>
@@ -21,24 +21,44 @@ export default function GebruikersPage() {
         <div className="empty-state">
           <p>Geen toegang tot gebruikersbeheer.</p>
         </div>
-      </div>
+      </>
     );
   }
 
-  const users = getUsers();
+  const [users, departments] = await Promise.all([
+    listUsers(),
+    listDepartments(),
+  ]);
 
   return (
-    <div className="page">
+    <>
       <header className="page-header">
         <h1>Gebruikers</h1>
         <p>
-          Accounts aanmaken en bewerken: rol, afdeling en actief-status. In de
-          UI-shell blijft dit mockdata; later Supabase Auth +{" "}
-          <code>profiles</code>.
+          Accounts aanmaken en bewerken: rol, afdeling en actief-status.
+          Aanmaken via Auth vereist <code>supabase_service_role_key</code>.
         </p>
       </header>
 
-      <UserAdmin initialUsers={users} currentUserId={MOCK_USER.id} />
+      <UserAdmin
+        initialUsers={users}
+        departments={departments}
+        currentUserId={me.id}
+      />
+    </>
+  );
+}
+
+/**
+ * IT user admin — create and edit accounts (rollen / afdeling / actief).
+ * Only uitvoerders may open this page.
+ */
+export default function GebruikersPage() {
+  return (
+    <div className="page">
+      <Suspense fallback={<p className="form-hint">Gebruikers laden…</p>}>
+        <GebruikersContent />
+      </Suspense>
     </div>
   );
 }
