@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { loginAction } from "@/app/actions/auth";
 import styles from "./login.module.css";
 
@@ -12,6 +12,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Soft navigation can restore this page from cache with loading=true
+  // after a successful login redirect — reset on every mount.
+  useEffect(() => {
+    setLoading(false);
+  }, []);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -21,10 +27,13 @@ export default function LoginPage() {
     const password = String(form.get("password") ?? "");
 
     setLoading(true);
-    const result = await loginAction(email, password);
-    // redirect() throws; only errors return here
-    if (result && !result.ok) {
-      setError(result.error);
+    try {
+      const result = await loginAction(email, password);
+      // redirect() throws on success; errors return here
+      if (result && !result.ok) {
+        setError(result.error);
+      }
+    } finally {
       setLoading(false);
     }
   }

@@ -2,10 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTransition } from "react";
+import { useFormStatus } from "react-dom";
 import { logoutAction } from "@/app/actions/auth";
 import type { User } from "@/lib/types";
 import styles from "./shell.module.css";
+
+function LogoutButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" className={styles.logoutBtn} disabled={pending}>
+      {pending ? "Bezig…" : "Uitloggen"}
+    </button>
+  );
+}
 
 /** Primary destinations from the wireframe IA. */
 const NAV_ITEMS = [
@@ -39,15 +48,8 @@ export function AppShell({
   supabaseConfigured?: boolean;
 }) {
   const pathname = usePathname();
-  const [pending, startTransition] = useTransition();
   const isIt = user.rol === "uitvoerder";
   const desktopItems = isIt ? [...NAV_ITEMS, ...IT_NAV_ITEMS] : [...NAV_ITEMS];
-
-  function handleLogout() {
-    startTransition(() => {
-      void logoutAction();
-    });
-  }
 
   return (
     <div className={styles.shell}>
@@ -97,14 +99,9 @@ export function AppShell({
               <strong>{user.naam}</strong>
               <span>{user.rol}</span>
             </div>
-            <button
-              type="button"
-              className={styles.logoutBtn}
-              onClick={handleLogout}
-              disabled={pending}
-            >
-              {pending ? "Bezig…" : "Uitloggen"}
-            </button>
+            <form action={logoutAction}>
+              <LogoutButton />
+            </form>
           </div>
         </div>
       </header>
