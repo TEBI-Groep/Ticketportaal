@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FilteredTicketList } from "@/components/FilteredTicketList";
-import { getCurrentUser } from "@/data/auth";
+import { requireUser } from "@/data/auth";
 import { getMijnTickets } from "@/data/tickets";
 
 export const metadata: Metadata = {
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 async function MijnTicketsContent() {
-  const user = await getCurrentUser();
+  const user = await requireUser();
   const tickets = await getMijnTickets(user.id);
 
   return (

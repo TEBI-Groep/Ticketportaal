@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
 import type { User, UserRole } from "@/lib/types";
-import { getUsers as mockGetUsers } from "@/data/mock";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function listUitvoerders(): Promise<User[]> {
@@ -11,14 +10,14 @@ export async function listUitvoerders(): Promise<User[]> {
 }
 
 export async function listUsers(): Promise<User[]> {
-  if (!isSupabaseConfigured()) return mockGetUsers();
+  if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("profiles")
       .select("id, naam, email, rol, actief, departments ( naam )")
       .order("naam");
-    if (error || !data) return mockGetUsers();
+    if (error || !data) return [];
     return data.map((p) => {
       const dept = one(p.departments);
       return {
@@ -31,15 +30,12 @@ export async function listUsers(): Promise<User[]> {
       };
     });
   } catch {
-    return mockGetUsers();
+    return [];
   }
 }
 
 export async function listDepartments(): Promise<string[]> {
-  const { FALLBACK_AFDELINGEN } = await import("@/lib/departments");
-  if (!isSupabaseConfigured()) {
-    return [...FALLBACK_AFDELINGEN];
-  }
+  if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -47,12 +43,10 @@ export async function listDepartments(): Promise<string[]> {
       .select("naam")
       .eq("actief", true)
       .order("sort_order");
-    if (error || !data) {
-      return [...FALLBACK_AFDELINGEN];
-    }
+    if (error || !data) return [];
     return data.map((d) => d.naam);
   } catch {
-    return [...FALLBACK_AFDELINGEN];
+    return [];
   }
 }
 

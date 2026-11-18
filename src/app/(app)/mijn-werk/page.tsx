@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FilteredTicketList } from "@/components/FilteredTicketList";
-import { getCurrentUser } from "@/data/auth";
+import { requireUitvoerder } from "@/data/auth";
 import { getTicketsByEigenaar } from "@/data/tickets";
 
 export const metadata: Metadata = {
@@ -9,22 +9,7 @@ export const metadata: Metadata = {
 };
 
 async function MijnWerkContent() {
-  const user = await getCurrentUser();
-
-  if (user.rol !== "uitvoerder") {
-    return (
-      <>
-        <header className="page-header">
-          <h1>Mijn werk</h1>
-          <p>Alleen uitvoerders (IT) zien tickets waarvan zij Eigenaar zijn.</p>
-        </header>
-        <div className="empty-state">
-          <p>Geen toegang tot deze lijst.</p>
-        </div>
-      </>
-    );
-  }
-
+  const user = await requireUitvoerder();
   const tickets = await getTicketsByEigenaar(user.id);
 
   return (

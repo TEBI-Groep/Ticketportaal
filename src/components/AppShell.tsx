@@ -46,7 +46,7 @@ export function AppShell({
 }: {
   children: React.ReactNode;
   user: User;
-  /** False when URL/anon env is missing — UI uses mock data; writes will fail. */
+  /** False when Supabase URL/anon key are missing on this environment. */
   supabaseConfigured?: boolean;
 }) {
   const pathname = usePathname();
@@ -67,8 +67,8 @@ export function AppShell({
             borderBottom: "1px solid #f0d9a8",
           }}
         >
-          Demo-modus: Supabase URL/anon key ontbreken op deze omgeving. Tickets
-          komen uit mockdata; comments en notities kunnen niet worden opgeslagen.
+          Supabase URL/anon key ontbreken op deze omgeving — data en auth werken
+          niet tot die zijn geconfigureerd.
         </p>
       ) : null}
       <header className={styles.topbar}>

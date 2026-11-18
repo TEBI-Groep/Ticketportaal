@@ -37,7 +37,7 @@ export function UserAdmin({
   departments,
   currentUserId,
 }: UserAdminProps) {
-  const defaultAfdeling = departments[0] ?? "Finance";
+  const defaultAfdeling = departments[0] ?? "";
   const emptyDraft: UserDraft = {
     naam: "",
     email: "",

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-/** Fallback when a mock ticket id does not exist. */
+/** Fallback when a ticket id does not exist. */
 export default function TicketNotFound() {
   return (
     <div className="page">

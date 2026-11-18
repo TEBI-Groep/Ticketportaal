@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { NieuwTicketForm } from "@/components/NieuwTicketForm";
-import { getCurrentUser } from "@/data/auth";
+import { requireUser } from "@/data/auth";
 import { listDepartments } from "@/data/users";
 
 export const metadata: Metadata = {
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 async function NieuwTicketContent() {
   const [departments, user] = await Promise.all([
     listDepartments(),
-    getCurrentUser(),
+    requireUser(),
   ]);
   const canCreate = user.rol === "manager" || user.rol === "uitvoerder";
 

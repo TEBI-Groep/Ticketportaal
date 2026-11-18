@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FilteredTicketList } from "@/components/FilteredTicketList";
-import { getCurrentUser } from "@/data/auth";
+import { requireUser } from "@/data/auth";
 import { getRanglijstTickets } from "@/data/tickets";
 
 export const metadata: Metadata = {
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 async function RanglijstContent() {
   const [tickets, user] = await Promise.all([
     getRanglijstTickets(),
-    getCurrentUser(),
+    requireUser(),
   ]);
 
   return (

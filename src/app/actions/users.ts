@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "@/data/auth";
+import { requireUitvoerderAction } from "@/data/auth";
 import {
   createUserAccount,
   setUserPassword,
@@ -14,9 +14,9 @@ import type { User } from "@/lib/types";
 export async function createUserAction(
   input: CreateUserInput,
 ): Promise<{ ok: true; user: User } | { ok: false; error: string }> {
-  const me = await getCurrentUser();
-  if (me.rol !== "uitvoerder") {
-    return { ok: false, error: "Alleen uitvoerders mogen accounts aanmaken." };
+  const gate = await requireUitvoerderAction();
+  if (!gate.ok) {
+    return { ok: false, error: gate.error };
   }
 
   const result = await createUserAccount(input);
@@ -29,11 +29,12 @@ export async function createUserAction(
 export async function updateUserAction(
   input: UpdateUserInput,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const me = await getCurrentUser();
-  if (me.rol !== "uitvoerder") {
-    return { ok: false, error: "Alleen uitvoerders mogen accounts bewerken." };
+  const gate = await requireUitvoerderAction();
+  if (!gate.ok) {
+    return { ok: false, error: gate.error };
   }
 
+  const me = gate.user;
   if (input.id === me.id) {
     if (!input.actief) {
       return { ok: false, error: "Je kunt je eigen account niet deactiveren." };
