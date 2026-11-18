@@ -19,6 +19,7 @@ function LogoutButton() {
 /** Primary destinations from the wireframe IA. */
 const NAV_ITEMS = [
   { href: "/ranglijst", label: "Ranglijst", short: "Rang" },
+  { href: "/werkvoorraad", label: "Werkvoorraad", short: "Werk" },
   { href: "/spoed", label: "Spoed", short: "Spoed" },
   { href: "/mijn-tickets", label: "Mijn tickets", short: "Mijn" },
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
 
 /** IT-only destinations (shown when the signed-in user is uitvoerder). */
 const IT_NAV_ITEMS = [
+  { href: "/mijn-werk", label: "Mijn werk", short: "Eigen" },
   { href: "/gebruikers", label: "Gebruikers", short: "Users" },
 ] as const;
 
@@ -111,7 +113,9 @@ export function AppShell({
       <nav
         className={styles.bottomNav}
         aria-label="Mobiele navigatie"
-        style={isIt ? { gridTemplateColumns: "repeat(5, 1fr)" } : undefined}
+        style={{
+          gridTemplateColumns: `repeat(${desktopItems.length}, 1fr)`,
+        }}
       >
         {desktopItems.map((item) => (
           <Link

@@ -5,8 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 /** Allowed in-app return paths for ticket detail “Terug”. */
 const ALLOWED_RETURN = new Set([
   "/ranglijst",
+  "/werkvoorraad",
   "/spoed",
   "/mijn-tickets",
+  "/mijn-werk",
   "/afgerond",
 ]);
 

@@ -17,8 +17,7 @@ async function MijnTicketsContent() {
       <header className="page-header">
         <h1>Mijn tickets</h1>
         <p>
-          Openstaande tickets die jij hebt aangemaakt. Klik door voor status en
-          details.
+          Openstaande tickets die jij hebt aangemaakt (als melder).
         </p>
       </header>
 

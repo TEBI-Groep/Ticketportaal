@@ -10,8 +10,15 @@ import {
   getRanglijstTickets as mockRanglijst,
   getSpoedTickets as mockSpoed,
   getTicketById as mockTicketById,
+  getTicketsByEigenaar as mockEigenaar,
+  getWerkvoorraadTickets as mockWerkvoorraad,
 } from "@/data/mock";
-import { ratingAantal, ratingGemiddelde } from "@/lib/types";
+import {
+  isRanglijstKandidaat,
+  ratingAantal,
+  ratingGemiddelde,
+  type UserRole,
+} from "@/lib/types";
 
 type TicketRow = {
   id: string;
@@ -106,6 +113,7 @@ export async function getRanglijstTickets(): Promise<Ticket[]> {
       .select(TICKET_SELECT)
       .eq("systeem", "NetSuite")
       .in("type", ["wijziging", "idee"])
+      .neq("prioriteit", "spoed")
       .not("status", "in", '("afgerond","afgewezen")');
     if (error || !data) return mockRanglijst();
     return (data as unknown as TicketRow[])
@@ -131,10 +139,55 @@ export async function getSpoedTickets(): Promise<Ticket[]> {
     if (error || !data) return mockSpoed();
     return (data as unknown as TicketRow[])
       .map(mapTicket)
-      .filter((t) => t.impact === "stil" || t.prioriteit === "spoed")
+      .filter((t) => t.prioriteit === "spoed")
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } catch {
     return mockSpoed();
+  }
+}
+
+/**
+ * Open operational tickets: not Spoed, not on the public NetSuite Ranglijst
+ * (storingen, vragen, Outlook/WMS/hardware, etc.).
+ * Non-uitvoerders only see tickets they created.
+ */
+export async function getWerkvoorraadTickets(options: {
+  userId: string;
+  rol: UserRole;
+}): Promise<Ticket[]> {
+  const alleenEigen = options.rol !== "uitvoerder";
+  if (!isSupabaseConfigured()) {
+    return mockWerkvoorraad({
+      userId: options.userId,
+      alleenEigen,
+    });
+  }
+  try {
+    const supabase = await createClient();
+    let query = supabase
+      .from("tickets")
+      .select(TICKET_SELECT)
+      .neq("prioriteit", "spoed")
+      .not("status", "in", '("afgerond","afgewezen")');
+    if (alleenEigen) {
+      query = query.eq("melder_id", options.userId);
+    }
+    const { data, error } = await query;
+    if (error || !data) {
+      return mockWerkvoorraad({
+        userId: options.userId,
+        alleenEigen,
+      });
+    }
+    return (data as unknown as TicketRow[])
+      .map(mapTicket)
+      .filter((t) => !isRanglijstKandidaat(t))
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  } catch {
+    return mockWerkvoorraad({
+      userId: options.userId,
+      alleenEigen,
+    });
   }
 }
 
@@ -153,6 +206,25 @@ export async function getMijnTickets(userId: string): Promise<Ticket[]> {
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } catch {
     return mockMijn(userId);
+  }
+}
+
+/** Open tickets where this user is Eigenaar (IT assignee). */
+export async function getTicketsByEigenaar(userId: string): Promise<Ticket[]> {
+  if (!isSupabaseConfigured()) return mockEigenaar(userId);
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("tickets")
+      .select(TICKET_SELECT)
+      .eq("eigenaar_id", userId)
+      .not("status", "in", '("afgerond","afgewezen")');
+    if (error || !data) return mockEigenaar(userId);
+    return (data as unknown as TicketRow[])
+      .map(mapTicket)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  } catch {
+    return mockEigenaar(userId);
   }
 }
 

@@ -107,8 +107,10 @@ export async function createTicketAction(
     }
 
     revalidatePath("/ranglijst");
+    revalidatePath("/werkvoorraad");
     revalidatePath("/spoed");
     revalidatePath("/mijn-tickets");
+    revalidatePath("/mijn-werk");
     revalidatePath(`/ticket/${data.id}`);
     return { ok: true, id: data.id };
   } catch (err) {
@@ -183,8 +185,10 @@ export async function updateTicketItAction(
 
     revalidatePath(`/ticket/${input.id}`);
     revalidatePath("/ranglijst");
+    revalidatePath("/werkvoorraad");
     revalidatePath("/spoed");
     revalidatePath("/mijn-tickets");
+    revalidatePath("/mijn-werk");
     revalidatePath("/afgerond");
     return { ok: true };
   } catch (err) {
