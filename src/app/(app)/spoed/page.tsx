@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { TicketList } from "@/components/TicketList";
+import { FilteredTicketList } from "@/components/FilteredTicketList";
 import { getSpoedTickets } from "@/data/tickets";
 
 export const metadata: Metadata = {
@@ -23,8 +23,10 @@ async function SpoedContent() {
         Stemmen gelden niet op spoedtickets — IT pakt deze op via prioriteit.
       </p>
 
-      <TicketList
+      <FilteredTicketList
         tickets={tickets}
+        filterDims={["systeem", "status", "type", "afdeling"]}
+        searchPlaceholder="Zoek in spoedtickets…"
         emptyMessage="Geen spoedtickets — mooi."
         emptyCta="Storing melden"
       />

@@ -1,11 +1,13 @@
 /** Static mock users and tickets for the first UI shell — no backend yet. */
 
 import type { ItNote, Ticket, TicketComment, TicketRating, User } from "@/lib/types";
+import { filterTicketsByQuery } from "@/lib/ticket-search";
 import {
   isRanglijstKandidaat,
   ratingAantal,
   ratingGemiddelde,
 } from "@/lib/types";
+import type { TicketSystem } from "@/lib/types";
 
 /**
  * Demo user after “login”.
@@ -353,6 +355,28 @@ export { FALLBACK_AFDELINGEN as AFDELINGEN } from "@/lib/departments";
 
 export function getTicketById(id: string): Ticket | undefined {
   return MOCK_TICKETS.find((t) => t.id === id);
+}
+
+/** Similar tickets for the create form (onderwerp / ticketnummer / body). */
+export function searchSimilarTickets(
+  query: string,
+  options?: { systeem?: TicketSystem; limit?: number },
+): Ticket[] {
+  const limit = options?.limit ?? 5;
+  let list = filterTicketsByQuery(MOCK_TICKETS, query);
+  if (options?.systeem) {
+    const same = list.filter((t) => t.systeem === options.systeem);
+    const other = list.filter((t) => t.systeem !== options.systeem);
+    list = [...same, ...other];
+  }
+  return list
+    .sort((a, b) => {
+      const aOpen = a.status !== "afgerond" && a.status !== "afgewezen" ? 0 : 1;
+      const bOpen = b.status !== "afgerond" && b.status !== "afgewezen" ? 0 : 1;
+      if (aOpen !== bOpen) return aOpen - bOpen;
+      return b.updatedAt.localeCompare(a.updatedAt);
+    })
+    .slice(0, limit);
 }
 
 /**

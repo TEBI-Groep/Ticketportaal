@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { TicketList } from "@/components/TicketList";
+import { FilteredTicketList } from "@/components/FilteredTicketList";
 import { getCurrentUser } from "@/data/auth";
 import { getWerkvoorraadTickets } from "@/data/tickets";
 
@@ -27,8 +27,10 @@ async function WerkvoorraadContent() {
         </p>
       </header>
 
-      <TicketList
+      <FilteredTicketList
         tickets={tickets}
+        filterDims={["systeem", "status", "type", "prioriteit", "afdeling"]}
+        searchPlaceholder="Zoek in de werkvoorraad…"
         emptyMessage={
           isIt
             ? "Geen open tickets in de werkvoorraad."

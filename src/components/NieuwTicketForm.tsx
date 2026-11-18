@@ -2,9 +2,17 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import {
+  FormEvent,
+  useEffect,
+  useEffectEvent,
+  useState,
+  useTransition,
+} from "react";
+import { searchSimilarTicketsAction } from "@/app/actions/search";
 import { createTicketAction } from "@/app/actions/tickets";
-import type { TicketImpact, TicketSystem, TicketType } from "@/lib/types";
+import { SimilarTickets } from "@/components/SimilarTickets";
+import type { Ticket, TicketImpact, TicketSystem, TicketType } from "@/lib/types";
 
 interface NieuwTicketFormProps {
   departments: string[];
@@ -13,11 +21,36 @@ interface NieuwTicketFormProps {
 
 /**
  * Create-ticket form — persists via Supabase when the user may create.
+ * Onderwerp triggers a similar-ticket search to reduce duplicates.
  */
 export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [onderwerp, setOnderwerp] = useState("");
+  const [systeem, setSysteem] = useState<TicketSystem>("NetSuite");
+  const [similar, setSimilar] = useState<Ticket[]>([]);
+  const [searchPending, startSearch] = useTransition();
+
+  const runSimilarSearch = useEffectEvent(
+    (query: string, system: TicketSystem) => {
+      if (query.trim().length < 3) {
+        setSimilar([]);
+        return;
+      }
+      startSearch(async () => {
+        const results = await searchSimilarTicketsAction(query, system);
+        setSimilar(results);
+      });
+    },
+  );
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      runSimilarSearch(onderwerp, systeem);
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [onderwerp, systeem]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -104,7 +137,8 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
           name="systeem"
           className="select-input"
           required
-          defaultValue="NetSuite"
+          value={systeem}
+          onChange={(e) => setSysteem(e.target.value as TicketSystem)}
         >
           <option>NetSuite</option>
           <option>WMS</option>
@@ -123,6 +157,13 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
           required
           maxLength={120}
           placeholder="Korte, duidelijke titel"
+          value={onderwerp}
+          onChange={(e) => setOnderwerp(e.target.value)}
+        />
+        <SimilarTickets
+          tickets={similar}
+          query={onderwerp}
+          loading={searchPending}
         />
       </div>
 
@@ -170,7 +211,8 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
       </div>
 
       <p className="form-hint">
-        Bijlagen en suggesties voor vergelijkbare tickets volgen later.
+        Bijlagen volgen later. Bij een match kun je beter stemmen of het
+        bestaande ticket openen.
       </p>
 
       {error ? (

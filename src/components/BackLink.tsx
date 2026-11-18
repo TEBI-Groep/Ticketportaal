@@ -10,6 +10,7 @@ const ALLOWED_RETURN = new Set([
   "/mijn-tickets",
   "/mijn-werk",
   "/afgerond",
+  "/ticket/nieuw",
 ]);
 
 /**
