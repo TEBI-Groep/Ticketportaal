@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { useSearchParams } from "next/navigation";
 import { loginAction } from "@/app/actions/auth";
 import styles from "./login.module.css";
 
@@ -14,12 +15,18 @@ function LoginSubmitButton() {
   );
 }
 
-/**
- * Login is brand-first. Auth runs on the server so SUPABASE_URL /
- * SUPABASE_ANON_KEY work without baking NEXT_PUBLIC_* into the client bundle.
- */
-export default function LoginPage() {
-  const [error, setError] = useState<string | null>(null);
+function inactiveReasonMessage(reason: string | null): string | null {
+  if (reason === "inactive") {
+    return "Dit account is inactief. Neem contact op met IT.";
+  }
+  return null;
+}
+
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(() =>
+    inactiveReasonMessage(searchParams.get("reason")),
+  );
 
   async function submit(formData: FormData) {
     setError(null);
@@ -53,7 +60,6 @@ export default function LoginPage() {
               autoComplete="username"
               className="text-input"
               placeholder="naam@tebi.nl"
-              defaultValue="sara.devries@tebi.nl"
             />
           </div>
 
@@ -66,7 +72,6 @@ export default function LoginPage() {
               autoComplete="current-password"
               className="text-input"
               placeholder="••••••••"
-              defaultValue="TebiDemo2026!"
             />
           </div>
 
@@ -74,11 +79,27 @@ export default function LoginPage() {
 
           <LoginSubmitButton />
         </form>
-
-        <p className={styles.help}>
-          Demo: <code>sara.devries@tebi.nl</code> / <code>TebiDemo2026!</code>
-        </p>
       </div>
     </div>
+  );
+}
+
+/**
+ * Login is brand-first. Auth runs on the server so SUPABASE_URL /
+ * SUPABASE_ANON_KEY work without baking NEXT_PUBLIC_* into the client bundle.
+ */
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className={styles.wrap}>
+          <div className={styles.panel}>
+            <p className="form-hint">Laden…</p>
+          </div>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
