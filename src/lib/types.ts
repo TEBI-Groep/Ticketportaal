@@ -69,6 +69,7 @@ export interface Ticket {
   prioriteit: TicketPriority;
   melderId: string;
   melderNaam: string;
+  eigenaarId?: string;
   eigenaarNaam?: string;
   streefdatum?: string;
   omvang?: TicketSize;

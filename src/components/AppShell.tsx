@@ -2,8 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useFormStatus } from "react-dom";
+import { logoutAction } from "@/app/actions/auth";
 import type { User } from "@/lib/types";
 import styles from "./shell.module.css";
+
+function LogoutButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" className={styles.logoutBtn} disabled={pending}>
+      {pending ? "Bezig…" : "Uitloggen"}
+    </button>
+  );
+}
 
 /** Primary destinations from the wireframe IA. */
 const NAV_ITEMS = [
@@ -83,9 +94,14 @@ export function AppShell({
             <span aria-hidden>+</span> Ticket
           </Link>
 
-          <div className={styles.userChip} aria-label="Ingelogde gebruiker">
-            <strong>{user.naam}</strong>
-            <span>{user.rol}</span>
+          <div className={styles.userMenu}>
+            <div className={styles.userChip} aria-label="Ingelogde gebruiker">
+              <strong>{user.naam}</strong>
+              <span>{user.rol}</span>
+            </div>
+            <form action={logoutAction}>
+              <LogoutButton />
+            </form>
           </div>
         </div>
       </header>

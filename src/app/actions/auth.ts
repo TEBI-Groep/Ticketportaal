@@ -39,3 +39,16 @@ export async function loginAction(
 
   redirect("/ranglijst");
 }
+
+/** Clear the Auth session and return to login. */
+export async function logoutAction(): Promise<void> {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      await supabase.auth.signOut();
+    } catch {
+      // Still send the user to login even if sign-out fails.
+    }
+  }
+  redirect("/login");
+}

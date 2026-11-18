@@ -61,6 +61,7 @@ function mapTicket(row: TicketRow): Ticket {
     prioriteit: row.prioriteit,
     melderId: row.melder_id,
     melderNaam: row.melder?.naam ?? "",
+    eigenaarId: row.eigenaar_id ?? undefined,
     eigenaarNaam: row.eigenaar?.naam ?? undefined,
     streefdatum: row.streefdatum ?? undefined,
     omvang: row.omvang ?? undefined,
