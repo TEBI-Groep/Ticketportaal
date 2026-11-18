@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTransition } from "react";
+import { logoutAction } from "@/app/actions/auth";
 import type { User } from "@/lib/types";
 import styles from "./shell.module.css";
 
@@ -37,8 +39,15 @@ export function AppShell({
   supabaseConfigured?: boolean;
 }) {
   const pathname = usePathname();
+  const [pending, startTransition] = useTransition();
   const isIt = user.rol === "uitvoerder";
   const desktopItems = isIt ? [...NAV_ITEMS, ...IT_NAV_ITEMS] : [...NAV_ITEMS];
+
+  function handleLogout() {
+    startTransition(() => {
+      void logoutAction();
+    });
+  }
 
   return (
     <div className={styles.shell}>
@@ -83,9 +92,19 @@ export function AppShell({
             <span aria-hidden>+</span> Ticket
           </Link>
 
-          <div className={styles.userChip} aria-label="Ingelogde gebruiker">
-            <strong>{user.naam}</strong>
-            <span>{user.rol}</span>
+          <div className={styles.userMenu}>
+            <div className={styles.userChip} aria-label="Ingelogde gebruiker">
+              <strong>{user.naam}</strong>
+              <span>{user.rol}</span>
+            </div>
+            <button
+              type="button"
+              className={styles.logoutBtn}
+              onClick={handleLogout}
+              disabled={pending}
+            >
+              {pending ? "Bezig…" : "Uitloggen"}
+            </button>
           </div>
         </div>
       </header>

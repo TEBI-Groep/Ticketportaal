@@ -114,6 +114,35 @@
   background: var(--brand-hover);
 }
 
+.userMenu {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logoutBtn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.4rem 0.65rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.logoutBtn:hover:not(:disabled) {
+  background: var(--bg-accent);
+  color: var(--ink);
+}
+
+.logoutBtn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .userChip {
   display: none;
   flex-direction: column;
