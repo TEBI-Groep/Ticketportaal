@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
 import type { User, UserRole } from "@/lib/types";
-import { getUsers as mockGetUsers } from "@/data/mock";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function listUitvoerders(): Promise<User[]> {
@@ -11,14 +10,14 @@ export async function listUitvoerders(): Promise<User[]> {
 }
 
 export async function listUsers(): Promise<User[]> {
-  if (!isSupabaseConfigured()) return mockGetUsers();
+  if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("profiles")
       .select("id, naam, email, rol, actief, departments ( naam )")
       .order("naam");
-    if (error || !data) return mockGetUsers();
+    if (error || !data) return [];
     return data.map((p) => {
       const dept = one(p.departments);
       return {
@@ -31,15 +30,12 @@ export async function listUsers(): Promise<User[]> {
       };
     });
   } catch {
-    return mockGetUsers();
+    return [];
   }
 }
 
 export async function listDepartments(): Promise<string[]> {
-  const { FALLBACK_AFDELINGEN } = await import("@/lib/departments");
-  if (!isSupabaseConfigured()) {
-    return [...FALLBACK_AFDELINGEN];
-  }
+  if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -47,12 +43,10 @@ export async function listDepartments(): Promise<string[]> {
       .select("naam")
       .eq("actief", true)
       .order("sort_order");
-    if (error || !data) {
-      return [...FALLBACK_AFDELINGEN];
-    }
+    if (error || !data) return [];
     return data.map((d) => d.naam);
   } catch {
-    return [...FALLBACK_AFDELINGEN];
+    return [];
   }
 }
 
@@ -151,6 +145,35 @@ export async function updateUserAccount(
     })
     .eq("id", input.id);
 
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/**
+ * Set / reset an Auth password (no e-mail flow yet).
+ * Requires service role — used by uitvoerders in Gebruikersbeheer.
+ */
+export async function setUserPassword(
+  userId: string,
+  password: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const trimmed = password.trim();
+  if (trimmed.length < 8) {
+    return { ok: false, error: "Wachtwoord moet minimaal 8 tekens zijn." };
+  }
+
+  const admin = createAdminClient();
+  if (!admin) {
+    return {
+      ok: false,
+      error:
+        "supabase_service_role_key ontbreekt — voeg die toe om wachtwoorden te wijzigen.",
+    };
+  }
+
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    password: trimmed,
+  });
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }

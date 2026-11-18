@@ -1,4 +1,4 @@
-/** Shared domain types for the Ticketportaal UI shell (mock-backed). */
+/** Shared domain types for the Ticketportaal app. */
 
 export type TicketType = "storing" | "wijziging" | "vraag" | "idee";
 export type TicketSystem = "NetSuite" | "WMS" | "hardware" | "Outlook" | "overig";

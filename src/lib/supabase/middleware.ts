@@ -2,13 +2,36 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseAnonKey, getSupabaseUrl } from "./env";
 
-/** Refresh the Auth session cookie on each matched request. */
+function isPublicPath(pathname: string): boolean {
+  return pathname === "/login" || pathname === "/";
+}
+
+function copyCookies(
+  from: NextResponse,
+  to: NextResponse,
+): NextResponse {
+  from.cookies.getAll().forEach((cookie) => {
+    to.cookies.set(cookie.name, cookie.value);
+  });
+  return to;
+}
+
+/** Refresh the Auth session and gate app routes behind login. */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
+  const publicPath = isPublicPath(pathname);
 
   const url = getSupabaseUrl();
   const key = getSupabaseAnonKey();
   if (!url || !key) {
+    // No database/auth config: never serve the app unauthenticated.
+    if (!publicPath) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.searchParams.set("next", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
     return supabaseResponse;
   }
 
@@ -30,7 +53,23 @@ export async function updateSession(request: NextRequest) {
   });
 
   // Important: do not remove — keeps the session fresh.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user && !publicPath) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("next", pathname);
+    return copyCookies(supabaseResponse, NextResponse.redirect(loginUrl));
+  }
+
+  if (user && (pathname === "/login" || pathname === "/")) {
+    const homeUrl = request.nextUrl.clone();
+    homeUrl.pathname = "/ranglijst";
+    homeUrl.search = "";
+    return copyCookies(supabaseResponse, NextResponse.redirect(homeUrl));
+  }
 
   return supabaseResponse;
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { UserAdmin } from "@/components/UserAdmin";
-import { getCurrentUser } from "@/data/auth";
+import { requireUitvoerder } from "@/data/auth";
 import { listDepartments, listUsers } from "@/data/users";
 
 export const metadata: Metadata = {
@@ -9,21 +9,7 @@ export const metadata: Metadata = {
 };
 
 async function GebruikersContent() {
-  const me = await getCurrentUser();
-
-  if (me.rol !== "uitvoerder") {
-    return (
-      <>
-        <header className="page-header">
-          <h1>Gebruikers</h1>
-          <p>Alleen uitvoerders (IT) mogen accounts beheren.</p>
-        </header>
-        <div className="empty-state">
-          <p>Geen toegang tot gebruikersbeheer.</p>
-        </div>
-      </>
-    );
-  }
+  const me = await requireUitvoerder();
 
   const [users, departments] = await Promise.all([
     listUsers(),

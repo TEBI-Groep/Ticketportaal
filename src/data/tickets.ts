@@ -3,18 +3,6 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
 import type { ItNote, Ticket, TicketComment, TicketRating } from "@/lib/types";
 import {
-  getAfgerondeTickets as mockAfgerond,
-  getCommentsForTicket as mockComments,
-  getItNotesForTicket as mockItNotes,
-  getMijnTickets as mockMijn,
-  getRanglijstTickets as mockRanglijst,
-  getSpoedTickets as mockSpoed,
-  getTicketById as mockTicketById,
-  getTicketsByEigenaar as mockEigenaar,
-  getWerkvoorraadTickets as mockWerkvoorraad,
-  searchSimilarTickets as mockSearchSimilar,
-} from "@/data/mock";
-import {
   escapeIlikePattern,
   filterTicketsByQuery,
   normalizeTicketQuery,
@@ -96,7 +84,7 @@ const TICKET_SELECT = `
 `;
 
 export async function getTicketById(id: string): Promise<Ticket | undefined> {
-  if (!isSupabaseConfigured()) return mockTicketById(id);
+  if (!isSupabaseConfigured()) return undefined;
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -104,16 +92,16 @@ export async function getTicketById(id: string): Promise<Ticket | undefined> {
       .select(TICKET_SELECT)
       .eq("id", id)
       .maybeSingle();
-    if (error || !data) return mockTicketById(id);
+    if (error || !data) return undefined;
     return mapTicket(data as unknown as TicketRow);
   } catch {
-    return mockTicketById(id);
+    return undefined;
   }
 }
 
 /**
  * Find tickets that look similar to a draft onderwerp (create-form helper).
- * Prefers same systeem and open tickets; falls back to mock when offline.
+ * Prefers same systeem and open tickets.
  */
 export async function searchSimilarTickets(
   query: string,
@@ -121,11 +109,7 @@ export async function searchSimilarTickets(
 ): Promise<Ticket[]> {
   const limit = options?.limit ?? 5;
   const q = normalizeTicketQuery(query);
-  if (q.length < 3) return [];
-
-  if (!isSupabaseConfigured()) {
-    return mockSearchSimilar(query, options);
-  }
+  if (q.length < 3 || !isSupabaseConfigured()) return [];
 
   try {
     const supabase = await createClient();
@@ -143,7 +127,7 @@ export async function searchSimilarTickets(
       .order("updated_at", { ascending: false })
       .limit(40);
 
-    if (error || !data) return mockSearchSimilar(query, options);
+    if (error || !data) return [];
 
     let list = (data as unknown as TicketRow[]).map(mapTicket);
     list = filterTicketsByQuery(list, query);
@@ -165,12 +149,12 @@ export async function searchSimilarTickets(
       })
       .slice(0, limit);
   } catch {
-    return mockSearchSimilar(query, options);
+    return [];
   }
 }
 
 export async function getRanglijstTickets(): Promise<Ticket[]> {
-  if (!isSupabaseConfigured()) return mockRanglijst();
+  if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -180,7 +164,7 @@ export async function getRanglijstTickets(): Promise<Ticket[]> {
       .in("type", ["wijziging", "idee"])
       .neq("prioriteit", "spoed")
       .not("status", "in", '("afgerond","afgewezen")');
-    if (error || !data) return mockRanglijst();
+    if (error || !data) return [];
     return (data as unknown as TicketRow[])
       .map(mapTicket)
       .sort((a, b) => {
@@ -189,25 +173,25 @@ export async function getRanglijstTickets(): Promise<Ticket[]> {
         return ratingAantal(b) - ratingAantal(a);
       });
   } catch {
-    return mockRanglijst();
+    return [];
   }
 }
 
 export async function getSpoedTickets(): Promise<Ticket[]> {
-  if (!isSupabaseConfigured()) return mockSpoed();
+  if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("tickets")
       .select(TICKET_SELECT)
+      .eq("prioriteit", "spoed")
       .not("status", "in", '("afgerond","afgewezen")');
-    if (error || !data) return mockSpoed();
+    if (error || !data) return [];
     return (data as unknown as TicketRow[])
       .map(mapTicket)
-      .filter((t) => t.prioriteit === "spoed")
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } catch {
-    return mockSpoed();
+    return [];
   }
 }
 
@@ -220,13 +204,8 @@ export async function getWerkvoorraadTickets(options: {
   userId: string;
   rol: UserRole;
 }): Promise<Ticket[]> {
+  if (!isSupabaseConfigured()) return [];
   const alleenEigen = options.rol !== "uitvoerder";
-  if (!isSupabaseConfigured()) {
-    return mockWerkvoorraad({
-      userId: options.userId,
-      alleenEigen,
-    });
-  }
   try {
     const supabase = await createClient();
     let query = supabase
@@ -238,26 +217,18 @@ export async function getWerkvoorraadTickets(options: {
       query = query.eq("melder_id", options.userId);
     }
     const { data, error } = await query;
-    if (error || !data) {
-      return mockWerkvoorraad({
-        userId: options.userId,
-        alleenEigen,
-      });
-    }
+    if (error || !data) return [];
     return (data as unknown as TicketRow[])
       .map(mapTicket)
       .filter((t) => !isRanglijstKandidaat(t))
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } catch {
-    return mockWerkvoorraad({
-      userId: options.userId,
-      alleenEigen,
-    });
+    return [];
   }
 }
 
 export async function getMijnTickets(userId: string): Promise<Ticket[]> {
-  if (!isSupabaseConfigured()) return mockMijn(userId);
+  if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -265,18 +236,18 @@ export async function getMijnTickets(userId: string): Promise<Ticket[]> {
       .select(TICKET_SELECT)
       .eq("melder_id", userId)
       .not("status", "in", '("afgerond","afgewezen")');
-    if (error || !data) return mockMijn(userId);
+    if (error || !data) return [];
     return (data as unknown as TicketRow[])
       .map(mapTicket)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } catch {
-    return mockMijn(userId);
+    return [];
   }
 }
 
 /** Open tickets where this user is Eigenaar (IT assignee). */
 export async function getTicketsByEigenaar(userId: string): Promise<Ticket[]> {
-  if (!isSupabaseConfigured()) return mockEigenaar(userId);
+  if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -284,36 +255,36 @@ export async function getTicketsByEigenaar(userId: string): Promise<Ticket[]> {
       .select(TICKET_SELECT)
       .eq("eigenaar_id", userId)
       .not("status", "in", '("afgerond","afgewezen")');
-    if (error || !data) return mockEigenaar(userId);
+    if (error || !data) return [];
     return (data as unknown as TicketRow[])
       .map(mapTicket)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } catch {
-    return mockEigenaar(userId);
+    return [];
   }
 }
 
 export async function getAfgerondeTickets(): Promise<Ticket[]> {
-  if (!isSupabaseConfigured()) return mockAfgerond();
+  if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("tickets")
       .select(TICKET_SELECT)
       .in("status", ["afgerond", "afgewezen"]);
-    if (error || !data) return mockAfgerond();
+    if (error || !data) return [];
     return (data as unknown as TicketRow[])
       .map(mapTicket)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } catch {
-    return mockAfgerond();
+    return [];
   }
 }
 
 export async function getCommentsForTicket(
   ticketId: string,
 ): Promise<TicketComment[]> {
-  if (!isSupabaseConfigured()) return mockComments(ticketId);
+  if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -321,7 +292,7 @@ export async function getCommentsForTicket(
       .select("id, ticket_id, user_id, body, created_at, profiles ( naam, rol )")
       .eq("ticket_id", ticketId)
       .order("created_at", { ascending: true });
-    if (error || !data) return mockComments(ticketId);
+    if (error || !data) return [];
     return data.map((c) => {
       const profile = one(c.profiles) as {
         naam: string;
@@ -338,12 +309,12 @@ export async function getCommentsForTicket(
       };
     });
   } catch {
-    return mockComments(ticketId);
+    return [];
   }
 }
 
 export async function getItNotesForTicket(ticketId: string): Promise<ItNote[]> {
-  if (!isSupabaseConfigured()) return mockItNotes(ticketId);
+  if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -351,7 +322,7 @@ export async function getItNotesForTicket(ticketId: string): Promise<ItNote[]> {
       .select("id, ticket_id, user_id, body, created_at, profiles ( naam )")
       .eq("ticket_id", ticketId)
       .order("created_at", { ascending: true });
-    if (error || !data) return mockItNotes(ticketId);
+    if (error || !data) return [];
     return data.map((n) => {
       const profile = one(n.profiles);
       return {
@@ -364,6 +335,6 @@ export async function getItNotesForTicket(ticketId: string): Promise<ItNote[]> {
       };
     });
   } catch {
-    return mockItNotes(ticketId);
+    return [];
   }
 }

@@ -93,7 +93,7 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
     );
   }
 
-  const defaultAfdeling = departments[0] ?? "Finance";
+  const defaultAfdeling = departments[0] ?? "";
 
   return (
     <form className="form-stack" onSubmit={handleSubmit}>

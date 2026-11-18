@@ -7,7 +7,7 @@ import { ItNotes } from "@/components/ItNotes";
 import { ItTicketEditor } from "@/components/ItTicketEditor";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
-import { getCurrentUser } from "@/data/auth";
+import { requireUser } from "@/data/auth";
 import {
   getCommentsForTicket,
   getItNotesForTicket,
@@ -46,7 +46,7 @@ async function TicketDetailContent({
   const { id } = await params;
   const [ticket, user] = await Promise.all([
     getTicketById(id),
-    getCurrentUser(),
+    requireUser(),
   ]);
 
   if (!ticket) {

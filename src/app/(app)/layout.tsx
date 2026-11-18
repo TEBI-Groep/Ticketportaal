@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
-import { getCurrentUser } from "@/data/auth";
+import { requireUser } from "@/data/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 async function AppShellWithUser({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
+  const user = await requireUser();
   return (
     <AppShell user={user} supabaseConfigured={isSupabaseConfigured()}>
       {children}

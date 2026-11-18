@@ -1,17 +1,18 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
 import type { User, UserRole } from "@/lib/types";
-import { MOCK_USER } from "@/data/mock";
 
 export type AppUser = User & { afdelingId?: string | null };
 
 /**
- * Current signed-in profile, or mock user when Supabase/env/session is missing.
+ * Current signed-in profile from Supabase Auth + profiles.
+ * Returns null when env is missing, there is no session, or the profile is inactive.
  */
-export async function getCurrentUser(): Promise<AppUser> {
+export async function getCurrentUser(): Promise<AppUser | null> {
   if (!isSupabaseConfigured()) {
-    return MOCK_USER;
+    return null;
   }
 
   try {
@@ -21,7 +22,7 @@ export async function getCurrentUser(): Promise<AppUser> {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return MOCK_USER;
+      return null;
     }
 
     const { data: profile } = await supabase
@@ -41,6 +42,10 @@ export async function getCurrentUser(): Promise<AppUser> {
       };
     }
 
+    if (!profile.actief) {
+      return null;
+    }
+
     const dept = one(profile.departments);
 
     return {
@@ -53,6 +58,47 @@ export async function getCurrentUser(): Promise<AppUser> {
       actief: profile.actief,
     };
   } catch {
-    return MOCK_USER;
+    return null;
   }
+}
+
+/** Redirect to login when there is no signed-in user. */
+export async function requireUser(): Promise<AppUser> {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+  return user;
+}
+
+/** Redirect non-uitvoerders away from IT-only pages. */
+export async function requireUitvoerder(): Promise<AppUser> {
+  const user = await requireUser();
+  if (user.rol !== "uitvoerder") {
+    redirect("/ranglijst");
+  }
+  return user;
+}
+
+/**
+ * Server-action gate: must be a real Supabase session with uitvoerder rol.
+ */
+export async function requireUitvoerderAction(): Promise<
+  { ok: true; user: AppUser } | { ok: false; error: string }
+> {
+  if (!isSupabaseConfigured()) {
+    return {
+      ok: false,
+      error: "Supabase is niet geconfigureerd op deze omgeving.",
+    };
+  }
+
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "Je bent niet ingelogd." };
+  }
+  if (user.rol !== "uitvoerder") {
+    return { ok: false, error: "Alleen uitvoerders mogen dit doen." };
+  }
+  return { ok: true, user };
 }
