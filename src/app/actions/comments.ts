@@ -15,7 +15,11 @@ export async function addCommentAction(
     return { ok: false, error: "Bericht mag niet leeg zijn." };
   }
   if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Supabase is niet geconfigureerd." };
+    return {
+      ok: false,
+      error:
+        "Supabase is niet geconfigureerd (NEXT_PUBLIC_SUPABASE_URL / anon key of SUPABASE_URL / SUPABASE_ANON_KEY ontbreken).",
+    };
   }
 
   try {

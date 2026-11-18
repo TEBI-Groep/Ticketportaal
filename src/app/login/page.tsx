@@ -1,17 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { loginAction } from "@/app/actions/auth";
 import styles from "./login.module.css";
 
 /**
- * Login is brand-first. Uses Supabase Auth when configured;
- * otherwise any non-empty credentials unlock the mock shell.
+ * Login is brand-first. Auth runs on the server so SUPABASE_URL /
+ * SUPABASE_ANON_KEY work without baking NEXT_PUBLIC_* into the client bundle.
  */
 export default function LoginPage() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -20,38 +17,14 @@ export default function LoginPage() {
     setError(null);
 
     const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") ?? "").trim();
+    const email = String(form.get("email") ?? "");
     const password = String(form.get("password") ?? "");
 
-    if (!email || !password) {
-      setError("Vul e-mail en wachtwoord in.");
-      return;
-    }
-
     setLoading(true);
-
-    if (!isSupabaseConfigured()) {
-      window.setTimeout(() => {
-        router.push("/ranglijst");
-      }, 350);
-      return;
-    }
-
-    try {
-      const supabase = createClient();
-      const { error: signError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (signError) {
-        setError(signError.message);
-        setLoading(false);
-        return;
-      }
-      router.push("/ranglijst");
-      router.refresh();
-    } catch {
-      setError("Inloggen mislukt. Probeer het opnieuw.");
+    const result = await loginAction(email, password);
+    // redirect() throws; only errors return here
+    if (result && !result.ok) {
+      setError(result.error);
       setLoading(false);
     }
   }

@@ -29,9 +29,12 @@ function isActive(pathname: string, href: string): boolean {
 export function AppShell({
   children,
   user,
+  supabaseConfigured = true,
 }: {
   children: React.ReactNode;
   user: User;
+  /** False when URL/anon env is missing — UI uses mock data; writes will fail. */
+  supabaseConfigured?: boolean;
 }) {
   const pathname = usePathname();
   const isIt = user.rol === "uitvoerder";
@@ -39,6 +42,22 @@ export function AppShell({
 
   return (
     <div className={styles.shell}>
+      {!supabaseConfigured ? (
+        <p
+          role="status"
+          style={{
+            margin: 0,
+            padding: "0.5rem 1rem",
+            background: "#fff4e5",
+            color: "#8a5a00",
+            fontSize: "0.875rem",
+            borderBottom: "1px solid #f0d9a8",
+          }}
+        >
+          Demo-modus: Supabase URL/anon key ontbreken op deze omgeving. Tickets
+          komen uit mockdata; comments en notities kunnen niet worden opgeslagen.
+        </p>
+      ) : null}
       <header className={styles.topbar}>
         <Link href="/ranglijst" className={styles.brand} aria-label="Tebi Ticketportaal home">
           <span className={styles.brandName}>Tebi</span>

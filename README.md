@@ -20,9 +20,13 @@ Zonder env-keys valt de app terug op lokale mockdata (shell-demo).
 
 | Variabele | Waarvoor |
 |-----------|----------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Project-URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser + server (RLS) |
-| `supabase_service_role_key` | Server-only: Auth admin (gebruikers aanmaken). Cursor secrets must be named `SUPABASE_SERVICE_ROLE_KEY` (uppercase); the app reads both. |
+| `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_URL` | Project-URL (server reads both; browser needs `NEXT_PUBLIC_*` on Vercel) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `SUPABASE_ANON_KEY` | Anon/publishable key (RLS) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only: Auth admin (gebruikers aanmaken) |
+
+Comments, IT-notes and login need URL + anon key. The service-role key is only for creating users. Without URL/anon the UI falls back to mock data and writes show “Supabase is niet geconfigureerd.”
+
+On **Vercel**, set at least `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Project → Settings → Environment Variables), then redeploy.
 
 ## Scripts
 

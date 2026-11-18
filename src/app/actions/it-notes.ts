@@ -15,7 +15,11 @@ export async function addItNoteAction(
     return { ok: false, error: "Notitie mag niet leeg zijn." };
   }
   if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Supabase is niet geconfigureerd." };
+    return {
+      ok: false,
+      error:
+        "Supabase is niet geconfigureerd (NEXT_PUBLIC_SUPABASE_URL / anon key of SUPABASE_URL / SUPABASE_ANON_KEY ontbreken).",
+    };
   }
 
   try {
