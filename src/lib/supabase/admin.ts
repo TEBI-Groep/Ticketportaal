@@ -6,7 +6,7 @@ import {
 
 /**
  * Service-role client (bypasses RLS). Server-only.
- * Returns null when SUPABASE_SERVICE_ROLE_KEY is not set.
+ * Returns null when supabase_service_role_key is not set.
  */
 export function createAdminClient() {
   const url = getSupabaseUrl();

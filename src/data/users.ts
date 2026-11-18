@@ -69,7 +69,7 @@ export async function createUserAccount(
     return {
       ok: false,
       error:
-        "SUPABASE_SERVICE_ROLE_KEY ontbreekt — voeg die toe om accounts aan te maken.",
+        "supabase_service_role_key ontbreekt — voeg die toe om accounts aan te maken.",
     };
   }
 
