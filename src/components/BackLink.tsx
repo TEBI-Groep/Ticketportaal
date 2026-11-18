@@ -8,6 +8,7 @@ const ALLOWED_RETURN = new Set([
   "/werkvoorraad",
   "/spoed",
   "/mijn-tickets",
+  "/mijn-werk",
   "/afgerond",
 ]);
 

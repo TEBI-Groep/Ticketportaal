@@ -110,6 +110,7 @@ export async function createTicketAction(
     revalidatePath("/werkvoorraad");
     revalidatePath("/spoed");
     revalidatePath("/mijn-tickets");
+    revalidatePath("/mijn-werk");
     revalidatePath(`/ticket/${data.id}`);
     return { ok: true, id: data.id };
   } catch (err) {
@@ -187,6 +188,7 @@ export async function updateTicketItAction(
     revalidatePath("/werkvoorraad");
     revalidatePath("/spoed");
     revalidatePath("/mijn-tickets");
+    revalidatePath("/mijn-werk");
     revalidatePath("/afgerond");
     return { ok: true };
   } catch (err) {

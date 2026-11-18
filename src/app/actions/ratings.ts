@@ -81,5 +81,6 @@ function revalidateRatingPaths(ticketId: string) {
   revalidatePath("/werkvoorraad");
   revalidatePath("/spoed");
   revalidatePath("/mijn-tickets");
+  revalidatePath("/mijn-werk");
   revalidatePath("/afgerond");
 }

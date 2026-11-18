@@ -27,6 +27,7 @@ const NAV_ITEMS = [
 
 /** IT-only destinations (shown when the signed-in user is uitvoerder). */
 const IT_NAV_ITEMS = [
+  { href: "/mijn-werk", label: "Mijn werk", short: "Eigen" },
   { href: "/gebruikers", label: "Gebruikers", short: "Users" },
 ] as const;
 

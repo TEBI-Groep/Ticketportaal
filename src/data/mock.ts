@@ -99,7 +99,8 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "belangrijk",
     melderId: "u-2",
     melderNaam: "Mark Jansen",
-    eigenaarNaam: "IT · Alex",
+    eigenaarId: "u-5",
+    eigenaarNaam: "Noor Smits",
     streefdatum: "2026-12-01",
     omvang: "M",
     beoordelingen: [
@@ -154,7 +155,8 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "voorrang",
     melderId: "u-1",
     melderNaam: "Sara de Vries",
-    eigenaarNaam: "IT · Jordan",
+    eigenaarId: "u-1",
+    eigenaarNaam: "Sara de Vries",
     streefdatum: "2026-11-28",
     omvang: "L",
     beoordelingen: [
@@ -226,7 +228,8 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "spoed",
     melderId: "u-5",
     melderNaam: "Noor Smits",
-    eigenaarNaam: "IT · Alex",
+    eigenaarId: "u-1",
+    eigenaarNaam: "Sara de Vries",
     omvang: "S",
     beoordelingen: [],
     createdAt: "2026-11-16",
@@ -264,7 +267,8 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "voorrang",
     melderId: "u-1",
     melderNaam: "Sara de Vries",
-    eigenaarNaam: "IT · Jordan",
+    eigenaarId: "u-1",
+    eigenaarNaam: "Sara de Vries",
     omvang: "M",
     beoordelingen: [],
     createdAt: "2026-09-18",
@@ -284,7 +288,8 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "spoed",
     melderId: "u-3",
     melderNaam: "Lisa Bakker",
-    eigenaarNaam: "IT · Alex",
+    eigenaarId: "u-5",
+    eigenaarNaam: "Noor Smits",
     omvang: "S",
     beoordelingen: [],
     createdAt: "2026-08-12",
@@ -305,7 +310,8 @@ export const MOCK_TICKETS: Ticket[] = [
     prioriteit: "normaal",
     melderId: "u-4",
     melderNaam: "Tom Vermeer",
-    eigenaarNaam: "IT · Jordan",
+    eigenaarId: "u-1",
+    eigenaarNaam: "Sara de Vries",
     omvang: "S",
     beoordelingen: [
       r("u-4", "Tom Vermeer", "Sales", 4),
@@ -378,14 +384,23 @@ export function getSpoedTickets(): Ticket[] {
   ).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-/** Open operational tickets outside Ranglijst and Spoed. */
-export function getWerkvoorraadTickets(): Ticket[] {
+/**
+ * Open operational tickets outside Ranglijst and Spoed.
+ * Non-uitvoerders only see tickets they created (`melderId`).
+ */
+export function getWerkvoorraadTickets(options?: {
+  userId?: string;
+  alleenEigen?: boolean;
+}): Ticket[] {
+  const alleenEigen = options?.alleenEigen ?? false;
+  const userId = options?.userId;
   return MOCK_TICKETS.filter(
     (t) =>
       t.status !== "afgerond" &&
       t.status !== "afgewezen" &&
       t.prioriteit !== "spoed" &&
-      !isRanglijstKandidaat(t),
+      !isRanglijstKandidaat(t) &&
+      (!alleenEigen || (userId != null && t.melderId === userId)),
   ).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
@@ -394,6 +409,16 @@ export function getMijnTickets(userId: string = MOCK_USER.id): Ticket[] {
   return MOCK_TICKETS.filter(
     (t) =>
       t.melderId === userId &&
+      t.status !== "afgerond" &&
+      t.status !== "afgewezen",
+  ).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+/** Open tickets where this user is Eigenaar (IT). */
+export function getTicketsByEigenaar(userId: string = MOCK_USER.id): Ticket[] {
+  return MOCK_TICKETS.filter(
+    (t) =>
+      t.eigenaarId === userId &&
       t.status !== "afgerond" &&
       t.status !== "afgewezen",
   ).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
