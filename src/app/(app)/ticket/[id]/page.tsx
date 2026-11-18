@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { BackLink } from "@/components/BackLink";
 import { CommentThread } from "@/components/CommentThread";
 import { ItNotes } from "@/components/ItNotes";
+import { ItTicketEditor } from "@/components/ItTicketEditor";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
 import { getCurrentUser } from "@/data/auth";
@@ -12,6 +13,7 @@ import {
   getItNotesForTicket,
   getTicketById,
 } from "@/data/tickets";
+import { listUitvoerders } from "@/data/users";
 import {
   IMPACT_LABEL,
   TYPE_LABEL,
@@ -55,9 +57,11 @@ async function TicketDetailContent({
   const avg = ratingGemiddelde(ticket);
   const count = ratingAantal(ticket);
   const mine = mijnRating(ticket, user.id);
-  const [comments, itNotes] = await Promise.all([
+  const isIt = user.rol === "uitvoerder";
+  const [comments, itNotes, uitvoerders] = await Promise.all([
     getCommentsForTicket(ticket.id),
     getItNotesForTicket(ticket.id),
+    isIt ? listUitvoerders() : Promise.resolve([]),
   ]);
 
   return (
@@ -147,33 +151,52 @@ async function TicketDetailContent({
 
         <aside className="detail-panel" aria-label="IT-gegevens">
           <h2>IT-paneel</h2>
-          <p className="form-hint" style={{ marginBottom: "1rem" }}>
-            IT-velden en interne notities zijn voor uitvoerders.
-          </p>
-          <dl className="kv-grid">
-            <div className="kv">
-              <dt>Eigenaar</dt>
-              <dd>{ticket.eigenaarNaam ?? "Nog niet geclaimd"}</dd>
-            </div>
-            <div className="kv">
-              <dt>Streefdatum</dt>
-              <dd>{ticket.streefdatum ? formatDate(ticket.streefdatum) : "—"}</dd>
-            </div>
-            <div className="kv">
-              <dt>Omvang</dt>
-              <dd>{ticket.omvang ?? "—"}</dd>
-            </div>
-            <div className="kv">
-              <dt>Laatst bijgewerkt</dt>
-              <dd>{formatDate(ticket.updatedAt)}</dd>
-            </div>
-          </dl>
-
-          <ItNotes
-            ticketId={ticket.id}
-            initialNotes={itNotes}
-            viewerRol={user.rol}
-          />
+          {isIt ? (
+            <>
+              <p className="form-hint" style={{ marginBottom: "1rem" }}>
+                Status, prioriteit, eigenaar en overige IT-velden bewerken.
+              </p>
+              <ItTicketEditor ticket={ticket} uitvoerders={uitvoerders} />
+              <div style={{ marginTop: "1.5rem" }}>
+                <ItNotes
+                  ticketId={ticket.id}
+                  initialNotes={itNotes}
+                  viewerRol={user.rol}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="form-hint" style={{ marginBottom: "1rem" }}>
+                IT-velden en interne notities zijn voor uitvoerders.
+              </p>
+              <dl className="kv-grid">
+                <div className="kv">
+                  <dt>Eigenaar</dt>
+                  <dd>{ticket.eigenaarNaam ?? "Nog niet geclaimd"}</dd>
+                </div>
+                <div className="kv">
+                  <dt>Streefdatum</dt>
+                  <dd>
+                    {ticket.streefdatum ? formatDate(ticket.streefdatum) : "—"}
+                  </dd>
+                </div>
+                <div className="kv">
+                  <dt>Omvang</dt>
+                  <dd>{ticket.omvang ?? "—"}</dd>
+                </div>
+                <div className="kv">
+                  <dt>Laatst bijgewerkt</dt>
+                  <dd>{formatDate(ticket.updatedAt)}</dd>
+                </div>
+              </dl>
+              <ItNotes
+                ticketId={ticket.id}
+                initialNotes={itNotes}
+                viewerRol={user.rol}
+              />
+            </>
+          )}
         </aside>
       </div>
     </>

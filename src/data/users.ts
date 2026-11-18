@@ -5,6 +5,11 @@ import type { User, UserRole } from "@/lib/types";
 import { getUsers as mockGetUsers } from "@/data/mock";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export async function listUitvoerders(): Promise<User[]> {
+  const users = await listUsers();
+  return users.filter((u) => u.rol === "uitvoerder" && u.actief);
+}
+
 export async function listUsers(): Promise<User[]> {
   if (!isSupabaseConfigured()) return mockGetUsers();
   try {
