@@ -12,13 +12,23 @@ export function getSupabaseAnonKey(): string | undefined {
   );
 }
 
+/**
+ * Server-only privileged key for Auth admin (create users).
+ * Canonical name: `supabase_service_role_key`.
+ * Cursor’s secrets UI only accepts UPPERCASE names, so published apps may
+ * inject `SUPABASE_SERVICE_ROLE_KEY` — we accept both.
+ */
 export function getSupabaseServiceRoleKey(): string | undefined {
-  // Cursor app secrets require lowercase names; keep uppercase for local/Vercel.
   return (
     process.env.supabase_service_role_key?.trim() ||
     process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
     undefined
   );
+}
+
+/** True when a service-role key is present (never logs the value). */
+export function hasSupabaseServiceRoleKey(): boolean {
+  return Boolean(getSupabaseServiceRoleKey());
 }
 
 export function isSupabaseConfigured(): boolean {

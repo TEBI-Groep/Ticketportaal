@@ -22,7 +22,7 @@ Zonder env-keys valt de app terug op lokale mockdata (shell-demo).
 |-----------|----------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Project-URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser + server (RLS) |
-| `supabase_service_role_key` | Server-only: Auth admin (gebruikers aanmaken). Uppercase `SUPABASE_SERVICE_ROLE_KEY` also works locally/Vercel. |
+| `supabase_service_role_key` | Server-only: Auth admin (gebruikers aanmaken). Cursor secrets must be named `SUPABASE_SERVICE_ROLE_KEY` (uppercase); the app reads both. |
 
 ## Scripts
 
