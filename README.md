@@ -31,3 +31,8 @@ Open [http://localhost:3000](http://localhost:3000). Login accepteert elke niet-
 - `/ticket/[id]` — detail
 
 Planningdocs staan in `docs/`.
+
+## Database (Supabase)
+
+Postgres schema + RLS staat in `supabase/migrations/` (project `rlnzhgkdaoewqiilnaaa`, eu-west-1).  
+Kopieer `.env.example` → `.env.local` en vul de keys uit het Supabase-dashboard.
