@@ -23,6 +23,7 @@ async function MijnTicketsContent() {
 
       <FilteredTicketList
         tickets={tickets}
+        filterDims={["systeem", "status", "type", "prioriteit", "afdeling"]}
         searchPlaceholder="Zoek in jouw tickets…"
         emptyMessage="Je hebt geen openstaande tickets."
       />

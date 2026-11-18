@@ -22,6 +22,7 @@ async function AfgerondContent() {
 
       <FilteredTicketList
         tickets={tickets}
+        filterDims={["status", "systeem", "type", "afdeling"]}
         searchPlaceholder="Zoek in opgeloste tickets…"
         searchLabel="Zoeken in afgeronde tickets"
         emptyMessage="Nog geen afgeronde tickets."

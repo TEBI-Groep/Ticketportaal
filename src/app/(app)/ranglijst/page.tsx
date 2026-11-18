@@ -29,6 +29,7 @@ async function RanglijstContent() {
         showRank
         showVote
         currentUserId={user.id}
+        filterDims={["status", "type", "afdeling"]}
         searchPlaceholder="Zoek in de ranglijst…"
         emptyMessage="Nog geen NetSuite-wensen. Maak de eerste aan."
       />

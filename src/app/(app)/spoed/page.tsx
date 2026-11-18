@@ -25,6 +25,7 @@ async function SpoedContent() {
 
       <FilteredTicketList
         tickets={tickets}
+        filterDims={["systeem", "status", "type", "afdeling"]}
         searchPlaceholder="Zoek in spoedtickets…"
         emptyMessage="Geen spoedtickets — mooi."
         emptyCta="Storing melden"

@@ -29,6 +29,7 @@ async function WerkvoorraadContent() {
 
       <FilteredTicketList
         tickets={tickets}
+        filterDims={["systeem", "status", "type", "prioriteit", "afdeling"]}
         searchPlaceholder="Zoek in de werkvoorraad…"
         emptyMessage={
           isIt

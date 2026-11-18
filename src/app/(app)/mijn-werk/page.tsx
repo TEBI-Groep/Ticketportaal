@@ -39,6 +39,7 @@ async function MijnWerkContent() {
 
       <FilteredTicketList
         tickets={tickets}
+        filterDims={["systeem", "status", "type", "prioriteit", "afdeling"]}
         searchPlaceholder="Zoek in jouw werk…"
         emptyMessage="Je bent nog nergens Eigenaar van."
         emptyCta=""
