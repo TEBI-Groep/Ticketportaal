@@ -139,6 +139,7 @@ async function TicketDetailContent({
                 plek op de ranglijst (advies aan IT).
               </p>
               <StarRating
+                ticketId={ticket.id}
                 average={avg}
                 count={count}
                 myRating={mine}
