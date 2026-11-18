@@ -1,8 +1,18 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { loginAction } from "@/app/actions/auth";
 import styles from "./login.module.css";
+
+function LoginSubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" className="btn btn-primary" disabled={pending}>
+      {pending ? "Bezig…" : "Inloggen"}
+    </button>
+  );
+}
 
 /**
  * Login is brand-first. Auth runs on the server so SUPABASE_URL /
@@ -10,31 +20,15 @@ import styles from "./login.module.css";
  */
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  // Soft navigation can restore this page from cache with loading=true
-  // after a successful login redirect — reset on every mount.
-  useEffect(() => {
-    setLoading(false);
-  }, []);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submit(formData: FormData) {
     setError(null);
-
-    const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") ?? "");
-    const password = String(form.get("password") ?? "");
-
-    setLoading(true);
-    try {
-      const result = await loginAction(email, password);
-      // redirect() throws on success; errors return here
-      if (result && !result.ok) {
-        setError(result.error);
-      }
-    } finally {
-      setLoading(false);
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
+    const result = await loginAction(email, password);
+    // redirect() throws on success; errors return here
+    if (result && !result.ok) {
+      setError(result.error);
     }
   }
 
@@ -49,7 +43,7 @@ export default function LoginPage() {
           </p>
         </header>
 
-        <form className={styles.form} onSubmit={handleSubmit} noValidate>
+        <form className={styles.form} action={submit} noValidate>
           <div className="form-field">
             <label htmlFor="email">E-mail</label>
             <input
@@ -78,9 +72,7 @@ export default function LoginPage() {
 
           {error ? <p className={styles.error}>{error}</p> : null}
 
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Bezig…" : "Inloggen"}
-          </button>
+          <LoginSubmitButton />
         </form>
 
         <p className={styles.help}>
