@@ -4,7 +4,6 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
-  useOptimistic,
   useRef,
   useState,
   useTransition,
@@ -35,15 +34,10 @@ interface StarRatingProps {
 
 const SCORES: StarScore[] = [1, 2, 3, 4, 5];
 
-type RatingView = {
-  mine: StarScore | null;
-  average: number;
-  count: number;
-};
-
 /**
  * 1–5 star rating: average + count; click count for who-voted panel.
  * Interactive mode upserts/deletes the signed-in user’s rating.
+ * Parents should pass a `key` that includes myRating/count so a refresh remounts.
  */
 export function StarRating({
   ticketId,
@@ -59,10 +53,9 @@ export function StarRating({
   const [hover, setHover] = useState<StarScore | null>(null);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useOptimistic<RatingView>(
-    { mine: myRating, average, count },
-    (_current, next: RatingView) => next,
-  );
+  const [mine, setMine] = useState(myRating);
+  const [avg, setAvg] = useState(average);
+  const [cnt, setCnt] = useState(count);
   const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(
     null,
   );
@@ -70,7 +63,7 @@ export function StarRating({
   const wrapRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const displayScore = hover ?? view.mine;
+  const displayScore = hover ?? mine;
 
   const sorted = [...beoordelingen].sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
@@ -134,39 +127,38 @@ export function StarRating({
     if (!interactive || !ticketId || pending) return;
     setError(null);
 
-    const removing = view.mine === score;
-    let next: RatingView;
-    if (removing && view.mine !== null) {
-      const nextCount = Math.max(0, view.count - 1);
-      const sum = view.average * view.count - view.mine;
-      next = {
-        mine: null,
-        count: nextCount,
-        average: nextCount > 0 ? sum / nextCount : 0,
-      };
-    } else if (view.mine !== null) {
-      const sum = view.average * view.count - view.mine + score;
-      next = {
-        mine: score,
-        count: view.count,
-        average: view.count > 0 ? sum / view.count : score,
-      };
+    const previousMine = mine;
+    const previousAvg = avg;
+    const previousCnt = cnt;
+    const removing = previousMine === score;
+
+    if (removing && previousMine !== null) {
+      const nextCount = Math.max(0, previousCnt - 1);
+      const sum = previousAvg * previousCnt - previousMine;
+      setMine(null);
+      setCnt(nextCount);
+      setAvg(nextCount > 0 ? sum / nextCount : 0);
+    } else if (previousMine !== null) {
+      const sum = previousAvg * previousCnt - previousMine + score;
+      setMine(score);
+      setAvg(previousCnt > 0 ? sum / previousCnt : score);
     } else {
-      const nextCount = view.count + 1;
-      next = {
-        mine: score,
-        count: nextCount,
-        average: (view.average * view.count + score) / nextCount,
-      };
+      const nextCount = previousCnt + 1;
+      setMine(score);
+      setCnt(nextCount);
+      setAvg((previousAvg * previousCnt + score) / nextCount);
     }
 
     startTransition(async () => {
-      setView(next);
       const result = await rateTicketAction(ticketId, score);
       if (!result.ok) {
+        setMine(previousMine);
+        setAvg(previousAvg);
+        setCnt(previousCnt);
         setError(result.error);
         return;
       }
+      setMine(result.myRating);
       router.refresh();
     });
   }
@@ -185,7 +177,7 @@ export function StarRating({
             <header className={styles.panelHeader}>
               <strong>Beoordelingen</strong>
               <span>
-                gem. {formatRating(view.average)} · {view.count}
+                gem. {formatRating(avg)} · {cnt}
               </span>
             </header>
             <ul className={styles.panelList}>
@@ -224,14 +216,14 @@ export function StarRating({
         aria-label={
           interactive
             ? "Beoordeel met 1 tot 5 sterren"
-            : `Gemiddelde ${formatRating(view.average)} van 5 (${view.count} beoordelingen)`
+            : `Gemiddelde ${formatRating(avg)} van 5 (${cnt} beoordelingen)`
         }
       >
         {SCORES.map((score) => {
           const filled =
             displayScore !== null
               ? score <= displayScore
-              : view.average > 0 && score <= Math.round(view.average);
+              : avg > 0 && score <= Math.round(avg);
 
           return (
             <button
@@ -240,7 +232,7 @@ export function StarRating({
               className={`${styles.star} ${filled ? styles.filled : ""}`}
               disabled={!interactive || pending}
               aria-label={`${score} ster${score === 1 ? "" : "ren"}`}
-              aria-checked={interactive ? view.mine === score : undefined}
+              aria-checked={interactive ? mine === score : undefined}
               role={interactive ? "radio" : undefined}
               onMouseEnter={() => interactive && setHover(score)}
               onFocus={() => interactive && setHover(score)}
@@ -257,8 +249,8 @@ export function StarRating({
       </div>
 
       <p className={styles.meta}>
-        <span className={styles.avg}>{formatRating(view.average)}</span>
-        {view.count === 0 ? (
+        <span className={styles.avg}>{formatRating(avg)}</span>
+        {cnt === 0 ? (
           <span className={styles.count}>nog geen beoordelingen</span>
         ) : (
           <button
@@ -273,12 +265,10 @@ export function StarRating({
               setOpen((v) => !v);
             }}
           >
-            {view.count} beoordeling{view.count === 1 ? "" : "en"}
+            {cnt} beoordeling{cnt === 1 ? "" : "en"}
           </button>
         )}
-        {view.mine ? (
-          <span className={styles.mine}>Jij: {view.mine}★</span>
-        ) : null}
+        {mine ? <span className={styles.mine}>Jij: {mine}★</span> : null}
       </p>
 
       {error ? (
