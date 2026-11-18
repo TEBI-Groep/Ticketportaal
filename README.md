@@ -29,5 +29,6 @@ Open [http://localhost:3000](http://localhost:3000). Login accepteert elke niet-
 - `/afgerond` — gesloten tickets
 - `/ticket/nieuw` — aanmaakformulier
 - `/ticket/[id]` — detail
+- `/gebruikers` — IT: accounts aanmaken/bewerken (alleen uitvoerder)
 
 Planningdocs staan in `docs/`.
