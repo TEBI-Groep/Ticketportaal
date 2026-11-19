@@ -16,20 +16,29 @@ function LogoutButton() {
   );
 }
 
-/** Primary destinations from the wireframe IA. */
-const NAV_ITEMS = [
+/** Destinations shared by everyone. */
+const PUBLIC_NAV_ITEMS = [
   { href: "/ranglijst", label: "Ranglijst", short: "Rang" },
-  { href: "/werkvoorraad", label: "Werkvoorraad", short: "Werk" },
   { href: "/spoed", label: "Spoed", short: "Spoed" },
   { href: "/mijn-tickets", label: "Mijn tickets", short: "Mijn" },
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
 ] as const;
 
-/** IT-only destinations (shown when the signed-in user is uitvoerder). */
+/**
+ * IT-only destinations. Werkvoorraad sits after Ranglijst for uitvoerders
+ * (operational queue); non-IT users use Mijn tickets instead.
+ */
 const IT_NAV_ITEMS = [
+  { href: "/werkvoorraad", label: "Werkvoorraad", short: "Werk" },
   { href: "/mijn-werk", label: "Mijn werk", short: "Eigen" },
   { href: "/gebruikers", label: "Gebruikers", short: "Users" },
 ] as const;
+
+function navForRole(isIt: boolean) {
+  if (!isIt) return [...PUBLIC_NAV_ITEMS];
+  const [ranglijst, ...rest] = PUBLIC_NAV_ITEMS;
+  return [ranglijst, ...IT_NAV_ITEMS, ...rest];
+}
 
 function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -51,7 +60,7 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const isIt = user.rol === "uitvoerder";
-  const desktopItems = isIt ? [...NAV_ITEMS, ...IT_NAV_ITEMS] : [...NAV_ITEMS];
+  const desktopItems = navForRole(isIt);
 
   return (
     <div className={styles.shell}>

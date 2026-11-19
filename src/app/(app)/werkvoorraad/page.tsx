@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FilteredTicketList } from "@/components/FilteredTicketList";
-import { requireUser } from "@/data/auth";
+import { requireUitvoerder } from "@/data/auth";
 import { getWerkvoorraadTickets } from "@/data/tickets";
 
 export const metadata: Metadata = {
@@ -9,21 +9,16 @@ export const metadata: Metadata = {
 };
 
 async function WerkvoorraadContent() {
-  const user = await requireUser();
-  const isIt = user.rol === "uitvoerder";
-  const tickets = await getWerkvoorraadTickets({
-    userId: user.id,
-    rol: user.rol,
-  });
+  await requireUitvoerder();
+  const tickets = await getWerkvoorraadTickets();
 
   return (
     <>
       <header className="page-header">
         <h1>Werkvoorraad</h1>
         <p>
-          {isIt
-            ? "Open storingen, vragen en overige verzoeken — alles wat niet op de openbare NetSuite-ranglijst hoort. Spoed blijft een aparte lijst."
-            : "Jouw open storingen, vragen en overige verzoeken (niet op de ranglijst). Spoed blijft een aparte lijst."}
+          Open storingen, vragen en overige verzoeken — alles wat niet op de
+          openbare NetSuite-ranglijst hoort. Spoed blijft een aparte lijst.
         </p>
       </header>
 
@@ -31,18 +26,14 @@ async function WerkvoorraadContent() {
         tickets={tickets}
         filterDims={["systeem", "status", "type", "prioriteit", "afdeling"]}
         searchPlaceholder="Zoek in de werkvoorraad…"
-        emptyMessage={
-          isIt
-            ? "Geen open tickets in de werkvoorraad."
-            : "Je hebt geen open tickets in de werkvoorraad."
-        }
+        emptyMessage="Geen open tickets in de werkvoorraad."
         emptyCta="Ticket aanmaken"
       />
     </>
   );
 }
 
-/** Operational open tickets outside Ranglijst and Spoed. */
+/** IT-only: operational open tickets outside Ranglijst and Spoed. */
 export default function WerkvoorraadPage() {
   return (
     <div className="page">
