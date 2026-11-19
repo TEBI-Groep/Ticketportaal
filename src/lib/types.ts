@@ -56,6 +56,24 @@ export interface ItNote {
   createdAt: string;
 }
 
+export type AttachmentKind = "image" | "document" | "other";
+
+/** File attached to a ticket (screenshot, PDF, …). */
+export interface TicketAttachment {
+  id: string;
+  ticketId: string;
+  uploadedBy: string;
+  uploaderNaam: string;
+  storagePath: string;
+  fileName: string;
+  mimeType: string | null;
+  byteSize: number | null;
+  kind: AttachmentKind;
+  createdAt: string;
+  /** Short-lived signed URL for preview/download (set when listing). */
+  url?: string;
+}
+
 export interface Ticket {
   id: string;
   ticketnummer: string;

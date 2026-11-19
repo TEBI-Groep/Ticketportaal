@@ -7,7 +7,9 @@ import { ItNotes } from "@/components/ItNotes";
 import { ItTicketEditor } from "@/components/ItTicketEditor";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
+import { TicketAttachments } from "@/components/TicketAttachments";
 import { requireUser } from "@/data/auth";
+import { getAttachmentsForTicket } from "@/data/attachments";
 import {
   getCommentsForTicket,
   getItNotesForTicket,
@@ -58,9 +60,10 @@ async function TicketDetailContent({
   const count = ratingAantal(ticket);
   const mine = mijnRating(ticket, user.id);
   const isIt = user.rol === "uitvoerder";
-  const [comments, itNotes, uitvoerders] = await Promise.all([
+  const [comments, itNotes, attachments, uitvoerders] = await Promise.all([
     getCommentsForTicket(ticket.id),
     getItNotesForTicket(ticket.id),
+    getAttachmentsForTicket(ticket.id),
     isIt ? listUitvoerders() : Promise.resolve([]),
   ]);
 
@@ -128,6 +131,13 @@ async function TicketDetailContent({
               <p style={{ color: "var(--ink-soft)" }}>{ticket.oplossingSamenvatting}</p>
             </>
           ) : null}
+
+          <TicketAttachments
+            ticketId={ticket.id}
+            initialAttachments={attachments}
+            currentUserId={user.id}
+            canDeleteAny={isIt}
+          />
 
           <CommentThread ticketId={ticket.id} initialComments={comments} />
 
