@@ -39,7 +39,8 @@ export async function uploadAttachmentAction(
   if (!ALLOWED_ATTACHMENT_MIME.has(mime)) {
     return {
       ok: false,
-      error: "Alleen afbeeldingen (JPG, PNG, GIF, WebP) of PDF zijn toegestaan.",
+      error:
+        "Alleen afbeeldingen (JPG, PNG, GIF, WebP, HEIC), PDF of Word zijn toegestaan.",
     };
   }
 

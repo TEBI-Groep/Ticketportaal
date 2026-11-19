@@ -142,9 +142,11 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
         >
           <option>NetSuite</option>
           <option>WMS</option>
-          <option>hardware</option>
+          <option>Hardware</option>
           <option>Outlook</option>
-          <option>overig</option>
+          <option>Overig</option>
+          <option>Artikelen</option>
+          <option>Transportplanning</option>
         </select>
       </div>
 

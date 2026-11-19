@@ -1,16 +1,24 @@
 /** Shared domain types for the Ticketportaal app. */
 
 export type TicketType = "storing" | "wijziging" | "vraag" | "idee";
-export type TicketSystem = "NetSuite" | "WMS" | "hardware" | "Outlook" | "overig";
+export type TicketSystem =
+  | "NetSuite"
+  | "WMS"
+  | "Hardware"
+  | "Outlook"
+  | "Overig"
+  | "Artikelen"
+  | "Transportplanning";
 export type TicketImpact = "stil" | "hinderlijk" | "wens";
 export type TicketStatus =
   | "nieuw"
   | "ingepland"
   | "in_behandeling"
   | "wacht_op_melder"
+  | "wacht_op_publicatie"
   | "afgerond"
   | "afgewezen";
-export type TicketPriority = "spoed" | "voorrang" | "belangrijk" | "normaal";
+export type TicketPriority = "spoed" | "hoog" | "gemiddeld" | "laag";
 export type TicketSize = "S" | "M" | "L";
 export type UserRole = "gebruiker" | "manager" | "uitvoerder";
 
