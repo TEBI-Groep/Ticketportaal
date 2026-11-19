@@ -16,28 +16,23 @@ function LogoutButton() {
   );
 }
 
-/** Destinations shared by everyone. */
-const PUBLIC_NAV_ITEMS = [
+type NavItem = { href: string; label: string; short: string };
+
+/** Same order as before; Werkvoorraad only for uitvoerders. */
+const NAV_ITEMS: Array<NavItem & { itOnly?: boolean }> = [
   { href: "/ranglijst", label: "Ranglijst", short: "Rang" },
+  { href: "/werkvoorraad", label: "Werkvoorraad", short: "Werk", itOnly: true },
   { href: "/spoed", label: "Spoed", short: "Spoed" },
   { href: "/mijn-tickets", label: "Mijn tickets", short: "Mijn" },
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
-] as const;
+  { href: "/mijn-werk", label: "Mijn werk", short: "Eigen", itOnly: true },
+  { href: "/gebruikers", label: "Gebruikers", short: "Users", itOnly: true },
+];
 
-/**
- * IT-only destinations. Werkvoorraad sits after Ranglijst for uitvoerders
- * (operational queue); non-IT users use Mijn tickets instead.
- */
-const IT_NAV_ITEMS = [
-  { href: "/werkvoorraad", label: "Werkvoorraad", short: "Werk" },
-  { href: "/mijn-werk", label: "Mijn werk", short: "Eigen" },
-  { href: "/gebruikers", label: "Gebruikers", short: "Users" },
-] as const;
-
-function navForRole(isIt: boolean) {
-  if (!isIt) return [...PUBLIC_NAV_ITEMS];
-  const [ranglijst, ...rest] = PUBLIC_NAV_ITEMS;
-  return [ranglijst, ...IT_NAV_ITEMS, ...rest];
+function navForRole(isIt: boolean): NavItem[] {
+  return NAV_ITEMS.filter((item) => isIt || !item.itOnly).map(
+    ({ href, label, short }) => ({ href, label, short }),
+  );
 }
 
 function isActive(pathname: string, href: string): boolean {
