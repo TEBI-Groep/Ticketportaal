@@ -16,20 +16,24 @@ function LogoutButton() {
   );
 }
 
-/** Primary destinations from the wireframe IA. */
-const NAV_ITEMS = [
+type NavItem = { href: string; label: string; short: string };
+
+/** Same order as before; Werkvoorraad only for uitvoerders. */
+const NAV_ITEMS: Array<NavItem & { itOnly?: boolean }> = [
   { href: "/ranglijst", label: "Ranglijst", short: "Rang" },
-  { href: "/werkvoorraad", label: "Werkvoorraad", short: "Werk" },
+  { href: "/werkvoorraad", label: "Werkvoorraad", short: "Werk", itOnly: true },
   { href: "/spoed", label: "Spoed", short: "Spoed" },
   { href: "/mijn-tickets", label: "Mijn tickets", short: "Mijn" },
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
-] as const;
+  { href: "/mijn-werk", label: "Mijn werk", short: "Eigen", itOnly: true },
+  { href: "/gebruikers", label: "Gebruikers", short: "Users", itOnly: true },
+];
 
-/** IT-only destinations (shown when the signed-in user is uitvoerder). */
-const IT_NAV_ITEMS = [
-  { href: "/mijn-werk", label: "Mijn werk", short: "Eigen" },
-  { href: "/gebruikers", label: "Gebruikers", short: "Users" },
-] as const;
+function navForRole(isIt: boolean): NavItem[] {
+  return NAV_ITEMS.filter((item) => isIt || !item.itOnly).map(
+    ({ href, label, short }) => ({ href, label, short }),
+  );
+}
 
 function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -51,7 +55,7 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const isIt = user.rol === "uitvoerder";
-  const desktopItems = isIt ? [...NAV_ITEMS, ...IT_NAV_ITEMS] : [...NAV_ITEMS];
+  const desktopItems = navForRole(isIt);
 
   return (
     <div className={styles.shell}>

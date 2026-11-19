@@ -12,7 +12,6 @@ import {
   ratingAantal,
   ratingGemiddelde,
   type TicketSystem,
-  type UserRole,
 } from "@/lib/types";
 
 type TicketRow = {
@@ -196,27 +195,19 @@ export async function getSpoedTickets(): Promise<Ticket[]> {
 }
 
 /**
- * Open operational tickets: not Spoed, not on the public NetSuite Ranglijst
- * (storingen, vragen, Outlook/WMS/hardware, etc.).
- * Non-uitvoerders only see tickets they created.
+ * Open operational tickets for IT: not Spoed, not on the public NetSuite
+ * Ranglijst (storingen, vragen, Outlook/WMS/hardware, etc.).
+ * Page is uitvoerder-only; non-IT users use Mijn tickets instead.
  */
-export async function getWerkvoorraadTickets(options: {
-  userId: string;
-  rol: UserRole;
-}): Promise<Ticket[]> {
+export async function getWerkvoorraadTickets(): Promise<Ticket[]> {
   if (!isSupabaseConfigured()) return [];
-  const alleenEigen = options.rol !== "uitvoerder";
   try {
     const supabase = await createClient();
-    let query = supabase
+    const { data, error } = await supabase
       .from("tickets")
       .select(TICKET_SELECT)
       .neq("prioriteit", "spoed")
       .not("status", "in", '("afgerond","afgewezen")');
-    if (alleenEigen) {
-      query = query.eq("melder_id", options.userId);
-    }
-    const { data, error } = await query;
     if (error || !data) return [];
     return (data as unknown as TicketRow[])
       .map(mapTicket)
