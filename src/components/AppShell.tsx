@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { logoutAction } from "@/app/actions/auth";
+import { ROLE_LABEL } from "@/lib/labels";
 import type { User } from "@/lib/types";
 import styles from "./shell.module.css";
 
@@ -103,7 +104,7 @@ export function AppShell({
           <div className={styles.userMenu}>
             <div className={styles.userChip} aria-label="Ingelogde gebruiker">
               <strong>{user.naam}</strong>
-              <span>{user.rol}</span>
+              <span>{ROLE_LABEL[user.rol]}</span>
             </div>
             <form action={logoutAction}>
               <LogoutButton />
