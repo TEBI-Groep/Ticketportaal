@@ -2,15 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import type { TicketComment } from "@/lib/types";
-import { formatDate } from "@/lib/labels";
+import { formatDate, ROLE_LABEL } from "@/lib/labels";
 import { addCommentAction } from "@/app/actions/comments";
 import styles from "./CommentThread.module.css";
-
-const ROL_LABEL: Record<TicketComment["auteurRol"], string> = {
-  gebruiker: "Gebruiker",
-  manager: "Manager",
-  uitvoerder: "IT",
-};
 
 interface CommentThreadProps {
   ticketId: string;
@@ -66,7 +60,7 @@ export function CommentThread({
             <li key={comment.id} className={styles.item}>
               <div className={styles.meta}>
                 <span className={styles.author}>{comment.auteurNaam}</span>
-                <span className={styles.role}>{ROL_LABEL[comment.auteurRol]}</span>
+                <span className={styles.role}>{ROLE_LABEL[comment.auteurRol]}</span>
                 <time dateTime={comment.createdAt}>
                   {formatDate(comment.createdAt)}
                 </time>

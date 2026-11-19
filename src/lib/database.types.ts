@@ -13,18 +13,21 @@ export type DbTicketType = "storing" | "wijziging" | "vraag" | "idee";
 export type DbTicketSysteem =
   | "NetSuite"
   | "WMS"
-  | "hardware"
+  | "Hardware"
   | "Outlook"
-  | "overig";
+  | "Overig"
+  | "Artikelen"
+  | "Transportplanning";
 export type DbTicketImpact = "stil" | "hinderlijk" | "wens";
 export type DbTicketStatus =
   | "nieuw"
   | "ingepland"
   | "in_behandeling"
   | "wacht_op_melder"
+  | "wacht_op_publicatie"
   | "afgerond"
   | "afgewezen";
-export type DbTicketPriority = "spoed" | "voorrang" | "belangrijk" | "normaal";
+export type DbTicketPriority = "spoed" | "hoog" | "gemiddeld" | "laag";
 export type DbTicketSize = "S" | "M" | "L";
 
 export interface Database {

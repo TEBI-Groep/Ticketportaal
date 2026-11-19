@@ -13,6 +13,7 @@ export const STATUS_LABEL: Record<TicketStatus, string> = {
   ingepland: "Ingepland",
   in_behandeling: "In behandeling",
   wacht_op_melder: "Wacht op melder",
+  wacht_op_publicatie: "Wacht op publicatie",
   afgerond: "Afgerond",
   afgewezen: "Afgewezen",
 };
@@ -32,15 +33,15 @@ export const IMPACT_LABEL: Record<TicketImpact, string> = {
 
 export const PRIORITY_LABEL: Record<TicketPriority, string> = {
   spoed: "Spoed",
-  voorrang: "Voorrang",
-  belangrijk: "Belangrijk",
-  normaal: "Normaal",
+  hoog: "Hoog",
+  gemiddeld: "Gemiddeld",
+  laag: "Laag",
 };
 
 export const ROLE_LABEL: Record<UserRole, string> = {
-  gebruiker: "Gebruiker",
-  manager: "Manager",
-  uitvoerder: "Uitvoerder (IT)",
+  gebruiker: "Medewerker",
+  manager: "Leidinggevende",
+  uitvoerder: "Beheerder (IT)",
 };
 
 /** Format ISO date strings for Dutch UI (day month year). */

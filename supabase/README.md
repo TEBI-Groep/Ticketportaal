@@ -18,6 +18,7 @@ Applied in order under `migrations/`:
 | `…80600_security_guards` | Column guards for profiles/tickets |
 | `…80700_harden_functions` | search_path + revoke PUBLIC execute |
 | `…100000_ticket_attachments_storage` | Private Storage bucket + policies for bijlagen |
+| `…120000_domain_enums_departments` | Systeem/status/prioriteit enums, afdelingen, HEIC/Word MIME |
 
 ## Local / CI
 

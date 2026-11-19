@@ -8,7 +8,7 @@ export function StatusBadge({ status }: { status: TicketStatus }) {
       ? "badge-ok"
       : status === "afgewezen"
         ? "badge-warn"
-        : status === "wacht_op_melder"
+        : status === "wacht_op_melder" || status === "wacht_op_publicatie"
           ? "badge-warn"
           : "badge-brand";
 

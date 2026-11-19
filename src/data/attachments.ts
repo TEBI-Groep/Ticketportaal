@@ -10,15 +10,30 @@ export const ALLOWED_ATTACHMENT_MIME = new Set([
   "image/png",
   "image/gif",
   "image/webp",
+  "image/heic",
+  "image/heif",
   "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]);
 
 const SIGNED_URL_SECONDS = 60 * 60;
 
+/** HEIC/HEIF is allowed but not reliably previewable in browsers. */
+const NON_PREVIEWABLE_IMAGE = new Set(["image/heic", "image/heif"]);
+
 export function attachmentKindFromMime(mime: string | null | undefined): AttachmentKind {
   if (!mime) return "other";
+  if (NON_PREVIEWABLE_IMAGE.has(mime)) return "document";
   if (mime.startsWith("image/")) return "image";
-  if (mime === "application/pdf") return "document";
+  if (
+    mime === "application/pdf" ||
+    mime === "application/msword" ||
+    mime ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    return "document";
+  }
   return "other";
 }
 

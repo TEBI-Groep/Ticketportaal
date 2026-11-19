@@ -35,8 +35,8 @@ export interface UpdateTicketItInput {
 
 function defaultPrioriteit(impact: TicketImpact): TicketPriority {
   if (impact === "stil") return "spoed";
-  if (impact === "hinderlijk") return "belangrijk";
-  return "normaal";
+  if (impact === "hinderlijk") return "gemiddeld";
+  return "laag";
 }
 
 export async function createTicketAction(

@@ -12,7 +12,11 @@ values (
     'image/png',
     'image/gif',
     'image/webp',
-    'application/pdf'
+    'image/heic',
+    'image/heif',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   ]
 )
 on conflict (id) do update set
