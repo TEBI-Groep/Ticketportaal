@@ -17,6 +17,7 @@ Applied in order under `migrations/`:
 | `…80500_rls_policies` | RLS + grants (applied remotely as core + future) |
 | `…80600_security_guards` | Column guards for profiles/tickets |
 | `…80700_harden_functions` | search_path + revoke PUBLIC execute |
+| `…100000_ticket_attachments_storage` | Private Storage bucket + policies for bijlagen |
 
 ## Local / CI
 

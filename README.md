@@ -45,7 +45,7 @@ All ticket and user data comes from Supabase. On **Vercel**, set at least `NEXT_
 - `/mijn-werk` — IT: tickets waar jij Eigenaar van bent
 - `/afgerond` — gesloten tickets
 - `/ticket/nieuw` — aanmaakformulier + vergelijkbare-ticket suggesties
-- `/ticket/[id]` — detail + comments + IT-notities
+- `/ticket/[id]` — detail + bijlagen + comments + IT-notities
 - `/gebruikers` — IT: accounts aanmaken/bewerken (uitvoerder)
 
 ## Database

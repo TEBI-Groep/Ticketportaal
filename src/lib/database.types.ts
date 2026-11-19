@@ -125,6 +125,30 @@ export interface Database {
           updated_at: string;
         };
       };
+      ticket_attachments: {
+        Row: {
+          id: string;
+          ticket_id: string;
+          uploaded_by: string;
+          storage_path: string;
+          file_name: string;
+          mime_type: string | null;
+          byte_size: number | null;
+          kind: "image" | "document" | "other";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          ticket_id: string;
+          uploaded_by: string;
+          storage_path: string;
+          file_name: string;
+          mime_type?: string | null;
+          byte_size?: number | null;
+          kind?: "image" | "document" | "other";
+          created_at?: string;
+        };
+      };
     };
   };
 }
