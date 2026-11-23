@@ -6,9 +6,11 @@ import {
   FormEvent,
   useEffect,
   useEffectEvent,
+  useRef,
   useState,
   useTransition,
 } from "react";
+import { uploadAttachmentAction } from "@/app/actions/attachments";
 import { searchSimilarTicketsAction } from "@/app/actions/search";
 import { createTicketAction } from "@/app/actions/tickets";
 import { SimilarTickets } from "@/components/SimilarTickets";
@@ -16,6 +18,8 @@ import type { Ticket, TicketImpact, TicketSystem, TicketType } from "@/lib/types
 
 interface NieuwTicketFormProps {
   departments: string[];
+  /** Pre-check the creator's own department when present. */
+  defaultAfdeling?: string | null;
   canCreate: boolean;
 }
 
@@ -23,7 +27,11 @@ interface NieuwTicketFormProps {
  * Create-ticket form — persists via Supabase when the user may create.
  * Onderwerp triggers a similar-ticket search to reduce duplicates.
  */
-export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps) {
+export function NieuwTicketForm({
+  departments,
+  defaultAfdeling,
+  canCreate,
+}: NieuwTicketFormProps) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +39,7 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
   const [systeem, setSysteem] = useState<TicketSystem>("NetSuite");
   const [similar, setSimilar] = useState<Ticket[]>([]);
   const [searchPending, startSearch] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const runSimilarSearch = useEffectEvent(
     (query: string, system: TicketSystem) => {
@@ -64,6 +73,11 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
       .getAll("afdelingen")
       .map((v) => String(v))
       .filter((v) => v.length > 0);
+    const prive = form.get("prive") === "on";
+    const files = fileInputRef.current?.files
+      ? Array.from(fileInputRef.current.files)
+      : [];
+
     const result = await createTicketAction({
       type: String(form.get("type") ?? "wijziging") as TicketType,
       systeem: String(form.get("systeem") ?? "NetSuite") as TicketSystem,
@@ -71,12 +85,29 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
       omschrijving: String(form.get("omschrijving") ?? ""),
       afdelingen,
       impact: String(form.get("impact") ?? "hinderlijk") as TicketImpact,
+      prive,
     });
 
     if (!result.ok) {
       setError(result.error);
       setSubmitting(false);
       return;
+    }
+
+    // Optional bijlagen after the ticket exists (reuse detail upload path).
+    for (const file of files) {
+      const uploadData = new FormData();
+      uploadData.set("file", file);
+      const uploaded = await uploadAttachmentAction(result.id, uploadData);
+      if (!uploaded.ok) {
+        setError(
+          `Ticket is aangemaakt, maar bijlage "${file.name}" mislukte: ${uploaded.error}`,
+        );
+        setSubmitting(false);
+        router.push(`/ticket/${result.id}`);
+        router.refresh();
+        return;
+      }
     }
 
     router.push(`/ticket/${result.id}`);
@@ -97,7 +128,10 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
     );
   }
 
-  const defaultAfdeling = departments[0] ?? "";
+  const prechecked =
+    defaultAfdeling && departments.includes(defaultAfdeling)
+      ? defaultAfdeling
+      : null;
 
   return (
     <form className="form-stack" onSubmit={handleSubmit}>
@@ -190,6 +224,9 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
         </legend>
         <p className="form-hint" style={{ marginTop: 0 }}>
           Kies één of meer afdelingen die bij dit ticket horen.
+          {prechecked
+            ? ` Jouw afdeling (${prechecked}) staat standaard aan.`
+            : null}
         </p>
         <div
           style={{
@@ -212,7 +249,7 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
                 type="checkbox"
                 name="afdelingen"
                 value={afdeling}
-                defaultChecked={afdeling === defaultAfdeling}
+                defaultChecked={afdeling === prechecked}
               />
               {afdeling}
             </label>
@@ -235,10 +272,41 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
         </select>
       </div>
 
-      <p className="form-hint">
-        Bijlagen volgen later. Bij een match kun je beter stemmen of het
-        bestaande ticket openen.
-      </p>
+      <label
+        className="form-field"
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "0.5rem",
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="checkbox"
+          name="prive"
+          style={{ marginTop: "0.2rem" }}
+        />
+        <span>
+          <strong>Privé</strong>
+          <span className="form-hint" style={{ display: "block", margin: 0 }}>
+            Leidinggevenden zien dit ticket niet. Alleen jij (als melder) en IT.
+          </span>
+        </span>
+      </label>
+
+      <div className="form-field">
+        <label htmlFor="bijlagen">Bijlagen (optioneel)</label>
+        <input
+          id="bijlagen"
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.pdf,.doc,.docx,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        />
+        <p className="form-hint" style={{ marginBottom: 0 }}>
+          Max. 5 MB per bestand — JPG, PNG, GIF, WebP, HEIC, PDF of Word.
+        </p>
+      </div>
 
       {error ? (
         <p role="alert" style={{ color: "var(--danger, #b42318)" }}>

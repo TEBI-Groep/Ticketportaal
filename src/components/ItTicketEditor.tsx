@@ -43,6 +43,7 @@ export function ItTicketEditor({
   const [oplossing, setOplossing] = useState(ticket.oplossingSamenvatting ?? "");
   const [onderwerp, setOnderwerp] = useState(ticket.onderwerp);
   const [omschrijving, setOmschrijving] = useState(ticket.omschrijving);
+  const [prive, setPrive] = useState(ticket.prive);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -73,6 +74,7 @@ export function ItTicketEditor({
       oplossingSamenvatting: oplossing,
       onderwerp,
       omschrijving,
+      prive,
     });
 
     setSaving(false);
@@ -262,6 +264,30 @@ export function ItTicketEditor({
           placeholder="Korte samenvatting bij afronden…"
         />
       </div>
+
+      <label
+        className="form-field"
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "0.5rem",
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={prive}
+          onChange={(e) => setPrive(e.target.checked)}
+          style={{ marginTop: "0.2rem" }}
+        />
+        <span>
+          <strong>Privé</strong>
+          <span className="form-hint" style={{ display: "block", margin: 0 }}>
+            Leidinggevenden zien dit ticket niet. Alleen melder, IT en
+            eventuele eigenaar.
+          </span>
+        </span>
+      </label>
 
       {error ? (
         <p role="alert" style={{ color: "var(--danger, #b42318)", margin: 0 }}>

@@ -20,6 +20,8 @@ export interface CreateTicketInput {
   type: TicketType;
   systeem: TicketSystem;
   impact: TicketImpact;
+  /** Privé: hide from leidinggevenden (maps to vertrouwelijk). */
+  prive?: boolean;
 }
 
 export interface UpdateTicketItInput {
@@ -34,6 +36,8 @@ export interface UpdateTicketItInput {
   oplossingSamenvatting: string | null;
   onderwerp?: string;
   omschrijving?: string;
+  /** Privé: hide from leidinggevenden (maps to vertrouwelijk). */
+  prive: boolean;
 }
 
 function defaultPrioriteit(impact: TicketImpact): TicketPriority {
@@ -138,6 +142,7 @@ export async function createTicketAction(
         prioriteit: defaultPrioriteit(input.impact),
         melder_id: user.id,
         status: "nieuw",
+        vertrouwelijk: Boolean(input.prive),
       })
       .select("id")
       .single();
@@ -228,6 +233,7 @@ export async function updateTicketItAction(
       streefdatum: input.streefdatum || null,
       omvang: input.omvang,
       oplossing_samenvatting: input.oplossingSamenvatting?.trim() || null,
+      vertrouwelijk: Boolean(input.prive),
     };
 
     if (input.onderwerp !== undefined) {

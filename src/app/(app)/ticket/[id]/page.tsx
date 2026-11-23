@@ -73,7 +73,7 @@ async function TicketDetailContent({
     watching,
   ] = await Promise.all([
     getCommentsForTicket(ticket.id),
-    getItNotesForTicket(ticket.id),
+    isIt ? getItNotesForTicket(ticket.id) : Promise.resolve([]),
     getAttachmentsForTicket(ticket.id),
     isIt ? listUitvoerders() : Promise.resolve([]),
     isIt ? listUsers() : Promise.resolve([]),
@@ -98,7 +98,7 @@ async function TicketDetailContent({
         </Suspense>
       </p>
 
-      <div className="detail-grid split">
+      <div className={isIt ? "detail-grid split" : "detail-grid"}>
         <section className="detail-panel">
           <div className="detail-title-row">
             <h1>
@@ -114,6 +114,11 @@ async function TicketDetailContent({
             >
               <StatusBadge status={ticket.status} />
               <PriorityBadge priority={ticket.prioriteit} />
+              {ticket.prive ? (
+                <span className="badge" title="Alleen melder en IT">
+                  Privé
+                </span>
+              ) : null}
               <TicketWatchBell
                 ticketId={ticket.id}
                 ticketLabel={ticket.ticketnummer}
@@ -146,6 +151,28 @@ async function TicketDetailContent({
             <div className="kv">
               <dt>Aangemaakt</dt>
               <dd>{formatDate(ticket.createdAt)}</dd>
+            </div>
+            <div className="kv">
+              <dt>Eigenaar</dt>
+              <dd>{ticket.eigenaarNaam ?? "Nog niet geclaimd"}</dd>
+            </div>
+            <div className="kv">
+              <dt>Streefdatum</dt>
+              <dd>
+                {ticket.streefdatum ? formatDate(ticket.streefdatum) : "—"}
+              </dd>
+            </div>
+            <div className="kv">
+              <dt>Omvang</dt>
+              <dd>{ticket.omvang ?? "—"}</dd>
+            </div>
+            <div className="kv">
+              <dt>Laatst bijgewerkt</dt>
+              <dd>{formatDate(ticket.updatedAt)}</dd>
+            </div>
+            <div className="kv">
+              <dt>Privé</dt>
+              <dd>{ticket.prive ? "Ja" : "Nee"}</dd>
             </div>
           </dl>
 
@@ -190,66 +217,33 @@ async function TicketDetailContent({
           ) : null}
         </section>
 
-        <aside className="detail-panel" aria-label="IT-gegevens">
-          <h2>IT-paneel</h2>
-          {isIt ? (
-            <>
-              <p className="form-hint" style={{ marginBottom: "1rem" }}>
-                Status, prioriteit, eigenaar en overige IT-velden bewerken.
-              </p>
-              <ItTicketEditor
-                ticket={ticket}
-                uitvoerders={uitvoerders}
-                melders={activeMelders}
-                departments={departments}
-              />
-              <div style={{ marginTop: "1.5rem" }}>
-                <ItNotes
-                  ticketId={ticket.id}
-                  initialNotes={itNotes}
-                  viewerRol={user.rol}
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="form-hint" style={{ marginBottom: "1rem" }}>
-                IT-velden en interne notities zijn voor uitvoerders.
-              </p>
-              <dl className="kv-grid">
-                <div className="kv">
-                  <dt>Eigenaar</dt>
-                  <dd>{ticket.eigenaarNaam ?? "Nog niet geclaimd"}</dd>
-                </div>
-                <div className="kv">
-                  <dt>Streefdatum</dt>
-                  <dd>
-                    {ticket.streefdatum ? formatDate(ticket.streefdatum) : "—"}
-                  </dd>
-                </div>
-                <div className="kv">
-                  <dt>Omvang</dt>
-                  <dd>{ticket.omvang ?? "—"}</dd>
-                </div>
-                <div className="kv">
-                  <dt>Laatst bijgewerkt</dt>
-                  <dd>{formatDate(ticket.updatedAt)}</dd>
-                </div>
-              </dl>
+        {isIt ? (
+          <aside className="detail-panel" aria-label="IT-gegevens">
+            <h2>IT-paneel</h2>
+            <p className="form-hint" style={{ marginBottom: "1rem" }}>
+              Status, prioriteit, eigenaar en overige IT-velden bewerken.
+            </p>
+            <ItTicketEditor
+              ticket={ticket}
+              uitvoerders={uitvoerders}
+              melders={activeMelders}
+              departments={departments}
+            />
+            <div style={{ marginTop: "1.5rem" }}>
               <ItNotes
                 ticketId={ticket.id}
                 initialNotes={itNotes}
                 viewerRol={user.rol}
               />
-            </>
-          )}
-        </aside>
+            </div>
+          </aside>
+        ) : null}
       </div>
     </>
   );
 }
 
-/** Ticket detail — requester fields + IT panel + comments / notes. */
+/** Ticket detail — requester fields + IT panel (IT only) + comments. */
 export default function TicketDetailPage({ params }: PageProps) {
   return (
     <div className="page">
