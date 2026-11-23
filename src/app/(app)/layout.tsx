@@ -36,7 +36,11 @@ export default async function AppLayout({
     countOpenSpoedTickets(),
     isIt ? countNieuwRanglijstTickets() : Promise.resolve(0),
     isIt ? countNieuwWerkvoorraadTickets() : Promise.resolve(0),
-    countWachtOpMelderTickets(user.id),
+    countWachtOpMelderTickets({
+      id: user.id,
+      rol: user.rol,
+      afdelingId: user.afdelingId,
+    }),
   ]);
 
   return (

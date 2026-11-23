@@ -127,7 +127,7 @@ export function AppShell({
   nieuwRanglijstCount?: number;
   /** Werkvoorraad tickets with status nieuw — IT badge on Werkvoorraad. */
   nieuwWerkvoorraadCount?: number;
-  /** Tickets waiting on this user as melder — Mijn tickets badge. */
+  /** Wacht-op-melder count in Mijn tickets scope (own + afdeling for managers). */
   wachtOpMelderCount?: number;
   /** False when Supabase URL/anon key are missing on this environment. */
   supabaseConfigured?: boolean;
