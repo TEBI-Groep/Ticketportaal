@@ -235,12 +235,31 @@ export async function deleteUserAccount(
     };
   }
 
+  // Portal comments require user_id (comments_portal_needs_user). Anonymize
+  // those as system comments before clearing the author FK.
+  const portalComments = await admin
+    .from("comments")
+    .update({ user_id: null, source: "system" })
+    .eq("user_id", userId)
+    .eq("source", "portal");
+  if (portalComments.error) {
+    return { ok: false, error: portalComments.error.message };
+  }
+
+  const otherComments = await admin
+    .from("comments")
+    .update({ user_id: null })
+    .eq("user_id", userId)
+    .neq("source", "portal");
+  if (otherComments.error) {
+    return { ok: false, error: otherComments.error.message };
+  }
+
   const steps: Array<{ error: { message: string } | null }> = [
     await admin
       .from("tickets")
       .update({ eigenaar_id: null })
       .eq("eigenaar_id", userId),
-    await admin.from("comments").update({ user_id: null }).eq("user_id", userId),
     await admin
       .from("ticket_status_events")
       .update({ changed_by: null })
