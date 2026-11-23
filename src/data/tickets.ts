@@ -1,7 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
-import type { ItNote, Ticket, TicketComment, TicketRating } from "@/lib/types";
+import type {
+  ItNote,
+  Ticket,
+  TicketComment,
+  TicketRating,
+  UserRole,
+} from "@/lib/types";
 import {
   escapeIlikePattern,
   filterTicketsByQuery,
@@ -31,7 +37,9 @@ type TicketRow = {
   oplossing_samenvatting: string | null;
   created_at: string;
   updated_at: string;
-  departments: { naam: string } | null;
+  ticket_departments:
+    | Array<{ departments: { naam: string } | null }>
+    | null;
   melder: { id: string; naam: string } | null;
   eigenaar: { id: string; naam: string } | null;
   ratings: Array<{
@@ -49,12 +57,20 @@ function mapTicket(row: TicketRow): Ticket {
     score: r.score as TicketRating["score"],
   }));
 
+  const afdelingen = [
+    ...new Set(
+      (row.ticket_departments ?? [])
+        .map((td) => td.departments?.naam ?? "")
+        .filter((naam) => naam.length > 0),
+    ),
+  ].sort((a, b) => a.localeCompare(b, "nl"));
+
   return {
     id: row.id,
     ticketnummer: row.ticketnummer,
     onderwerp: row.onderwerp,
     omschrijving: row.omschrijving,
-    afdeling: row.departments?.naam ?? "",
+    afdelingen,
     type: row.type,
     systeem: row.systeem,
     impact: row.impact,
@@ -76,11 +92,25 @@ function mapTicket(row: TicketRow): Ticket {
 const TICKET_SELECT = `
   id, ticketnummer, onderwerp, omschrijving, type, systeem, impact, status, prioriteit,
   melder_id, eigenaar_id, streefdatum, omvang, oplossing_samenvatting, created_at, updated_at,
-  departments ( naam ),
+  ticket_departments ( departments ( naam ) ),
   melder:profiles!tickets_melder_id_fkey ( id, naam ),
   eigenaar:profiles!tickets_eigenaar_id_fkey ( id, naam ),
   ratings ( user_id, score, profiles ( naam, departments ( naam ) ) )
 `;
+
+function sortOpenTickets(tickets: Ticket[]): Ticket[] {
+  return [...tickets].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+function mergeTicketsById(lists: Ticket[][]): Ticket[] {
+  const byId = new Map<string, Ticket>();
+  for (const list of lists) {
+    for (const ticket of list) {
+      byId.set(ticket.id, ticket);
+    }
+  }
+  return sortOpenTickets([...byId.values()]);
+}
 
 export async function getTicketById(id: string): Promise<Ticket | undefined> {
   if (!isSupabaseConfigured()) return undefined;
@@ -218,19 +248,58 @@ export async function getWerkvoorraadTickets(): Promise<Ticket[]> {
   }
 }
 
-export async function getMijnTickets(userId: string): Promise<Ticket[]> {
+export type MijnTicketsUser = {
+  id: string;
+  rol: UserRole;
+  afdelingId?: string | null;
+};
+
+/**
+ * Open tickets for the current user:
+ * - iedereen: tickets where they are melder
+ * - leidinggevende: also all tickets that include their afdeling
+ */
+export async function getMijnTickets(user: MijnTicketsUser): Promise<Ticket[]> {
   if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase
+
+    const { data: ownData, error: ownError } = await supabase
       .from("tickets")
       .select(TICKET_SELECT)
-      .eq("melder_id", userId)
+      .eq("melder_id", user.id)
       .not("status", "in", '("afgerond","afgewezen")');
-    if (error || !data) return [];
-    return (data as unknown as TicketRow[])
-      .map(mapTicket)
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    if (ownError) return [];
+    const own = (ownData as unknown as TicketRow[] | null)?.map(mapTicket) ?? [];
+
+    if (user.rol !== "manager" || !user.afdelingId) {
+      return sortOpenTickets(own);
+    }
+
+    const { data: links, error: linkError } = await supabase
+      .from("ticket_departments")
+      .select("ticket_id")
+      .eq("department_id", user.afdelingId);
+    if (linkError || !links || links.length === 0) {
+      return sortOpenTickets(own);
+    }
+
+    const { data: deptData, error: deptError } = await supabase
+      .from("tickets")
+      .select(TICKET_SELECT)
+      .in(
+        "id",
+        links.map((l) => l.ticket_id),
+      )
+      .not("status", "in", '("afgerond","afgewezen")');
+    if (deptError || !deptData) {
+      return sortOpenTickets(own);
+    }
+
+    return mergeTicketsById([
+      own,
+      (deptData as unknown as TicketRow[]).map(mapTicket),
+    ]);
   } catch {
     return [];
   }
@@ -280,7 +349,9 @@ export async function getCommentsForTicket(
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("comments")
-      .select("id, ticket_id, user_id, body, created_at, profiles ( naam, rol )")
+      .select(
+        "id, ticket_id, user_id, body, created_at, profiles ( naam, rol )",
+      )
       .eq("ticket_id", ticketId)
       .order("created_at", { ascending: true });
     if (error || !data) return [];

@@ -87,7 +87,8 @@ export interface Ticket {
   ticketnummer: string;
   onderwerp: string;
   omschrijving: string;
-  afdeling: string;
+  /** One or more departments linked to this ticket. */
+  afdelingen: string[];
   type: TicketType;
   systeem: TicketSystem;
   impact: TicketImpact;

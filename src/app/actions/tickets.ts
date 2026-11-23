@@ -15,7 +15,7 @@ import type {
 export interface CreateTicketInput {
   onderwerp: string;
   omschrijving: string;
-  afdeling: string;
+  afdelingen: string[];
   type: TicketType;
   systeem: TicketSystem;
   impact: TicketImpact;
@@ -26,6 +26,8 @@ export interface UpdateTicketItInput {
   status: TicketStatus;
   prioriteit: TicketPriority;
   eigenaarId: string | null;
+  melderId: string;
+  afdelingen: string[];
   streefdatum: string | null;
   omvang: TicketSize | null;
   oplossingSamenvatting: string | null;
@@ -37,6 +39,51 @@ function defaultPrioriteit(impact: TicketImpact): TicketPriority {
   if (impact === "stil") return "spoed";
   if (impact === "hinderlijk") return "gemiddeld";
   return "laag";
+}
+
+function uniqueNames(names: string[]): string[] {
+  return [
+    ...new Set(
+      names.map((n) => n.trim()).filter((n) => n.length > 0),
+    ),
+  ];
+}
+
+async function resolveDepartmentIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  names: string[],
+): Promise<{ ok: true; ids: string[] } | { ok: false; error: string }> {
+  const unique = uniqueNames(names);
+  if (unique.length === 0) {
+    return { ok: false, error: "Kies minstens één afdeling." };
+  }
+
+  const { data: depts, error } = await supabase
+    .from("departments")
+    .select("id, naam")
+    .in("naam", unique);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  const byName = new Map((depts ?? []).map((d) => [d.naam, d.id]));
+  const missing = unique.filter((n) => !byName.has(n));
+  if (missing.length > 0) {
+    return { ok: false, error: `Onbekende afdeling: ${missing.join(", ")}.` };
+  }
+
+  return { ok: true, ids: unique.map((n) => byName.get(n)!) };
+}
+
+function revalidateTicketPaths(id: string) {
+  revalidatePath(`/ticket/${id}`);
+  revalidatePath("/ranglijst");
+  revalidatePath("/werkvoorraad");
+  revalidatePath("/spoed");
+  revalidatePath("/mijn-tickets");
+  revalidatePath("/mijn-werk");
+  revalidatePath("/afgerond");
 }
 
 export async function createTicketAction(
@@ -76,22 +123,14 @@ export async function createTicketAction(
       };
     }
 
-    const { data: dept } = await supabase
-      .from("departments")
-      .select("id")
-      .eq("naam", input.afdeling)
-      .maybeSingle();
-
-    if (!dept?.id) {
-      return { ok: false, error: "Onbekende afdeling." };
-    }
+    const depts = await resolveDepartmentIds(supabase, input.afdelingen);
+    if (!depts.ok) return depts;
 
     const { data, error } = await supabase
       .from("tickets")
       .insert({
         onderwerp,
         omschrijving,
-        afdeling_id: dept.id,
         type: input.type,
         systeem: input.systeem,
         impact: input.impact,
@@ -106,12 +145,19 @@ export async function createTicketAction(
       return { ok: false, error: error?.message ?? "Aanmaken mislukt." };
     }
 
-    revalidatePath("/ranglijst");
-    revalidatePath("/werkvoorraad");
-    revalidatePath("/spoed");
-    revalidatePath("/mijn-tickets");
-    revalidatePath("/mijn-werk");
-    revalidatePath(`/ticket/${data.id}`);
+    const { error: linkError } = await supabase.from("ticket_departments").insert(
+      depts.ids.map((department_id) => ({
+        ticket_id: data.id,
+        department_id,
+      })),
+    );
+
+    if (linkError) {
+      await supabase.from("tickets").delete().eq("id", data.id);
+      return { ok: false, error: linkError.message };
+    }
+
+    revalidateTicketPaths(data.id);
     return { ok: true, id: data.id };
   } catch (err) {
     return {
@@ -150,10 +196,27 @@ export async function updateTicketItAction(
       return { ok: false, error: "Alleen uitvoerders mogen tickets bewerken." };
     }
 
+    if (!input.melderId) {
+      return { ok: false, error: "Kies een melder." };
+    }
+
+    const depts = await resolveDepartmentIds(supabase, input.afdelingen);
+    if (!depts.ok) return depts;
+
+    const { data: melder } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", input.melderId)
+      .maybeSingle();
+    if (!melder?.id) {
+      return { ok: false, error: "Onbekende melder." };
+    }
+
     const patch: Record<string, unknown> = {
       status: input.status,
       prioriteit: input.prioriteit,
       eigenaar_id: input.eigenaarId,
+      melder_id: input.melderId,
       streefdatum: input.streefdatum || null,
       omvang: input.omvang,
       oplossing_samenvatting: input.oplossingSamenvatting?.trim() || null,
@@ -183,13 +246,27 @@ export async function updateTicketItAction(
       return { ok: false, error: error.message };
     }
 
-    revalidatePath(`/ticket/${input.id}`);
-    revalidatePath("/ranglijst");
-    revalidatePath("/werkvoorraad");
-    revalidatePath("/spoed");
-    revalidatePath("/mijn-tickets");
-    revalidatePath("/mijn-werk");
-    revalidatePath("/afgerond");
+    const { error: deleteError } = await supabase
+      .from("ticket_departments")
+      .delete()
+      .eq("ticket_id", input.id);
+    if (deleteError) {
+      return { ok: false, error: deleteError.message };
+    }
+
+    const { error: insertError } = await supabase
+      .from("ticket_departments")
+      .insert(
+        depts.ids.map((department_id) => ({
+          ticket_id: input.id,
+          department_id,
+        })),
+      );
+    if (insertError) {
+      return { ok: false, error: insertError.message };
+    }
+
+    revalidateTicketPaths(input.id);
     return { ok: true };
   } catch (err) {
     return {

@@ -19,6 +19,7 @@ Applied in order under `migrations/`:
 | `…80700_harden_functions` | search_path + revoke PUBLIC execute |
 | `…100000_ticket_attachments_storage` | Private Storage bucket + policies for bijlagen |
 | `…120000_domain_enums_departments` | Systeem/status/prioriteit enums, afdelingen, HEIC/Word MIME |
+| `…23120000_ticket_departments_manager_visibility` | Multi-afdeling op tickets + manager-afdeling zichtbaarheid |
 
 ## Local / CI
 

@@ -60,12 +60,16 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
     setSubmitting(true);
 
     const form = new FormData(event.currentTarget);
+    const afdelingen = form
+      .getAll("afdelingen")
+      .map((v) => String(v))
+      .filter((v) => v.length > 0);
     const result = await createTicketAction({
       type: String(form.get("type") ?? "wijziging") as TicketType,
       systeem: String(form.get("systeem") ?? "NetSuite") as TicketSystem,
       onderwerp: String(form.get("onderwerp") ?? ""),
       omschrijving: String(form.get("omschrijving") ?? ""),
-      afdeling: String(form.get("afdeling") ?? ""),
+      afdelingen,
       impact: String(form.get("impact") ?? "hinderlijk") as TicketImpact,
     });
 
@@ -180,22 +184,41 @@ export function NieuwTicketForm({ departments, canCreate }: NieuwTicketFormProps
         />
       </div>
 
-      <div className="form-field">
-        <label htmlFor="afdeling">Afdeling</label>
-        <select
-          id="afdeling"
-          name="afdeling"
-          className="select-input"
-          required
-          defaultValue={defaultAfdeling}
+      <fieldset className="form-field" style={{ border: 0, padding: 0 }}>
+        <legend style={{ fontWeight: 600, marginBottom: "0.35rem" }}>
+          Afdelingen
+        </legend>
+        <p className="form-hint" style={{ marginTop: 0 }}>
+          Kies één of meer afdelingen die bij dit ticket horen.
+        </p>
+        <div
+          style={{
+            display: "grid",
+            gap: "0.35rem",
+            gridTemplateColumns: "repeat(auto-fill, minmax(10rem, 1fr))",
+          }}
         >
           {departments.map((afdeling) => (
-            <option key={afdeling} value={afdeling}>
+            <label
+              key={afdeling}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                fontSize: "0.95rem",
+              }}
+            >
+              <input
+                type="checkbox"
+                name="afdelingen"
+                value={afdeling}
+                defaultChecked={afdeling === defaultAfdeling}
+              />
               {afdeling}
-            </option>
+            </label>
           ))}
-        </select>
-      </div>
+        </div>
+      </fieldset>
 
       <div className="form-field">
         <label htmlFor="impact">Impact</label>
