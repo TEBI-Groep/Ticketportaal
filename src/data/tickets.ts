@@ -227,6 +227,12 @@ export async function getSpoedTickets(): Promise<Ticket[]> {
   }
 }
 
+export type MijnTicketsUser = {
+  id: string;
+  rol: UserRole;
+  afdelingId?: string | null;
+};
+
 /** Open spoed count for the nav badge (afgerond/afgewezen excluded). */
 export async function countOpenSpoedTickets(): Promise<number> {
   if (!isSupabaseConfigured()) return 0;
@@ -239,6 +245,97 @@ export async function countOpenSpoedTickets(): Promise<number> {
       .not("status", "in", '("afgerond","afgewezen")');
     if (error) return 0;
     return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Count Ranglijst tickets with status nieuw (nav badge).
+ * Same scope as getRanglijstTickets so the number matches that page.
+ */
+export async function countNieuwRanglijstTickets(): Promise<number> {
+  if (!isSupabaseConfigured()) return 0;
+  try {
+    const supabase = await createClient();
+    const { count, error } = await supabase
+      .from("tickets")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "nieuw")
+      .eq("systeem", "NetSuite")
+      .in("type", ["wijziging", "idee"])
+      .neq("prioriteit", "spoed");
+    if (error) return 0;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Count Werkvoorraad tickets with status nieuw (IT nav badge).
+ * Same scope as getWerkvoorraadTickets: open, not spoed, not Ranglijst.
+ */
+export async function countNieuwWerkvoorraadTickets(): Promise<number> {
+  if (!isSupabaseConfigured()) return 0;
+  try {
+    const supabase = await createClient();
+    // Exclude Ranglijst candidates: NetSuite wijziging/idee.
+    const { count, error } = await supabase
+      .from("tickets")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "nieuw")
+      .neq("prioriteit", "spoed")
+      .or("systeem.neq.NetSuite,type.not.in.(wijziging,idee)");
+    if (error) return 0;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Count tickets with status wacht_op_melder in the same scope as Mijn tickets:
+ * - iedereen: tickets where they are melder
+ * - leidinggevende: also non-privé tickets that include their afdeling
+ */
+export async function countWachtOpMelderTickets(
+  user: MijnTicketsUser,
+): Promise<number> {
+  if (!isSupabaseConfigured() || !user.id) return 0;
+  try {
+    const supabase = await createClient();
+
+    const { data: ownData, error: ownError } = await supabase
+      .from("tickets")
+      .select("id")
+      .eq("status", "wacht_op_melder")
+      .eq("melder_id", user.id);
+    if (ownError) return 0;
+    const ids = new Set((ownData ?? []).map((row) => row.id));
+
+    if (user.rol === "manager" && user.afdelingId) {
+      const { data: links, error: linkError } = await supabase
+        .from("ticket_departments")
+        .select("ticket_id")
+        .eq("department_id", user.afdelingId);
+      if (!linkError && links && links.length > 0) {
+        const { data: deptData, error: deptError } = await supabase
+          .from("tickets")
+          .select("id")
+          .eq("status", "wacht_op_melder")
+          .eq("vertrouwelijk", false)
+          .in(
+            "id",
+            links.map((l) => l.ticket_id),
+          );
+        if (!deptError) {
+          for (const row of deptData ?? []) ids.add(row.id);
+        }
+      }
+    }
+
+    return ids.size;
   } catch {
     return 0;
   }
@@ -267,12 +364,6 @@ export async function getWerkvoorraadTickets(): Promise<Ticket[]> {
     return [];
   }
 }
-
-export type MijnTicketsUser = {
-  id: string;
-  rol: UserRole;
-  afdelingId?: string | null;
-};
 
 /**
  * Open tickets for the current user:

@@ -79,12 +79,18 @@
   height: 1.15rem;
   padding: 0 0.3rem;
   border-radius: 999px;
+  /* Default = spoed / danger */
   background: var(--spoed, #b42318);
   color: #fff;
   font-size: 0.65rem;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+}
+
+/* Nieuw (Ranglijst) and wacht-op-melder (Mijn tickets) use blue. */
+.navBadgeInfo {
+  background: #2563eb;
 }
 
 .navLink:hover {
