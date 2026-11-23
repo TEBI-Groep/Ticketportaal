@@ -375,25 +375,6 @@ img {
   color: var(--ink-muted);
 }
 
-/* Prefer a single meta row on wide screens so more tickets fit vertically. */
-@media (min-width: 960px) {
-  .ticket-meta {
-    flex-wrap: nowrap;
-    overflow: hidden;
-  }
-
-  .ticket-meta > * {
-    flex-shrink: 0;
-  }
-
-  .ticket-meta > span:last-child {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
 .ticket-actions {
   display: flex;
   flex-direction: column;
@@ -409,13 +390,23 @@ img {
 }
 
 .list-compact .ticket-row {
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+/* Vote column without rank (e.g. Werkvoorraad) — do not reserve a rank gutter. */
+.list-compact .ticket-row.with-vote {
+  grid-template-columns: minmax(0, 1fr) 9.5rem;
 }
 
 .form-stack {
   display: grid;
   gap: var(--space-4);
   max-width: 36rem;
+}
+
+/* Ticket create uses more horizontal space for afdelingen + bijlagen. */
+.form-stack-wide {
+  max-width: min(100%, 52rem);
 }
 
 .form-field {
@@ -535,18 +526,32 @@ img {
     align-items: start;
   }
 
+  /* Ranglijst: rank + main + ratings */
   .ticket-row.with-vote {
-    grid-template-columns: 2.5rem 1fr 9.5rem;
+    grid-template-columns: 2.5rem minmax(0, 1fr) 9.5rem;
+  }
+
+  /* Werkvoorraad e.d.: main + ratings (no rank column) */
+  .list-compact .ticket-row.with-vote {
+    grid-template-columns: minmax(0, 1fr) 9.5rem;
   }
 }
 
 @media (max-width: 719px) {
   .ticket-row,
   .ticket-row.with-vote {
-    grid-template-columns: 2rem 1fr;
+    grid-template-columns: 2rem minmax(0, 1fr);
     grid-template-areas:
       "rank main"
       "rank actions";
+  }
+
+  .list-compact .ticket-row,
+  .list-compact .ticket-row.with-vote {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "main"
+      "actions";
   }
 
   .ticket-rank {

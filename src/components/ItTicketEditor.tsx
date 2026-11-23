@@ -283,8 +283,7 @@ export function ItTicketEditor({
         <span>
           <strong>Privé</strong>
           <span className="form-hint" style={{ display: "block", margin: 0 }}>
-            Leidinggevenden zien dit ticket niet. Alleen melder, IT en
-            eventuele eigenaar.
+            Alleen melder en IT zien dit ticket — niet op de ranglijst.
           </span>
         </span>
       </label>

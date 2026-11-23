@@ -134,7 +134,7 @@ export function NieuwTicketForm({
       : null;
 
   return (
-    <form className="form-stack" onSubmit={handleSubmit}>
+    <form className="form-stack form-stack-wide" onSubmit={handleSubmit}>
       <fieldset className="form-field" style={{ border: 0 }}>
         <legend
           style={{
@@ -270,6 +270,9 @@ export function NieuwTicketForm({
           <option value="hinderlijk">Hinderlijk</option>
           <option value="wens">Wens</option>
         </select>
+        <p className="form-hint" style={{ marginBottom: 0 }}>
+          Bij “Werk ligt stil” wordt de prioriteit automatisch Spoed.
+        </p>
       </div>
 
       <label
@@ -289,7 +292,8 @@ export function NieuwTicketForm({
         <span>
           <strong>Privé</strong>
           <span className="form-hint" style={{ display: "block", margin: 0 }}>
-            Leidinggevenden zien dit ticket niet. Alleen jij (als melder) en IT.
+            Alleen jij (als melder) en IT zien dit ticket — niet op de
+            ranglijst, niet voor leidinggevenden.
           </span>
         </span>
       </label>

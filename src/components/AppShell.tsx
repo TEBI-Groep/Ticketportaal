@@ -17,11 +17,7 @@ function LogoutButton() {
   );
 }
 
-type BadgeKey =
-  | "spoed"
-  | "nieuwRanglijst"
-  | "nieuwWerkvoorraad"
-  | "wachtOpMelder";
+type BadgeKey = "spoed" | "nieuwWerkvoorraad" | "wachtOpMelder";
 type BadgeTone = "danger" | "info";
 
 type NavItem = {
@@ -36,7 +32,6 @@ type NavItem = {
 
 type BadgeCounts = {
   spoed: number;
-  nieuwRanglijst: number;
   nieuwWerkvoorraad: number;
   wachtOpMelder: number;
 };
@@ -45,12 +40,7 @@ type BadgeCounts = {
 const NAV_ITEMS: Array<
   Omit<NavItem, "badge"> & { itOnly?: boolean; badgeKey?: BadgeKey }
 > = [
-  {
-    href: "/ranglijst",
-    label: "Ranglijst",
-    short: "Rang",
-    badgeKey: "nieuwRanglijst",
-  },
+  { href: "/ranglijst", label: "Ranglijst", short: "Rang" },
   {
     href: "/werkvoorraad",
     label: "Werkvoorraad",
@@ -114,7 +104,6 @@ export function AppShell({
   children,
   user,
   spoedCount = 0,
-  nieuwRanglijstCount = 0,
   nieuwWerkvoorraadCount = 0,
   wachtOpMelderCount = 0,
   supabaseConfigured = true,
@@ -123,8 +112,6 @@ export function AppShell({
   user: User;
   /** Open tickets with prioriteit spoed (nav badge). */
   spoedCount?: number;
-  /** Ranglijst tickets with status nieuw — IT badge on Ranglijst. */
-  nieuwRanglijstCount?: number;
   /** Werkvoorraad tickets with status nieuw — IT badge on Werkvoorraad. */
   nieuwWerkvoorraadCount?: number;
   /** Wacht-op-melder count in Mijn tickets scope (own + afdeling for managers). */
@@ -136,7 +123,6 @@ export function AppShell({
   const isIt = user.rol === "uitvoerder";
   const desktopItems = navForRole(isIt, {
     spoed: spoedCount,
-    nieuwRanglijst: isIt ? nieuwRanglijstCount : 0,
     nieuwWerkvoorraad: isIt ? nieuwWerkvoorraadCount : 0,
     wachtOpMelder: wachtOpMelderCount,
   });
