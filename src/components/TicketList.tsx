@@ -65,6 +65,8 @@ export function TicketList({
         const avg = ratingGemiddelde(ticket);
         const count = ratingAantal(ticket);
         const mine = mijnRating(ticket, currentUserId);
+        // Keep a ratings column whenever voting UI is enabled so rows align
+        // (Werkvoorraad mixes stembare and non-stembare tickets).
         const showStars = showVote && (canRate || count > 0);
 
         return (
@@ -101,18 +103,20 @@ export function TicketList({
               </div>
             </Link>
 
-            {showStars ? (
+            {showVote ? (
               <div className="ticket-actions">
-                <StarRating
-                  key={`${ticket.id}-${mine ?? 0}-${count}`}
-                  ticketId={ticket.id}
-                  average={avg}
-                  count={count}
-                  myRating={mine}
-                  beoordelingen={ticket.beoordelingen}
-                  interactive={canRate}
-                  compact
-                />
+                {showStars ? (
+                  <StarRating
+                    key={`${ticket.id}-${mine ?? 0}-${count}`}
+                    ticketId={ticket.id}
+                    average={avg}
+                    count={count}
+                    myRating={mine}
+                    beoordelingen={ticket.beoordelingen}
+                    interactive={canRate}
+                    compact
+                  />
+                ) : null}
               </div>
             ) : null}
           </li>
