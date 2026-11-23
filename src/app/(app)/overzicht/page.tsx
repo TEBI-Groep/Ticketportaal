@@ -39,7 +39,7 @@ async function OverzichtContent() {
 /** Spreadsheet-style open-ticket overview for everyone. */
 export default function OverzichtPage() {
   return (
-    <div className="page page-wide">
+    <div className="page">
       <Suspense fallback={<p className="form-hint">Overzicht laden…</p>}>
         <OverzichtContent />
       </Suspense>

@@ -48,8 +48,8 @@
   --radius-pill: 980px;
   --nav-height: 3.5rem;
   --bottom-nav-height: 4rem;
-  /* Wide enough for dense ticket lists / tables without excess side margin. */
-  --content-max: 96rem;
+  /* Same width for every page (lists, detail, Overzicht table). */
+  --content-max: 104rem;
   --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
   --focus-ring: 0 0 0 4px rgba(21, 128, 61, 0.18);
 
@@ -126,14 +126,10 @@ img {
 /* ——— Shared primitives ——— */
 
 .page {
-  width: min(100% - 2rem, var(--content-max));
+  /* Shared content width — side margin kept, not full bleed. */
+  width: min(100% - 1rem, var(--content-max));
   margin-inline: auto;
   padding-block: var(--space-4) var(--space-6);
-}
-
-/* Overzicht (and similar): a bit wider than default, still not full bleed. */
-.page-wide {
-  width: min(100% - 1rem, 104rem);
 }
 
 .page-header {
