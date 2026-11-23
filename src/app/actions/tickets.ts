@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { ATTACHMENTS_BUCKET } from "@/data/attachments";
 import type {
   TicketImpact,
   TicketPriority,
@@ -279,6 +280,79 @@ export async function updateTicketItAction(
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Opslaan mislukt.",
+    };
+  }
+}
+
+/**
+ * Permanently delete a ticket (IT only) — for false/test tickets.
+ * Cascades child rows; clears nullable FKs and storage objects first.
+ */
+export async function deleteTicketItAction(
+  ticketId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured()) {
+    return {
+      ok: false,
+      error: "Supabase is niet geconfigureerd op deze omgeving.",
+    };
+  }
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { ok: false, error: "Je bent niet ingelogd." };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("rol")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile?.rol !== "uitvoerder") {
+      return { ok: false, error: "Alleen uitvoerders mogen tickets verwijderen." };
+    }
+
+    const { data: attachments } = await supabase
+      .from("ticket_attachments")
+      .select("storage_path")
+      .eq("ticket_id", ticketId);
+    const paths = (attachments ?? [])
+      .map((a) => a.storage_path)
+      .filter((p): p is string => Boolean(p));
+    if (paths.length > 0) {
+      await supabase.storage.from(ATTACHMENTS_BUCKET).remove(paths);
+    }
+
+    await supabase
+      .from("inbound_messages")
+      .update({ ticket_id: null })
+      .eq("ticket_id", ticketId);
+    await supabase
+      .from("knowledge_articles")
+      .update({ related_ticket_id: null })
+      .eq("related_ticket_id", ticketId);
+
+    const { error } = await supabase.from("tickets").delete().eq("id", ticketId);
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
+    revalidatePath("/ranglijst");
+    revalidatePath("/werkvoorraad");
+    revalidatePath("/spoed");
+    revalidatePath("/mijn-tickets");
+    revalidatePath("/mijn-werk");
+    revalidatePath("/afgerond");
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Verwijderen mislukt.",
     };
   }
 }

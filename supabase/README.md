@@ -20,6 +20,7 @@ Applied in order under `migrations/`:
 | `…100000_ticket_attachments_storage` | Private Storage bucket + policies for bijlagen |
 | `…120000_domain_enums_departments` | Systeem/status/prioriteit enums, afdelingen, HEIC/Word MIME |
 | `…23120000_ticket_departments_manager_visibility` | Multi-afdeling op tickets + manager-afdeling zichtbaarheid |
+| `…23130000_tickets_delete_uitvoerder` | IT mag tickets permanent verwijderen (RLS) |
 
 ## Local / CI
 

@@ -8,6 +8,7 @@ import {
   setUserPassword,
   updateUserAccount,
   type CreateUserInput,
+  type DeleteUserResult,
   type UpdateUserInput,
 } from "@/data/users";
 import type { User } from "@/lib/types";
@@ -72,7 +73,7 @@ export async function setUserPasswordAction(
 /** IT permanently deletes a user after confirmation in the UI. */
 export async function deleteUserAction(
   userId: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<DeleteUserResult> {
   const gate = await requireUitvoerderAction();
   if (!gate.ok) {
     return { ok: false, error: gate.error };

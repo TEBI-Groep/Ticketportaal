@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import type { User, UserRole } from "@/lib/types";
 import { ROLE_LABEL } from "@/lib/labels";
@@ -9,6 +10,7 @@ import {
   setUserPasswordAction,
   updateUserAction,
 } from "@/app/actions/users";
+import type { BlockingMelderTicket } from "@/data/users";
 import styles from "./UserAdmin.module.css";
 
 export interface UserDraft {
@@ -52,6 +54,10 @@ export function UserAdmin({
   const [mode, setMode] = useState<Mode>({ kind: "list" });
   const [draft, setDraft] = useState<UserDraft>(emptyDraft);
   const [error, setError] = useState<string | null>(null);
+  /** Tickets blocking delete because this user is still melder. */
+  const [blockingTickets, setBlockingTickets] = useState<
+    BlockingMelderTicket[]
+  >([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState("");
@@ -78,6 +84,7 @@ export function UserAdmin({
 
   function openCreate() {
     setError(null);
+    setBlockingTickets([]);
     setNotice(null);
     setDraft({ ...emptyDraft, wachtwoord: suggestPassword() });
     setMode({ kind: "create" });
@@ -85,6 +92,7 @@ export function UserAdmin({
 
   function openEdit(user: User) {
     setError(null);
+    setBlockingTickets([]);
     setNotice(null);
     setDraft({
       naam: user.naam,
@@ -100,6 +108,7 @@ export function UserAdmin({
   function backToList() {
     setMode({ kind: "list" });
     setError(null);
+    setBlockingTickets([]);
     setPendingDeleteId(null);
   }
 
@@ -108,10 +117,12 @@ export function UserAdmin({
     const id = pendingDeleteId;
     setDeleting(true);
     setError(null);
+    setBlockingTickets([]);
     const result = await deleteUserAction(id);
     setDeleting(false);
     if (!result.ok) {
       setError(result.error);
+      setBlockingTickets(result.blockingTickets ?? []);
       setPendingDeleteId(null);
       return;
     }
@@ -394,11 +405,10 @@ export function UserAdmin({
             </p>
           </div>
 
-          {error ? (
-            <p className={styles.error} role="alert">
-              {error}
-            </p>
-          ) : null}
+          <DeleteError
+            error={error}
+            blockingTickets={blockingTickets}
+          />
 
           <div className={styles.formActions}>
             {!isCreate && editing && editing.id !== currentUserId ? (
@@ -407,6 +417,7 @@ export function UserAdmin({
                 className={`btn btn-ghost ${styles.deleteBtn}`}
                 onClick={() => {
                   setError(null);
+                  setBlockingTickets([]);
                   setPendingDeleteId(editing.id);
                 }}
                 disabled={saving || deleting}
@@ -463,11 +474,7 @@ export function UserAdmin({
           {notice}
         </p>
       ) : null}
-      {error ? (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      ) : null}
+      <DeleteError error={error} blockingTickets={blockingTickets} />
 
       {filtered.length === 0 ? (
         <div className="empty-state">
@@ -521,6 +528,7 @@ export function UserAdmin({
                         className={`btn btn-ghost ${styles.deleteBtn}`}
                         onClick={() => {
                           setError(null);
+                          setBlockingTickets([]);
                           setNotice(null);
                           setPendingDeleteId(user.id);
                         }}
@@ -546,6 +554,40 @@ export function UserAdmin({
         />
       ) : null}
     </section>
+  );
+}
+
+/** Error message plus optional links to tickets that still have this melder. */
+function DeleteError({
+  error,
+  blockingTickets,
+}: {
+  error: string | null;
+  blockingTickets: BlockingMelderTicket[];
+}) {
+  if (!error) return null;
+  return (
+    <div className={styles.errorBlock} role="alert">
+      <p className={styles.error}>{error}</p>
+      {blockingTickets.length > 0 ? (
+        <ul className={styles.blockingList}>
+          {blockingTickets.map((ticket) => (
+            <li key={ticket.id}>
+              <Link
+                href={`/ticket/${ticket.id}`}
+                className={styles.blockingLink}
+              >
+                {ticket.ticketnummer}
+              </Link>
+              <span className={styles.blockingSubject}>
+                {" "}
+                · {ticket.onderwerp}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 
