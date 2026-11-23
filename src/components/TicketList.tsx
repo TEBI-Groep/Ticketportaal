@@ -101,9 +101,9 @@ export function TicketList({
                   <span>{ticket.systeem}</span>
                   <span>{IMPACT_LABEL[ticket.impact]}</span>
                   <span>{ticket.afdelingen.join(", ") || "—"}</span>
-                  <span>Melder {ticket.melderNaam || "—"}</span>
+                  <span>Melder: {ticket.melderNaam || "—"}</span>
                   <span>
-                    Eigenaar {ticket.eigenaarNaam ?? "Nog niet geclaimd"}
+                    Eigenaar: {ticket.eigenaarNaam ?? "Nog niet geclaimd"}
                   </span>
                   <span>
                     Streefdatum{" "}
