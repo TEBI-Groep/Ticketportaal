@@ -87,6 +87,7 @@ function revalidateTicketPaths(id: string) {
   revalidatePath("/werkvoorraad");
   revalidatePath("/spoed");
   revalidatePath("/mijn-tickets");
+  revalidatePath("/overzicht");
   revalidatePath("/mijn-werk");
   revalidatePath("/afgerond");
 }
@@ -352,6 +353,7 @@ export async function deleteTicketItAction(
     revalidatePath("/werkvoorraad");
     revalidatePath("/spoed");
     revalidatePath("/mijn-tickets");
+    revalidatePath("/overzicht");
     revalidatePath("/mijn-werk");
     revalidatePath("/afgerond");
     return { ok: true };

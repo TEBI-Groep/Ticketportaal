@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { TicketList } from "@/components/TicketList";
+import { TicketTable } from "@/components/TicketTable";
 import {
   PRIORITY_LABEL,
   STATUS_LABEL,
@@ -42,6 +43,8 @@ interface FilteredTicketListProps {
   emptyMessage?: string;
   emptyHref?: string;
   emptyCta?: string;
+  /** List rows (default) or sortable spreadsheet table (Overzicht). */
+  variant?: "list" | "table";
 }
 
 function toggleInSet<T>(set: Set<T>, value: T): Set<T> {
@@ -65,6 +68,7 @@ export function FilteredTicketList({
   emptyMessage = "Geen tickets gevonden.",
   emptyHref,
   emptyCta,
+  variant = "list",
 }: FilteredTicketListProps) {
   const [query, setQuery] = useState("");
   const [chips, setChips] = useState<TicketChipFilters>(() => emptyChipFilters());
@@ -243,17 +247,28 @@ export function FilteredTicketList({
         ) : null}
       </div>
 
-      <TicketList
-        tickets={filtered}
-        showRank={showRank}
-        showVote={showVote}
-        currentUserId={currentUserId}
-        emptyMessage={
-          hasFilters ? "Geen tickets voor deze filters." : emptyMessage
-        }
-        emptyHref={emptyHref}
-        emptyCta={hasFilters ? "" : emptyCta}
-      />
+      {variant === "table" ? (
+        <TicketTable
+          tickets={filtered}
+          emptyMessage={
+            hasFilters ? "Geen tickets voor deze filters." : emptyMessage
+          }
+          emptyHref={emptyHref}
+          emptyCta={hasFilters ? "" : emptyCta}
+        />
+      ) : (
+        <TicketList
+          tickets={filtered}
+          showRank={showRank}
+          showVote={showVote}
+          currentUserId={currentUserId}
+          emptyMessage={
+            hasFilters ? "Geen tickets voor deze filters." : emptyMessage
+          }
+          emptyHref={emptyHref}
+          emptyCta={hasFilters ? "" : emptyCta}
+        />
+      )}
     </>
   );
 }
