@@ -35,6 +35,7 @@ type TicketRow = {
   streefdatum: string | null;
   omvang: Ticket["omvang"] | null;
   oplossing_samenvatting: string | null;
+  vertrouwelijk: boolean;
   created_at: string;
   updated_at: string;
   ticket_departments:
@@ -86,12 +87,14 @@ function mapTicket(row: TicketRow): Ticket {
     createdAt: row.created_at.slice(0, 10),
     updatedAt: row.updated_at.slice(0, 10),
     oplossingSamenvatting: row.oplossing_samenvatting ?? undefined,
+    prive: row.vertrouwelijk,
   };
 }
 
 const TICKET_SELECT = `
   id, ticketnummer, onderwerp, omschrijving, type, systeem, impact, status, prioriteit,
-  melder_id, eigenaar_id, streefdatum, omvang, oplossing_samenvatting, created_at, updated_at,
+  melder_id, eigenaar_id, streefdatum, omvang, oplossing_samenvatting, vertrouwelijk,
+  created_at, updated_at,
   ticket_departments ( departments ( naam ) ),
   melder:profiles!tickets_melder_id_fkey ( id, naam ),
   eigenaar:profiles!tickets_eigenaar_id_fkey ( id, naam ),
@@ -301,6 +304,7 @@ export async function getMijnTickets(user: MijnTicketsUser): Promise<Ticket[]> {
       return sortOpenTickets(own);
     }
 
+    // Privé tickets stay out of the afdeling-overzicht for leidinggevenden.
     const { data: deptData, error: deptError } = await supabase
       .from("tickets")
       .select(TICKET_SELECT)
@@ -308,6 +312,7 @@ export async function getMijnTickets(user: MijnTicketsUser): Promise<Ticket[]> {
         "id",
         links.map((l) => l.ticket_id),
       )
+      .eq("vertrouwelijk", false)
       .not("status", "in", '("afgerond","afgewezen")');
     if (deptError || !deptData) {
       return sortOpenTickets(own);

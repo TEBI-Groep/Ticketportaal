@@ -106,6 +106,8 @@ export interface Ticket {
   updatedAt: string;
   /** Short solution blurb for completed tickets (UI-only for now). */
   oplossingSamenvatting?: string;
+  /** Privé: hidden from leidinggevenden; only melder, IT, eigenaar, ACL. */
+  prive: boolean;
 }
 
 /** Average of all scores, or 0 when empty. */

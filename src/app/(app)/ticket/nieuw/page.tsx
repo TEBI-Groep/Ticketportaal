@@ -25,7 +25,11 @@ async function NieuwTicketContent() {
         </p>
       </header>
 
-      <NieuwTicketForm departments={departments} canCreate={canCreate} />
+      <NieuwTicketForm
+        departments={departments}
+        defaultAfdeling={user.afdeling}
+        canCreate={canCreate}
+      />
     </>
   );
 }
