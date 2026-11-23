@@ -17,8 +17,8 @@ async function WerkvoorraadContent() {
       <header className="page-header">
         <h1>Werkvoorraad</h1>
         <p>
-          Open storingen, vragen en overige verzoeken — alles wat niet op de
-          openbare NetSuite-ranglijst hoort. Spoed blijft een aparte lijst.
+          Alle open tickets behalve Spoed — inclusief NetSuite-wensen die ook
+          op de ranglijst staan, zodat IT alles op één plek ziet.
         </p>
       </header>
 

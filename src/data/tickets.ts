@@ -14,7 +14,6 @@ import {
   normalizeTicketQuery,
 } from "@/lib/ticket-search";
 import {
-  isRanglijstKandidaat,
   ratingAantal,
   ratingGemiddelde,
   type TicketSystem,
@@ -195,6 +194,7 @@ export async function getRanglijstTickets(): Promise<Ticket[]> {
       .eq("systeem", "NetSuite")
       .in("type", ["wijziging", "idee"])
       .neq("prioriteit", "spoed")
+      .eq("vertrouwelijk", false)
       .not("status", "in", '("afgerond","afgewezen")');
     if (error || !data) return [];
     return (data as unknown as TicketRow[])
@@ -264,7 +264,8 @@ export async function countNieuwRanglijstTickets(): Promise<number> {
       .eq("status", "nieuw")
       .eq("systeem", "NetSuite")
       .in("type", ["wijziging", "idee"])
-      .neq("prioriteit", "spoed");
+      .neq("prioriteit", "spoed")
+      .eq("vertrouwelijk", false);
     if (error) return 0;
     return count ?? 0;
   } catch {
@@ -274,19 +275,17 @@ export async function countNieuwRanglijstTickets(): Promise<number> {
 
 /**
  * Count Werkvoorraad tickets with status nieuw (IT nav badge).
- * Same scope as getWerkvoorraadTickets: open, not spoed, not Ranglijst.
+ * Same scope as getWerkvoorraadTickets: open and not spoed (incl. Ranglijst).
  */
 export async function countNieuwWerkvoorraadTickets(): Promise<number> {
   if (!isSupabaseConfigured()) return 0;
   try {
     const supabase = await createClient();
-    // Exclude Ranglijst candidates: NetSuite wijziging/idee.
     const { count, error } = await supabase
       .from("tickets")
       .select("id", { count: "exact", head: true })
       .eq("status", "nieuw")
-      .neq("prioriteit", "spoed")
-      .or("systeem.neq.NetSuite,type.not.in.(wijziging,idee)");
+      .neq("prioriteit", "spoed");
     if (error) return 0;
     return count ?? 0;
   } catch {
@@ -342,8 +341,8 @@ export async function countWachtOpMelderTickets(
 }
 
 /**
- * Open operational tickets for IT: not Spoed, not on the public NetSuite
- * Ranglijst (storingen, vragen, Outlook/WMS/hardware, etc.).
+ * Open operational tickets for IT: everything open that is not Spoed,
+ * including NetSuite Ranglijst-kandidaten so IT has one combined overview.
  * Page is uitvoerder-only; non-IT users use Mijn tickets instead.
  */
 export async function getWerkvoorraadTickets(): Promise<Ticket[]> {
@@ -358,7 +357,6 @@ export async function getWerkvoorraadTickets(): Promise<Ticket[]> {
     if (error || !data) return [];
     return (data as unknown as TicketRow[])
       .map(mapTicket)
-      .filter((t) => !isRanglijstKandidaat(t))
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } catch {
     return [];

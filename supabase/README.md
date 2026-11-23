@@ -22,6 +22,7 @@ Applied in order under `migrations/`:
 | `…23120000_ticket_departments_manager_visibility` | Multi-afdeling op tickets + manager-afdeling zichtbaarheid |
 | `…23130000_tickets_delete_uitvoerder` | IT mag tickets permanent verwijderen (RLS) |
 | `…23140000_prive_hides_from_managers` | Privé-tickets verbergen voor leidinggevenden |
+| `…23150000_prive_melder_it_only` | Privé alleen melder+IT; geen ratings op privé |
 
 ## Local / CI
 

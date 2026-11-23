@@ -131,19 +131,24 @@ export function mijnRating(
 }
 
 /**
- * NetSuite wijziging/idee — belongs on the public Ranglijst when open and
- * not marked Spoed. Everything else operational goes to Werkvoorraad.
+ * NetSuite wijziging/idee — belongs on the public Ranglijst when open,
+ * not Spoed, and not Privé. Privé tickets stay melder+IT only.
  */
 export function isRanglijstKandidaat(ticket: Ticket): boolean {
   const typeOk = ticket.type === "wijziging" || ticket.type === "idee";
-  return typeOk && ticket.systeem === "NetSuite";
+  return (
+    typeOk &&
+    ticket.systeem === "NetSuite" &&
+    !ticket.prive &&
+    ticket.prioriteit !== "spoed"
+  );
 }
 
-/** True when rating is allowed: ranglijst-eligible + not spoed + not closed. */
+/** True when rating is allowed: public ranglijst-eligible + open. */
 export function isStembaar(ticket: Ticket): boolean {
   const open =
     ticket.status !== "afgerond" && ticket.status !== "afgewezen";
-  return open && isRanglijstKandidaat(ticket) && ticket.prioriteit !== "spoed";
+  return open && isRanglijstKandidaat(ticket);
 }
 
 /** Display helper: one decimal for averages, e.g. 4.3. */

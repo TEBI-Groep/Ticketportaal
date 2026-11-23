@@ -42,9 +42,12 @@ export async function listDepartments(): Promise<string[]> {
       .from("departments")
       .select("naam")
       .eq("actief", true)
-      .order("sort_order");
+      .order("naam");
     if (error || !data) return [];
-    return data.map((d) => d.naam);
+    // Alphabetical (nl) for create form, IT panel, and user admin.
+    return data
+      .map((d) => d.naam)
+      .sort((a, b) => a.localeCompare(b, "nl", { sensitivity: "base" }));
   } catch {
     return [];
   }
