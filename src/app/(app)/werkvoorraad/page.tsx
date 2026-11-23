@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 async function WerkvoorraadContent() {
-  await requireUitvoerder();
+  const user = await requireUitvoerder();
   const tickets = await getWerkvoorraadTickets();
 
   return (
@@ -18,12 +18,16 @@ async function WerkvoorraadContent() {
         <h1>Werkvoorraad</h1>
         <p>
           Alle open tickets behalve Spoed — inclusief NetSuite-wensen die ook
-          op de ranglijst staan, zodat IT alles op één plek ziet.
+          op de ranglijst staan, zodat IT alles op één plek ziet. Bij
+          ranglijst-tickets zie je hier ook de sterrenrating en wie heeft
+          gestemd.
         </p>
       </header>
 
       <FilteredTicketList
         tickets={tickets}
+        showVote
+        currentUserId={user.id}
         filterDims={["systeem", "status", "type", "prioriteit", "afdeling"]}
         searchPlaceholder="Zoek in de werkvoorraad…"
         emptyMessage="Geen open tickets in de werkvoorraad."

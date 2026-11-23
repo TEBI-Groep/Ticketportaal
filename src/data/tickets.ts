@@ -251,29 +251,6 @@ export async function countOpenSpoedTickets(): Promise<number> {
 }
 
 /**
- * Count Ranglijst tickets with status nieuw (nav badge).
- * Same scope as getRanglijstTickets so the number matches that page.
- */
-export async function countNieuwRanglijstTickets(): Promise<number> {
-  if (!isSupabaseConfigured()) return 0;
-  try {
-    const supabase = await createClient();
-    const { count, error } = await supabase
-      .from("tickets")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "nieuw")
-      .eq("systeem", "NetSuite")
-      .in("type", ["wijziging", "idee"])
-      .neq("prioriteit", "spoed")
-      .eq("vertrouwelijk", false);
-    if (error) return 0;
-    return count ?? 0;
-  } catch {
-    return 0;
-  }
-}
-
-/**
  * Count Werkvoorraad tickets with status nieuw (IT nav badge).
  * Same scope as getWerkvoorraadTickets: open and not spoed (incl. Ranglijst).
  */
