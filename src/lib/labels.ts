@@ -54,3 +54,9 @@ export function formatDate(iso: string): string {
     year: "numeric",
   });
 }
+
+/** Join department names for compact list/detail display. */
+export function formatAfdelingen(afdelingen: string[]): string {
+  if (afdelingen.length === 0) return "—";
+  return afdelingen.join(", ");
+}

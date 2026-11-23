@@ -21,7 +21,7 @@ export function matchesTicketQuery(ticket: Ticket, query: string): boolean {
     ticket.onderwerp,
     ticket.omschrijving,
     ticket.systeem,
-    ticket.afdeling,
+    ticket.afdelingen.join(" "),
     ticket.melderNaam,
     ticket.eigenaarNaam ?? "",
     ticket.oplossingSamenvatting ?? "",
@@ -79,7 +79,10 @@ export function filterTickets(
   return filterTicketsByQuery(tickets, query).filter((t) => {
     if (chips.systemen.size > 0 && !chips.systemen.has(t.systeem)) return false;
     if (chips.statussen.size > 0 && !chips.statussen.has(t.status)) return false;
-    if (chips.afdelingen.size > 0 && !chips.afdelingen.has(t.afdeling)) {
+    if (
+      chips.afdelingen.size > 0 &&
+      !t.afdelingen.some((a) => chips.afdelingen.has(a))
+    ) {
       return false;
     }
     if (chips.types.size > 0 && !chips.types.has(t.type)) return false;
@@ -100,7 +103,7 @@ export function chipOptionsFromTickets(tickets: Ticket[]) {
     systemen: uniqueSorted(tickets.map((t) => t.systeem)),
     statussen: uniqueSorted(tickets.map((t) => t.status)),
     afdelingen: uniqueSorted(
-      tickets.map((t) => t.afdeling).filter((a) => a.length > 0),
+      tickets.flatMap((t) => t.afdelingen).filter((a) => a.length > 0),
     ),
     types: uniqueSorted(tickets.map((t) => t.type)),
     prioriteiten: uniqueSorted(tickets.map((t) => t.prioriteit)),

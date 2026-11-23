@@ -15,10 +15,11 @@ import {
   getItNotesForTicket,
   getTicketById,
 } from "@/data/tickets";
-import { listUitvoerders } from "@/data/users";
+import { listDepartments, listUsers, listUitvoerders } from "@/data/users";
 import {
   IMPACT_LABEL,
   TYPE_LABEL,
+  formatAfdelingen,
   formatDate,
 } from "@/lib/labels";
 import {
@@ -60,12 +61,18 @@ async function TicketDetailContent({
   const count = ratingAantal(ticket);
   const mine = mijnRating(ticket, user.id);
   const isIt = user.rol === "uitvoerder";
-  const [comments, itNotes, attachments, uitvoerders] = await Promise.all([
-    getCommentsForTicket(ticket.id),
-    getItNotesForTicket(ticket.id),
-    getAttachmentsForTicket(ticket.id),
-    isIt ? listUitvoerders() : Promise.resolve([]),
-  ]);
+  const [comments, itNotes, attachments, uitvoerders, melders, departments] =
+    await Promise.all([
+      getCommentsForTicket(ticket.id),
+      getItNotesForTicket(ticket.id),
+      getAttachmentsForTicket(ticket.id),
+      isIt ? listUitvoerders() : Promise.resolve([]),
+      isIt ? listUsers() : Promise.resolve([]),
+      isIt ? listDepartments() : Promise.resolve([]),
+    ]);
+  const activeMelders = melders.filter(
+    (u) => u.actief || u.id === ticket.melderId,
+  );
 
   return (
     <>
@@ -107,8 +114,8 @@ async function TicketDetailContent({
               <dd>{IMPACT_LABEL[ticket.impact]}</dd>
             </div>
             <div className="kv">
-              <dt>Afdeling</dt>
-              <dd>{ticket.afdeling}</dd>
+              <dt>Afdelingen</dt>
+              <dd>{formatAfdelingen(ticket.afdelingen)}</dd>
             </div>
             <div className="kv">
               <dt>Melder</dt>
@@ -168,7 +175,12 @@ async function TicketDetailContent({
               <p className="form-hint" style={{ marginBottom: "1rem" }}>
                 Status, prioriteit, eigenaar en overige IT-velden bewerken.
               </p>
-              <ItTicketEditor ticket={ticket} uitvoerders={uitvoerders} />
+              <ItTicketEditor
+                ticket={ticket}
+                uitvoerders={uitvoerders}
+                melders={activeMelders}
+                departments={departments}
+              />
               <div style={{ marginTop: "1.5rem" }}>
                 <ItNotes
                   ticketId={ticket.id}

@@ -10,14 +10,17 @@ export const metadata: Metadata = {
 
 async function MijnTicketsContent() {
   const user = await requireUser();
-  const tickets = await getMijnTickets(user.id);
+  const tickets = await getMijnTickets(user);
+  const isManager = user.rol === "manager";
 
   return (
     <>
       <header className="page-header">
         <h1>Mijn tickets</h1>
         <p>
-          Openstaande tickets die jij hebt aangemaakt (als melder).
+          {isManager
+            ? "Openstaande tickets van jouw afdeling, plus tickets die jij hebt aangemaakt."
+            : "Openstaande tickets die jij hebt aangemaakt (als melder)."}
         </p>
       </header>
 

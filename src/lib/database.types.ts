@@ -75,7 +75,6 @@ export interface Database {
           ticketnummer: string;
           onderwerp: string;
           omschrijving: string;
-          afdeling_id: string;
           type: DbTicketType;
           systeem: DbTicketSysteem;
           impact: DbTicketImpact;
@@ -93,6 +92,42 @@ export interface Database {
           netsuite_ref: string | null;
           created_at: string;
           updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          onderwerp: string;
+          omschrijving: string;
+          type: DbTicketType;
+          systeem: DbTicketSysteem;
+          impact: DbTicketImpact;
+          status?: DbTicketStatus;
+          prioriteit?: DbTicketPriority;
+          melder_id: string;
+          eigenaar_id?: string | null;
+          streefdatum?: string | null;
+          omvang?: DbTicketSize | null;
+          oplossing_samenvatting?: string | null;
+        };
+        Update: {
+          onderwerp?: string;
+          omschrijving?: string;
+          status?: DbTicketStatus;
+          prioriteit?: DbTicketPriority;
+          melder_id?: string;
+          eigenaar_id?: string | null;
+          streefdatum?: string | null;
+          omvang?: DbTicketSize | null;
+          oplossing_samenvatting?: string | null;
+        };
+      };
+      ticket_departments: {
+        Row: {
+          ticket_id: string;
+          department_id: string;
+        };
+        Insert: {
+          ticket_id: string;
+          department_id: string;
         };
       };
       ratings: {

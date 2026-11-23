@@ -90,7 +90,7 @@ export function TicketList({
                   ) : null}
                   <span>{ticket.systeem}</span>
                   <span>{IMPACT_LABEL[ticket.impact]}</span>
-                  <span>{ticket.afdeling}</span>
+                  <span>{ticket.afdelingen.join(", ") || "—"}</span>
                   <span>Bijgewerkt {formatDate(ticket.updatedAt)}</span>
                 </div>
                 {ticket.oplossingSamenvatting ? (
