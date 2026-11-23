@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   subscribeToTicketAction,
@@ -10,6 +10,8 @@ import styles from "./TicketWatchBell.module.css";
 
 interface TicketWatchBellProps {
   ticketId: string;
+  /** Display label for feedback, e.g. ticketnummer. */
+  ticketLabel: string;
   initiallyWatching: boolean;
 }
 
@@ -52,22 +54,32 @@ function BellOnIcon() {
 
 /**
  * Bell toggle to follow a ticket for future e-mail updates.
- * Subscription is stored now; mailing can be wired later.
+ * Shows a short confirmation popup after subscribe / unsubscribe.
  */
 export function TicketWatchBell({
   ticketId,
+  ticketLabel,
   initiallyWatching,
 }: TicketWatchBellProps) {
   const router = useRouter();
   const [watching, setWatching] = useState(initiallyWatching);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Auto-dismiss the feedback popup after a few seconds.
+  useEffect(() => {
+    if (!toast) return;
+    const handle = window.setTimeout(() => setToast(null), 3500);
+    return () => window.clearTimeout(handle);
+  }, [toast]);
 
   async function toggle() {
     if (pending) return;
     setPending(true);
     setError(null);
 
+    const nextWatching = !watching;
     const result = watching
       ? await unsubscribeFromTicketAction(ticketId)
       : await subscribeToTicketAction(ticketId);
@@ -78,7 +90,12 @@ export function TicketWatchBell({
       return;
     }
 
-    setWatching(!watching);
+    setWatching(nextWatching);
+    setToast(
+      nextWatching
+        ? `Je volgt nu ${ticketLabel} en krijgt hiervoor updates.`
+        : `Je volgt ${ticketLabel} niet meer en krijgt hiervoor geen updates meer.`,
+    );
     router.refresh();
   }
 
@@ -103,6 +120,19 @@ export function TicketWatchBell({
         <p className={styles.error} role="alert">
           {error}
         </p>
+      ) : null}
+      {toast ? (
+        <div className={styles.toast} role="status" aria-live="polite">
+          <p>{toast}</p>
+          <button
+            type="button"
+            className={styles.toastClose}
+            onClick={() => setToast(null)}
+            aria-label="Sluiten"
+          >
+            ×
+          </button>
+        </div>
       ) : null}
     </div>
   );

@@ -116,6 +116,7 @@ async function TicketDetailContent({
               <PriorityBadge priority={ticket.prioriteit} />
               <TicketWatchBell
                 ticketId={ticket.id}
+                ticketLabel={ticket.ticketnummer}
                 initiallyWatching={watching}
               />
             </div>
