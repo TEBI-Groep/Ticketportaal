@@ -375,25 +375,6 @@ img {
   color: var(--ink-muted);
 }
 
-/* Prefer a single meta row on wide screens so more tickets fit vertically. */
-@media (min-width: 960px) {
-  .ticket-meta {
-    flex-wrap: nowrap;
-    overflow: hidden;
-  }
-
-  .ticket-meta > * {
-    flex-shrink: 0;
-  }
-
-  .ticket-meta > span:last-child {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
 .ticket-actions {
   display: flex;
   flex-direction: column;

@@ -9,7 +9,12 @@ import {
   ratingAantal,
   ratingGemiddelde,
 } from "@/lib/types";
-import { IMPACT_LABEL, formatDate } from "@/lib/labels";
+import {
+  IMPACT_LABEL,
+  PRIORITY_LABEL,
+  TYPE_LABEL,
+  formatDate,
+} from "@/lib/labels";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
 
@@ -89,10 +94,23 @@ export function TicketList({
                   <StatusBadge status={ticket.status} />
                   {ticket.prioriteit === "spoed" ? (
                     <PriorityBadge priority={ticket.prioriteit} />
-                  ) : null}
+                  ) : (
+                    <span>{PRIORITY_LABEL[ticket.prioriteit]}</span>
+                  )}
+                  <span>{TYPE_LABEL[ticket.type]}</span>
                   <span>{ticket.systeem}</span>
                   <span>{IMPACT_LABEL[ticket.impact]}</span>
                   <span>{ticket.afdelingen.join(", ") || "—"}</span>
+                  <span>Melder {ticket.melderNaam || "—"}</span>
+                  <span>
+                    Eigenaar {ticket.eigenaarNaam ?? "Nog niet geclaimd"}
+                  </span>
+                  <span>
+                    Streefdatum{" "}
+                    {ticket.streefdatum ? formatDate(ticket.streefdatum) : "—"}
+                  </span>
+                  <span>Omvang {ticket.omvang ?? "—"}</span>
+                  {ticket.prive ? <span>Privé</span> : null}
                   <span>Bijgewerkt {formatDate(ticket.updatedAt)}</span>
                 </div>
                 {ticket.oplossingSamenvatting ? (
