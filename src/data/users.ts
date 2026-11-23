@@ -178,6 +178,22 @@ export async function setUserPassword(
   return { ok: true };
 }
 
+/** Ticket still owned as melder — shown when delete is blocked. */
+export type BlockingMelderTicket = {
+  id: string;
+  ticketnummer: string;
+  onderwerp: string;
+};
+
+export type DeleteUserResult =
+  | { ok: true }
+  | {
+      ok: false;
+      error: string;
+      /** Present when the user is still melder on one or more tickets. */
+      blockingTickets?: BlockingMelderTicket[];
+    };
+
 /**
  * Permanently delete an Auth user (+ profile cascade).
  * Blocks when the user is still melder on tickets; cleans other FKs first.
@@ -185,7 +201,7 @@ export async function setUserPassword(
 export async function deleteUserAccount(
   userId: string,
   actorId: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<DeleteUserResult> {
   if (userId === actorId) {
     return { ok: false, error: "Je kunt je eigen account niet verwijderen." };
   }
@@ -199,17 +215,23 @@ export async function deleteUserAccount(
     };
   }
 
-  const { count: melderCount, error: melderError } = await admin
+  const { data: melderTickets, error: melderError } = await admin
     .from("tickets")
-    .select("id", { count: "exact", head: true })
-    .eq("melder_id", userId);
+    .select("id, ticketnummer, onderwerp")
+    .eq("melder_id", userId)
+    .order("ticketnummer", { ascending: true });
   if (melderError) {
     return { ok: false, error: melderError.message };
   }
-  if ((melderCount ?? 0) > 0) {
+  if (melderTickets && melderTickets.length > 0) {
     return {
       ok: false,
-      error: `Deze gebruiker is melder van ${melderCount} ticket(s). Wijzig eerst de melder op die tickets.`,
+      error: `Deze gebruiker is melder van ${melderTickets.length} ticket(s). Wijzig eerst de melder op die tickets.`,
+      blockingTickets: melderTickets.map((t) => ({
+        id: t.id,
+        ticketnummer: t.ticketnummer,
+        onderwerp: t.onderwerp,
+      })),
     };
   }
 
