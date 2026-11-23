@@ -17,7 +17,12 @@ function LogoutButton() {
   );
 }
 
-type BadgeKey = "spoed" | "nieuw" | "wachtOpMelder";
+type BadgeKey =
+  | "spoed"
+  | "nieuwRanglijst"
+  | "nieuwWerkvoorraad"
+  | "wachtOpMelder";
+type BadgeTone = "danger" | "info";
 
 type NavItem = {
   href: string;
@@ -25,19 +30,33 @@ type NavItem = {
   short: string;
   /** Optional count badge (e.g. open spoed tickets). */
   badge?: number;
+  /** Spoed stays red; other counts use blue. */
+  badgeTone?: BadgeTone;
+};
+
+type BadgeCounts = {
+  spoed: number;
+  nieuwRanglijst: number;
+  nieuwWerkvoorraad: number;
+  wachtOpMelder: number;
 };
 
 /** Same order as before; Werkvoorraad only for uitvoerders. */
 const NAV_ITEMS: Array<
   Omit<NavItem, "badge"> & { itOnly?: boolean; badgeKey?: BadgeKey }
 > = [
-  { href: "/ranglijst", label: "Ranglijst", short: "Rang" },
+  {
+    href: "/ranglijst",
+    label: "Ranglijst",
+    short: "Rang",
+    badgeKey: "nieuwRanglijst",
+  },
   {
     href: "/werkvoorraad",
     label: "Werkvoorraad",
     short: "Werk",
     itOnly: true,
-    badgeKey: "nieuw",
+    badgeKey: "nieuwWerkvoorraad",
   },
   { href: "/spoed", label: "Spoed", short: "Spoed", badgeKey: "spoed" },
   {
@@ -51,31 +70,40 @@ const NAV_ITEMS: Array<
   { href: "/gebruikers", label: "Gebruikers", short: "Users", itOnly: true },
 ];
 
+function badgeToneForKey(key: BadgeKey | undefined): BadgeTone | undefined {
+  if (!key) return undefined;
+  return key === "spoed" ? "danger" : "info";
+}
+
 function badgeForKey(
   key: BadgeKey | undefined,
-  counts: { spoed: number; nieuw: number; wachtOpMelder: number },
+  counts: BadgeCounts,
 ): number | undefined {
   if (!key) return undefined;
   const value = counts[key];
   return value > 0 ? value : undefined;
 }
 
-function navForRole(
-  isIt: boolean,
-  counts: { spoed: number; nieuw: number; wachtOpMelder: number },
-): NavItem[] {
+function navForRole(isIt: boolean, counts: BadgeCounts): NavItem[] {
   return NAV_ITEMS.filter((item) => isIt || !item.itOnly).map(
     ({ href, label, short, badgeKey }) => ({
       href,
       label,
       short,
       badge: badgeForKey(badgeKey, counts),
+      badgeTone: badgeToneForKey(badgeKey),
     }),
   );
 }
 
 function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function badgeClass(tone: BadgeTone | undefined): string {
+  return tone === "info"
+    ? `${styles.navBadge} ${styles.navBadgeInfo}`
+    : styles.navBadge;
 }
 
 /**
@@ -86,7 +114,8 @@ export function AppShell({
   children,
   user,
   spoedCount = 0,
-  nieuwCount = 0,
+  nieuwRanglijstCount = 0,
+  nieuwWerkvoorraadCount = 0,
   wachtOpMelderCount = 0,
   supabaseConfigured = true,
 }: {
@@ -94,8 +123,10 @@ export function AppShell({
   user: User;
   /** Open tickets with prioriteit spoed (nav badge). */
   spoedCount?: number;
-  /** Tickets with status nieuw — IT Werkvoorraad badge. */
-  nieuwCount?: number;
+  /** Ranglijst tickets with status nieuw — IT badge on Ranglijst. */
+  nieuwRanglijstCount?: number;
+  /** Werkvoorraad tickets with status nieuw — IT badge on Werkvoorraad. */
+  nieuwWerkvoorraadCount?: number;
   /** Tickets waiting on this user as melder — Mijn tickets badge. */
   wachtOpMelderCount?: number;
   /** False when Supabase URL/anon key are missing on this environment. */
@@ -105,7 +136,8 @@ export function AppShell({
   const isIt = user.rol === "uitvoerder";
   const desktopItems = navForRole(isIt, {
     spoed: spoedCount,
-    nieuw: isIt ? nieuwCount : 0,
+    nieuwRanglijst: isIt ? nieuwRanglijstCount : 0,
+    nieuwWerkvoorraad: isIt ? nieuwWerkvoorraadCount : 0,
     wachtOpMelder: wachtOpMelderCount,
   });
 
@@ -144,7 +176,10 @@ export function AppShell({
             >
               <span>{item.label}</span>
               {item.badge != null ? (
-                <span className={styles.navBadge} aria-label={`${item.badge} open`}>
+                <span
+                  className={badgeClass(item.badgeTone)}
+                  aria-label={`${item.badge} open`}
+                >
                   {item.badge > 99 ? "99+" : item.badge}
                 </span>
               ) : null}
@@ -192,7 +227,7 @@ export function AppShell({
               </span>
               {item.badge != null ? (
                 <span
-                  className={styles.navBadge}
+                  className={badgeClass(item.badgeTone)}
                   aria-label={`${item.badge} open`}
                 >
                   {item.badge > 99 ? "99+" : item.badge}

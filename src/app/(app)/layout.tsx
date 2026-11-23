@@ -1,7 +1,8 @@
 import { AppShell } from "@/components/AppShell";
 import { requireUser } from "@/data/auth";
 import {
-  countNieuwTickets,
+  countNieuwRanglijstTickets,
+  countNieuwWerkvoorraadTickets,
   countOpenSpoedTickets,
   countWachtOpMelderTickets,
 } from "@/data/tickets";
@@ -25,10 +26,16 @@ export default async function AppLayout({
   const user = await requireUser();
   const isIt = user.rol === "uitvoerder";
 
-  // Badge counts: spoed for everyone; nieuw only for IT; wacht-op-melder for all.
-  const [spoedCount, nieuwCount, wachtOpMelderCount] = await Promise.all([
+  // Badge counts: spoed for everyone; nieuw badges for IT; wacht-op-melder for all.
+  const [
+    spoedCount,
+    nieuwRanglijstCount,
+    nieuwWerkvoorraadCount,
+    wachtOpMelderCount,
+  ] = await Promise.all([
     countOpenSpoedTickets(),
-    isIt ? countNieuwTickets() : Promise.resolve(0),
+    isIt ? countNieuwRanglijstTickets() : Promise.resolve(0),
+    isIt ? countNieuwWerkvoorraadTickets() : Promise.resolve(0),
     countWachtOpMelderTickets(user.id),
   ]);
 
@@ -36,7 +43,8 @@ export default async function AppLayout({
     <AppShell
       user={user}
       spoedCount={spoedCount}
-      nieuwCount={nieuwCount}
+      nieuwRanglijstCount={nieuwRanglijstCount}
+      nieuwWerkvoorraadCount={nieuwWerkvoorraadCount}
       wachtOpMelderCount={wachtOpMelderCount}
       supabaseConfigured={isSupabaseConfigured()}
     >
