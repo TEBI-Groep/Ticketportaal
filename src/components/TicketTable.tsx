@@ -4,7 +4,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState, type KeyboardEvent } from "react";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
-import { PRIORITY_LABEL, TYPE_LABEL, formatDate } from "@/lib/labels";
+import {
+  PRIORITY_LABEL,
+  STATUS_LABEL,
+  TYPE_LABEL,
+  formatDate,
+} from "@/lib/labels";
 import type { Ticket, TicketPriority, TicketStatus } from "@/lib/types";
 import styles from "./TicketTable.module.css";
 
@@ -247,7 +252,7 @@ export function TicketTable({
                 onKeyDown={onRowKey}
                 tabIndex={0}
               >
-                <td>
+                <td title={ticket.ticketnummer}>
                   <Link
                     href={href}
                     className={styles.rowLink}
@@ -259,33 +264,64 @@ export function TicketTable({
                     ) : null}
                   </Link>
                 </td>
-                <td>
-                  <span className={styles.onderwerp} title={ticket.onderwerp}>
-                    {ticket.onderwerp}
-                  </span>
+                <td title={ticket.onderwerp}>
+                  <span className={styles.onderwerp}>{ticket.onderwerp}</span>
                 </td>
-                <td>
+                <td title={STATUS_LABEL[ticket.status]}>
                   <StatusBadge status={ticket.status} />
                 </td>
-                <td>
+                <td title={PRIORITY_LABEL[ticket.prioriteit]}>
                   {ticket.prioriteit === "spoed" ? (
                     <PriorityBadge priority={ticket.prioriteit} />
                   ) : (
-                    PRIORITY_LABEL[ticket.prioriteit]
+                    <span className={styles.cell}>
+                      {PRIORITY_LABEL[ticket.prioriteit]}
+                    </span>
                   )}
                 </td>
-                <td>{TYPE_LABEL[ticket.type]}</td>
-                <td>{ticket.systeem}</td>
-                <td>{ticket.afdelingen.join(", ") || "—"}</td>
-                <td>{ticket.melderNaam || "—"}</td>
-                <td className={!ticket.eigenaarNaam ? styles.muted : undefined}>
-                  {ticket.eigenaarNaam ?? "Nog niet geclaimd"}
+                <td title={TYPE_LABEL[ticket.type]}>
+                  <span className={styles.cell}>{TYPE_LABEL[ticket.type]}</span>
+                </td>
+                <td title={ticket.systeem}>
+                  <span className={styles.cell}>{ticket.systeem}</span>
+                </td>
+                <td title={ticket.afdelingen.join(", ") || undefined}>
+                  <span className={styles.cell}>
+                    {ticket.afdelingen.join(", ") || "—"}
+                  </span>
+                </td>
+                <td title={ticket.melderNaam || undefined}>
+                  <span className={styles.cell}>
+                    {ticket.melderNaam || "—"}
+                  </span>
+                </td>
+                <td
+                  className={!ticket.eigenaarNaam ? styles.muted : undefined}
+                  title={ticket.eigenaarNaam ?? "Nog niet geclaimd"}
+                >
+                  <span className={styles.cell}>
+                    {ticket.eigenaarNaam ?? "Nog niet geclaimd"}
+                  </span>
+                </td>
+                <td
+                  title={
+                    ticket.streefdatum
+                      ? formatDate(ticket.streefdatum)
+                      : undefined
+                  }
+                >
+                  <span className={styles.cell}>
+                    {ticket.streefdatum ? formatDate(ticket.streefdatum) : "—"}
+                  </span>
                 </td>
                 <td>
-                  {ticket.streefdatum ? formatDate(ticket.streefdatum) : "—"}
+                  <span className={styles.cell}>{ticket.omvang ?? "—"}</span>
                 </td>
-                <td>{ticket.omvang ?? "—"}</td>
-                <td>{formatDate(ticket.updatedAt)}</td>
+                <td title={formatDate(ticket.updatedAt)}>
+                  <span className={styles.cell}>
+                    {formatDate(ticket.updatedAt)}
+                  </span>
+                </td>
               </tr>
             );
           })}

@@ -1,9 +1,22 @@
+/* One column on narrow screens; two columns on desktop to use page width. */
 .filters {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem 1.25rem;
   width: 100%;
   margin-top: 0.15rem;
+  align-items: start;
+}
+
+@media (min-width: 860px) {
+  .filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Long chip rows (e.g. Afdeling) keep a full-width row. */
+  .groupWide {
+    grid-column: 1 / -1;
+  }
 }
 
 .group {
@@ -11,6 +24,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem 0.45rem;
+  min-width: 0;
 }
 
 .label {

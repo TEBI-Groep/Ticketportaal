@@ -223,7 +223,11 @@ export function FilteredTicketList({
             ) : null}
 
             {showAfdeling ? (
-              <div className={styles.group} role="group" aria-label="Filter op afdeling">
+              <div
+                className={`${styles.group} ${styles.groupWide}`}
+                role="group"
+                aria-label="Filter op afdeling"
+              >
                 <span className={styles.label}>Afdeling</span>
                 {options.afdelingen.map((value) => (
                   <button
