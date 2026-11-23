@@ -2,7 +2,10 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateTicketItAction } from "@/app/actions/tickets";
+import {
+  deleteTicketItAction,
+  updateTicketItAction,
+} from "@/app/actions/tickets";
 import { PRIORITY_LABEL, STATUS_LABEL } from "@/lib/labels";
 import type {
   Ticket,
@@ -11,6 +14,7 @@ import type {
   TicketStatus,
   User,
 } from "@/lib/types";
+import styles from "./ItTicketEditor.module.css";
 
 interface ItTicketEditorProps {
   ticket: Ticket;
@@ -40,6 +44,8 @@ export function ItTicketEditor({
   const [onderwerp, setOnderwerp] = useState(ticket.onderwerp);
   const [omschrijving, setOmschrijving] = useState(ticket.omschrijving);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -76,6 +82,21 @@ export function ItTicketEditor({
     }
 
     setNotice("Ticket opgeslagen.");
+    router.refresh();
+  }
+
+  async function handleDelete() {
+    if (deleting) return;
+    setDeleting(true);
+    setError(null);
+    const result = await deleteTicketItAction(ticket.id);
+    setDeleting(false);
+    if (!result.ok) {
+      setConfirmDelete(false);
+      setError(result.error);
+      return;
+    }
+    router.push("/ranglijst");
     router.refresh();
   }
 
@@ -253,9 +274,67 @@ export function ItTicketEditor({
         </p>
       ) : null}
 
-      <button type="submit" className="btn btn-primary" disabled={saving}>
-        {saving ? "Bezig…" : "Opslaan"}
-      </button>
+      <div className={styles.actions}>
+        <button
+          type="button"
+          className={`btn btn-ghost ${styles.deleteBtn}`}
+          onClick={() => {
+            setError(null);
+            setConfirmDelete(true);
+          }}
+          disabled={saving || deleting}
+        >
+          Ticket verwijderen
+        </button>
+        <button type="submit" className="btn btn-primary" disabled={saving || deleting}>
+          {saving ? "Bezig…" : "Opslaan"}
+        </button>
+      </div>
+
+      {confirmDelete ? (
+        <div
+          className={styles.dialogBackdrop}
+          role="presentation"
+          onClick={() => !deleting && setConfirmDelete(false)}
+        >
+          <div
+            className={styles.dialog}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-ticket-title"
+            aria-describedby="delete-ticket-desc"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="delete-ticket-title">Ticket verwijderen?</h2>
+            <p id="delete-ticket-desc">
+              Weet je zeker dat je <strong>{ticket.ticketnummer}</strong> (
+              {ticket.onderwerp}) wilt verwijderen? Dit kan niet ongedaan worden
+              gemaakt.
+            </p>
+            <p className={styles.warning}>
+              Alleen gebruiken voor foutieve of testtickets.
+            </p>
+            <div className={styles.dialogActions}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+              >
+                Annuleren
+              </button>
+              <button
+                type="button"
+                className={`btn btn-primary ${styles.deleteConfirm}`}
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Bezig…" : "Ja, verwijderen"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </form>
   );
 }

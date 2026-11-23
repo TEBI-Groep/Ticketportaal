@@ -1,0 +1,64 @@
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.deleteBtn {
+  color: var(--spoed, #b42318) !important;
+}
+
+.deleteConfirm {
+  background: var(--spoed, #b42318) !important;
+  border-color: var(--spoed, #b42318) !important;
+}
+
+.dialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: color-mix(in srgb, #0f172a 45%, transparent);
+}
+
+.dialog {
+  width: min(100%, 26rem);
+  padding: 1.25rem 1.35rem;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.dialog h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.dialog p {
+  margin: 0 0 0.75rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.warning {
+  margin: 0 0 1.1rem !important;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--spoed, #b42318) 12%, var(--surface-raised));
+  border: 1px solid color-mix(in srgb, var(--spoed, #b42318) 35%, var(--border));
+  color: var(--spoed, #b42318) !important;
+  font-weight: 600;
+}
+
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
