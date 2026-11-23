@@ -177,3 +177,78 @@ export async function setUserPassword(
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+/**
+ * Permanently delete an Auth user (+ profile cascade).
+ * Blocks when the user is still melder on tickets; cleans other FKs first.
+ */
+export async function deleteUserAccount(
+  userId: string,
+  actorId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (userId === actorId) {
+    return { ok: false, error: "Je kunt je eigen account niet verwijderen." };
+  }
+
+  const admin = createAdminClient();
+  if (!admin) {
+    return {
+      ok: false,
+      error:
+        "supabase_service_role_key ontbreekt — voeg die toe om accounts te verwijderen.",
+    };
+  }
+
+  const { count: melderCount, error: melderError } = await admin
+    .from("tickets")
+    .select("id", { count: "exact", head: true })
+    .eq("melder_id", userId);
+  if (melderError) {
+    return { ok: false, error: melderError.message };
+  }
+  if ((melderCount ?? 0) > 0) {
+    return {
+      ok: false,
+      error: `Deze gebruiker is melder van ${melderCount} ticket(s). Wijzig eerst de melder op die tickets.`,
+    };
+  }
+
+  const steps: Array<{ error: { message: string } | null }> = [
+    await admin
+      .from("tickets")
+      .update({ eigenaar_id: null })
+      .eq("eigenaar_id", userId),
+    await admin.from("comments").update({ user_id: null }).eq("user_id", userId),
+    await admin
+      .from("ticket_status_events")
+      .update({ changed_by: null })
+      .eq("changed_by", userId),
+    await admin
+      .from("ticket_links")
+      .update({ created_by: null })
+      .eq("created_by", userId),
+    await admin
+      .from("knowledge_articles")
+      .update({ created_by: null })
+      .eq("created_by", userId),
+    await admin
+      .from("ticket_attachments")
+      .update({ uploaded_by: actorId })
+      .eq("uploaded_by", userId),
+    await admin.from("it_notes").delete().eq("user_id", userId),
+    await admin
+      .from("approval_requests")
+      .delete()
+      .or(`requested_by.eq.${userId},approver_id.eq.${userId}`),
+  ];
+
+  for (const step of steps) {
+    if (step.error) {
+      return { ok: false, error: step.error.message };
+    }
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

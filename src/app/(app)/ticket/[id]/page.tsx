@@ -8,6 +8,7 @@ import { ItTicketEditor } from "@/components/ItTicketEditor";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
 import { TicketAttachments } from "@/components/TicketAttachments";
+import { TicketWatchBell } from "@/components/TicketWatchBell";
 import { requireUser } from "@/data/auth";
 import { getAttachmentsForTicket } from "@/data/attachments";
 import {
@@ -16,6 +17,7 @@ import {
   getTicketById,
 } from "@/data/tickets";
 import { listDepartments, listUsers, listUitvoerders } from "@/data/users";
+import { isWatchingTicket } from "@/data/watchers";
 import {
   IMPACT_LABEL,
   TYPE_LABEL,
@@ -61,15 +63,23 @@ async function TicketDetailContent({
   const count = ratingAantal(ticket);
   const mine = mijnRating(ticket, user.id);
   const isIt = user.rol === "uitvoerder";
-  const [comments, itNotes, attachments, uitvoerders, melders, departments] =
-    await Promise.all([
-      getCommentsForTicket(ticket.id),
-      getItNotesForTicket(ticket.id),
-      getAttachmentsForTicket(ticket.id),
-      isIt ? listUitvoerders() : Promise.resolve([]),
-      isIt ? listUsers() : Promise.resolve([]),
-      isIt ? listDepartments() : Promise.resolve([]),
-    ]);
+  const [
+    comments,
+    itNotes,
+    attachments,
+    uitvoerders,
+    melders,
+    departments,
+    watching,
+  ] = await Promise.all([
+    getCommentsForTicket(ticket.id),
+    getItNotesForTicket(ticket.id),
+    getAttachmentsForTicket(ticket.id),
+    isIt ? listUitvoerders() : Promise.resolve([]),
+    isIt ? listUsers() : Promise.resolve([]),
+    isIt ? listDepartments() : Promise.resolve([]),
+    isWatchingTicket(ticket.id, user.id),
+  ]);
   const activeMelders = melders.filter(
     (u) => u.actief || u.id === ticket.melderId,
   );
@@ -94,9 +104,20 @@ async function TicketDetailContent({
             <h1>
               {ticket.ticketnummer} · {ticket.onderwerp}
             </h1>
-            <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "0.35rem",
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
               <StatusBadge status={ticket.status} />
               <PriorityBadge priority={ticket.prioriteit} />
+              <TicketWatchBell
+                ticketId={ticket.id}
+                initiallyWatching={watching}
+              />
             </div>
           </div>
 

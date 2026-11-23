@@ -130,6 +130,20 @@ export interface Database {
           department_id: string;
         };
       };
+      ticket_watchers: {
+        Row: {
+          ticket_id: string;
+          user_id: string;
+          reason: string;
+          created_at: string;
+        };
+        Insert: {
+          ticket_id: string;
+          user_id: string;
+          reason?: string;
+          created_at?: string;
+        };
+      };
       ratings: {
         Row: {
           id: string;

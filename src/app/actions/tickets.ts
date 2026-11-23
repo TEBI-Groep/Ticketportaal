@@ -157,6 +157,13 @@ export async function createTicketAction(
       return { ok: false, error: linkError.message };
     }
 
+    // Melder starts watching their own ticket (for future update e-mails).
+    await supabase.from("ticket_watchers").insert({
+      ticket_id: data.id,
+      user_id: user.id,
+      reason: "melder",
+    });
+
     revalidateTicketPaths(data.id);
     return { ok: true, id: data.id };
   } catch (err) {
