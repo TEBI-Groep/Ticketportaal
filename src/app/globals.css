@@ -131,6 +131,11 @@ img {
   padding-block: var(--space-4) var(--space-6);
 }
 
+/* Wider than default pages, still with side margin (not full bleed). */
+.page-wide {
+  width: min(100% - 1.25rem, 96rem);
+}
+
 .page-header {
   margin-bottom: var(--space-4);
 }

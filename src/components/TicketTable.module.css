@@ -1,4 +1,6 @@
-/* Dense spreadsheet-style ticket overview (Overzicht page). */
+/* Dense spreadsheet-style ticket overview (Overzicht page).
+   Fixed layout + capped columns so a typical desktop fits without
+   sideways scroll; overflow-x remains as a fallback on narrow viewports. */
 
 .wrap {
   overflow-x: auto;
@@ -10,27 +12,90 @@
 
 .table {
   width: 100%;
-  min-width: 72rem;
+  table-layout: fixed;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .table th,
 .table td {
-  padding: 0.65rem 0.85rem;
+  padding: 0.5rem 0.45rem;
   text-align: left;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Column budget — keeps the full grid inside the page width. */
+.table th:nth-child(1),
+.table td:nth-child(1) {
+  width: 5.5%;
+}
+
+.table th:nth-child(2),
+.table td:nth-child(2) {
+  width: 15%;
+}
+
+.table th:nth-child(3),
+.table td:nth-child(3) {
+  width: 10%;
+}
+
+.table th:nth-child(4),
+.table td:nth-child(4) {
+  width: 7%;
+}
+
+.table th:nth-child(5),
+.table td:nth-child(5) {
+  width: 7%;
+}
+
+.table th:nth-child(6),
+.table td:nth-child(6) {
+  width: 8%;
+}
+
+.table th:nth-child(7),
+.table td:nth-child(7) {
+  width: 9%;
+}
+
+.table th:nth-child(8),
+.table td:nth-child(8) {
+  width: 9%;
+}
+
+.table th:nth-child(9),
+.table td:nth-child(9) {
+  width: 10%;
+}
+
+.table th:nth-child(10),
+.table td:nth-child(10) {
+  width: 7.5%;
+}
+
+.table th:nth-child(11),
+.table td:nth-child(11) {
+  width: 4%;
+}
+
+.table th:nth-child(12),
+.table td:nth-child(12) {
+  width: 8%;
 }
 
 .table th {
   position: sticky;
   top: 0;
   z-index: 1;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--ink-muted);
   background: color-mix(in srgb, var(--bg) 55%, var(--surface-raised));
 }
@@ -60,7 +125,8 @@
 .sortBtn {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.2rem;
+  max-width: 100%;
   margin: 0;
   padding: 0;
   border: none;
@@ -72,6 +138,7 @@
   text-transform: inherit;
   color: inherit;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .sortBtn:hover,
@@ -90,13 +157,25 @@
 }
 
 .arrow {
+  flex-shrink: 0;
   font-size: 0.7rem;
   opacity: 0.85;
+}
+
+/* Truncation helper for cell text (title attrs carry the full value). */
+.cell {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Whole row is clickable via the ticket link. */
 .rowLink {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: inherit;
   text-decoration: none;
 }
@@ -108,7 +187,7 @@
 }
 
 .onderwerp {
-  max-width: 18rem;
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -120,8 +199,8 @@
 }
 
 .prive {
-  margin-left: 0.35rem;
-  font-size: 0.65rem;
+  margin-left: 0.25rem;
+  font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
