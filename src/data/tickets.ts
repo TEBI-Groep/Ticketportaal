@@ -318,6 +318,27 @@ export async function countWachtOpMelderTickets(
 }
 
 /**
+ * All open tickets visible to the current user (RLS filters the rest).
+ * Used by the spreadsheet-style /overzicht page.
+ */
+export async function getOverzichtTickets(): Promise<Ticket[]> {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("tickets")
+      .select(TICKET_SELECT)
+      .not("status", "in", '("afgerond","afgewezen")');
+    if (error || !data) return [];
+    return sortOpenTickets(
+      (data as unknown as TicketRow[]).map(mapTicket),
+    );
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Open operational tickets for IT: everything open that is not Spoed,
  * including NetSuite Ranglijst-kandidaten so IT has one combined overview.
  * Page is uitvoerder-only; non-IT users use Mijn tickets instead.

@@ -55,6 +55,8 @@ const NAV_ITEMS: Array<
     short: "Mijn",
     badgeKey: "wachtOpMelder",
   },
+  /* Spreadsheet-style view with sortable headers (everyone). */
+  { href: "/overzicht", label: "Overzicht", short: "Tabel" },
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
   { href: "/mijn-werk", label: "Mijn werk", short: "Eigen", itOnly: true },
   { href: "/gebruikers", label: "Gebruikers", short: "Users", itOnly: true },
