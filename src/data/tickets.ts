@@ -244,6 +244,44 @@ export async function countOpenSpoedTickets(): Promise<number> {
   }
 }
 
+/** Count tickets with status nieuw (IT Werkvoorraad nav badge). */
+export async function countNieuwTickets(): Promise<number> {
+  if (!isSupabaseConfigured()) return 0;
+  try {
+    const supabase = await createClient();
+    const { count, error } = await supabase
+      .from("tickets")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "nieuw");
+    if (error) return 0;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Count tickets waiting on the current user as melder (Mijn tickets badge).
+ * Scoped to melder_id so the number is actionable for that user.
+ */
+export async function countWachtOpMelderTickets(
+  userId: string,
+): Promise<number> {
+  if (!isSupabaseConfigured() || !userId) return 0;
+  try {
+    const supabase = await createClient();
+    const { count, error } = await supabase
+      .from("tickets")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "wacht_op_melder")
+      .eq("melder_id", userId);
+    if (error) return 0;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 /**
  * Open operational tickets for IT: not Spoed, not on the public NetSuite
  * Ranglijst (storingen, vragen, Outlook/WMS/hardware, etc.).

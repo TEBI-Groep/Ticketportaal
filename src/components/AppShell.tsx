@@ -17,6 +17,8 @@ function LogoutButton() {
   );
 }
 
+type BadgeKey = "spoed" | "nieuw" | "wachtOpMelder";
+
 type NavItem = {
   href: string;
   label: string;
@@ -27,24 +29,47 @@ type NavItem = {
 
 /** Same order as before; Werkvoorraad only for uitvoerders. */
 const NAV_ITEMS: Array<
-  Omit<NavItem, "badge"> & { itOnly?: boolean; badgeKey?: "spoed" }
+  Omit<NavItem, "badge"> & { itOnly?: boolean; badgeKey?: BadgeKey }
 > = [
   { href: "/ranglijst", label: "Ranglijst", short: "Rang" },
-  { href: "/werkvoorraad", label: "Werkvoorraad", short: "Werk", itOnly: true },
+  {
+    href: "/werkvoorraad",
+    label: "Werkvoorraad",
+    short: "Werk",
+    itOnly: true,
+    badgeKey: "nieuw",
+  },
   { href: "/spoed", label: "Spoed", short: "Spoed", badgeKey: "spoed" },
-  { href: "/mijn-tickets", label: "Mijn tickets", short: "Mijn" },
+  {
+    href: "/mijn-tickets",
+    label: "Mijn tickets",
+    short: "Mijn",
+    badgeKey: "wachtOpMelder",
+  },
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
   { href: "/mijn-werk", label: "Mijn werk", short: "Eigen", itOnly: true },
   { href: "/gebruikers", label: "Gebruikers", short: "Users", itOnly: true },
 ];
 
-function navForRole(isIt: boolean, spoedCount: number): NavItem[] {
+function badgeForKey(
+  key: BadgeKey | undefined,
+  counts: { spoed: number; nieuw: number; wachtOpMelder: number },
+): number | undefined {
+  if (!key) return undefined;
+  const value = counts[key];
+  return value > 0 ? value : undefined;
+}
+
+function navForRole(
+  isIt: boolean,
+  counts: { spoed: number; nieuw: number; wachtOpMelder: number },
+): NavItem[] {
   return NAV_ITEMS.filter((item) => isIt || !item.itOnly).map(
     ({ href, label, short, badgeKey }) => ({
       href,
       label,
       short,
-      badge: badgeKey === "spoed" && spoedCount > 0 ? spoedCount : undefined,
+      badge: badgeForKey(badgeKey, counts),
     }),
   );
 }
@@ -54,25 +79,35 @@ function isActive(pathname: string, href: string): boolean {
 }
 
 /**
- * Shared chrome: Tebi brand, four tabs, + Ticket CTA.
+ * Shared chrome: Tebi brand, role-aware tabs, + Ticket CTA.
  * Stemsaldo removed — ratings are 1–5 stars without a limited pool.
  */
 export function AppShell({
   children,
   user,
   spoedCount = 0,
+  nieuwCount = 0,
+  wachtOpMelderCount = 0,
   supabaseConfigured = true,
 }: {
   children: React.ReactNode;
   user: User;
   /** Open tickets with prioriteit spoed (nav badge). */
   spoedCount?: number;
+  /** Tickets with status nieuw — IT Werkvoorraad badge. */
+  nieuwCount?: number;
+  /** Tickets waiting on this user as melder — Mijn tickets badge. */
+  wachtOpMelderCount?: number;
   /** False when Supabase URL/anon key are missing on this environment. */
   supabaseConfigured?: boolean;
 }) {
   const pathname = usePathname();
   const isIt = user.rol === "uitvoerder";
-  const desktopItems = navForRole(isIt, spoedCount);
+  const desktopItems = navForRole(isIt, {
+    spoed: spoedCount,
+    nieuw: isIt ? nieuwCount : 0,
+    wachtOpMelder: wachtOpMelderCount,
+  });
 
   return (
     <div className={styles.shell}>
