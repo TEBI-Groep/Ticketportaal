@@ -224,6 +224,23 @@ export async function getSpoedTickets(): Promise<Ticket[]> {
   }
 }
 
+/** Open spoed count for the nav badge (afgerond/afgewezen excluded). */
+export async function countOpenSpoedTickets(): Promise<number> {
+  if (!isSupabaseConfigured()) return 0;
+  try {
+    const supabase = await createClient();
+    const { count, error } = await supabase
+      .from("tickets")
+      .select("id", { count: "exact", head: true })
+      .eq("prioriteit", "spoed")
+      .not("status", "in", '("afgerond","afgewezen")');
+    if (error) return 0;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 /**
  * Open operational tickets for IT: not Spoed, not on the public NetSuite
  * Ranglijst (storingen, vragen, Outlook/WMS/hardware, etc.).

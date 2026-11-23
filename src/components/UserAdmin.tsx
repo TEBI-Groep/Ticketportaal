@@ -5,6 +5,7 @@ import type { User, UserRole } from "@/lib/types";
 import { ROLE_LABEL } from "@/lib/labels";
 import {
   createUserAction,
+  deleteUserAction,
   setUserPasswordAction,
   updateUserAction,
 } from "@/app/actions/users";
@@ -54,6 +55,9 @@ export function UserAdmin({
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState("");
+  /** User id pending delete confirmation (null = dialog closed). */
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const editing = mode.kind === "edit"
     ? users.find((u) => u.id === mode.userId)
@@ -96,6 +100,28 @@ export function UserAdmin({
   function backToList() {
     setMode({ kind: "list" });
     setError(null);
+    setPendingDeleteId(null);
+  }
+
+  async function confirmDelete() {
+    if (!pendingDeleteId || deleting) return;
+    const id = pendingDeleteId;
+    setDeleting(true);
+    setError(null);
+    const result = await deleteUserAction(id);
+    setDeleting(false);
+    if (!result.ok) {
+      setError(result.error);
+      setPendingDeleteId(null);
+      return;
+    }
+    const removed = users.find((u) => u.id === id);
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+    setPendingDeleteId(null);
+    setNotice(`Gebruiker ${removed?.naam ?? ""} verwijderd.`);
+    if (mode.kind === "edit" && mode.userId === id) {
+      setMode({ kind: "list" });
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -375,6 +401,19 @@ export function UserAdmin({
           ) : null}
 
           <div className={styles.formActions}>
+            {!isCreate && editing && editing.id !== currentUserId ? (
+              <button
+                type="button"
+                className={`btn btn-ghost ${styles.deleteBtn}`}
+                onClick={() => {
+                  setError(null);
+                  setPendingDeleteId(editing.id);
+                }}
+                disabled={saving || deleting}
+              >
+                Verwijderen
+              </button>
+            ) : null}
             <button type="button" className="btn btn-secondary" onClick={backToList}>
               Annuleren
             </button>
@@ -383,9 +422,23 @@ export function UserAdmin({
             </button>
           </div>
         </form>
+
+        {pendingDeleteId && editing ? (
+          <DeleteConfirmDialog
+            naam={editing.naam}
+            email={editing.email}
+            deleting={deleting}
+            onCancel={() => setPendingDeleteId(null)}
+            onConfirm={confirmDelete}
+          />
+        ) : null}
       </section>
     );
   }
+
+  const pendingDeleteUser = pendingDeleteId
+    ? users.find((u) => u.id === pendingDeleteId)
+    : undefined;
 
   return (
     <section className={styles.wrap}>
@@ -408,6 +461,11 @@ export function UserAdmin({
       {notice ? (
         <p className={styles.notice} role="status">
           {notice}
+        </p>
+      ) : null}
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
         </p>
       ) : null}
 
@@ -449,7 +507,7 @@ export function UserAdmin({
                       {user.actief ? "Actief" : "Inactief"}
                     </span>
                   </td>
-                  <td>
+                  <td className={styles.rowActions}>
                     <button
                       type="button"
                       className="btn btn-ghost"
@@ -457,6 +515,19 @@ export function UserAdmin({
                     >
                       Bewerken
                     </button>
+                    {user.id !== currentUserId ? (
+                      <button
+                        type="button"
+                        className={`btn btn-ghost ${styles.deleteBtn}`}
+                        onClick={() => {
+                          setError(null);
+                          setNotice(null);
+                          setPendingDeleteId(user.id);
+                        }}
+                      >
+                        Verwijderen
+                      </button>
+                    ) : null}
                   </td>
                 </tr>
               ))}
@@ -464,7 +535,72 @@ export function UserAdmin({
           </table>
         </div>
       )}
+
+      {pendingDeleteUser ? (
+        <DeleteConfirmDialog
+          naam={pendingDeleteUser.naam}
+          email={pendingDeleteUser.email}
+          deleting={deleting}
+          onCancel={() => setPendingDeleteId(null)}
+          onConfirm={confirmDelete}
+        />
+      ) : null}
     </section>
+  );
+}
+
+function DeleteConfirmDialog({
+  naam,
+  email,
+  deleting,
+  onCancel,
+  onConfirm,
+}: {
+  naam: string;
+  email: string;
+  deleting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      className={styles.dialogBackdrop}
+      role="presentation"
+      onClick={onCancel}
+    >
+      <div
+        className={styles.dialog}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="delete-user-title"
+        aria-describedby="delete-user-desc"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="delete-user-title">Gebruiker verwijderen?</h2>
+        <p id="delete-user-desc">
+          Weet je zeker dat je <strong>{naam}</strong> ({email}) wilt
+          verwijderen? Dit kan niet ongedaan worden gemaakt.
+        </p>
+        <div className={styles.dialogActions}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={onCancel}
+            disabled={deleting}
+          >
+            Annuleren
+          </button>
+          <button
+            type="button"
+            className={`btn btn-primary ${styles.deleteConfirm}`}
+            onClick={onConfirm}
+            disabled={deleting}
+          >
+            {deleting ? "Bezig…" : "Ja, verwijderen"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

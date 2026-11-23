@@ -17,22 +17,35 @@ function LogoutButton() {
   );
 }
 
-type NavItem = { href: string; label: string; short: string };
+type NavItem = {
+  href: string;
+  label: string;
+  short: string;
+  /** Optional count badge (e.g. open spoed tickets). */
+  badge?: number;
+};
 
 /** Same order as before; Werkvoorraad only for uitvoerders. */
-const NAV_ITEMS: Array<NavItem & { itOnly?: boolean }> = [
+const NAV_ITEMS: Array<
+  Omit<NavItem, "badge"> & { itOnly?: boolean; badgeKey?: "spoed" }
+> = [
   { href: "/ranglijst", label: "Ranglijst", short: "Rang" },
   { href: "/werkvoorraad", label: "Werkvoorraad", short: "Werk", itOnly: true },
-  { href: "/spoed", label: "Spoed", short: "Spoed" },
+  { href: "/spoed", label: "Spoed", short: "Spoed", badgeKey: "spoed" },
   { href: "/mijn-tickets", label: "Mijn tickets", short: "Mijn" },
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
   { href: "/mijn-werk", label: "Mijn werk", short: "Eigen", itOnly: true },
   { href: "/gebruikers", label: "Gebruikers", short: "Users", itOnly: true },
 ];
 
-function navForRole(isIt: boolean): NavItem[] {
+function navForRole(isIt: boolean, spoedCount: number): NavItem[] {
   return NAV_ITEMS.filter((item) => isIt || !item.itOnly).map(
-    ({ href, label, short }) => ({ href, label, short }),
+    ({ href, label, short, badgeKey }) => ({
+      href,
+      label,
+      short,
+      badge: badgeKey === "spoed" && spoedCount > 0 ? spoedCount : undefined,
+    }),
   );
 }
 
@@ -47,16 +60,19 @@ function isActive(pathname: string, href: string): boolean {
 export function AppShell({
   children,
   user,
+  spoedCount = 0,
   supabaseConfigured = true,
 }: {
   children: React.ReactNode;
   user: User;
+  /** Open tickets with prioriteit spoed (nav badge). */
+  spoedCount?: number;
   /** False when Supabase URL/anon key are missing on this environment. */
   supabaseConfigured?: boolean;
 }) {
   const pathname = usePathname();
   const isIt = user.rol === "uitvoerder";
-  const desktopItems = navForRole(isIt);
+  const desktopItems = navForRole(isIt, spoedCount);
 
   return (
     <div className={styles.shell}>
@@ -91,7 +107,12 @@ export function AppShell({
                 isActive(pathname, item.href) ? styles.navLinkActive : ""
               }`}
             >
-              {item.label}
+              <span>{item.label}</span>
+              {item.badge != null ? (
+                <span className={styles.navBadge} aria-label={`${item.badge} open`}>
+                  {item.badge > 99 ? "99+" : item.badge}
+                </span>
+              ) : null}
             </Link>
           ))}
         </nav>
@@ -130,8 +151,18 @@ export function AppShell({
               isActive(pathname, item.href) ? styles.bottomLinkActive : ""
             }`}
           >
-            <span className={styles.bottomIcon} aria-hidden>
-              {item.short.charAt(0)}
+            <span className={styles.bottomIconWrap}>
+              <span className={styles.bottomIcon} aria-hidden>
+                {item.short.charAt(0)}
+              </span>
+              {item.badge != null ? (
+                <span
+                  className={styles.navBadge}
+                  aria-label={`${item.badge} open`}
+                >
+                  {item.badge > 99 ? "99+" : item.badge}
+                </span>
+              ) : null}
             </span>
             {item.short}
           </Link>

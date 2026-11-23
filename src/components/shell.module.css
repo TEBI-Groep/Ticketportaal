@@ -60,12 +60,31 @@
 }
 
 .navLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.45rem 0.75rem;
   border-radius: var(--radius-sm);
   font-weight: 600;
   font-size: 0.875rem;
   color: var(--ink-soft);
   transition: background 0.12s ease, color 0.12s ease;
+}
+
+.navBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--spoed, #b42318);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .navLink:hover {
@@ -188,6 +207,22 @@
 .bottomLinkActive {
   color: var(--brand-ink);
   background: var(--brand-soft);
+}
+
+.bottomIconWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottomIconWrap .navBadge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.55rem;
+  min-width: 1rem;
+  height: 1rem;
+  font-size: 0.6rem;
 }
 
 .bottomIcon {

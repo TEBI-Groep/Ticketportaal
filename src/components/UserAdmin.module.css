@@ -141,3 +141,57 @@
   gap: var(--space-2);
   margin-top: var(--space-2);
 }
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.deleteBtn {
+  color: var(--spoed, #b42318) !important;
+}
+
+.deleteConfirm {
+  background: var(--spoed, #b42318) !important;
+  border-color: var(--spoed, #b42318) !important;
+}
+
+.dialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: color-mix(in srgb, #0f172a 45%, transparent);
+}
+
+.dialog {
+  width: min(100%, 24rem);
+  padding: 1.25rem 1.35rem;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.dialog h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.dialog p {
+  margin: 0 0 1.1rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

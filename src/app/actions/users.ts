@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUitvoerderAction } from "@/data/auth";
 import {
   createUserAccount,
+  deleteUserAccount,
   setUserPassword,
   updateUserAccount,
   type CreateUserInput,
@@ -62,6 +63,22 @@ export async function setUserPasswordAction(
   }
 
   const result = await setUserPassword(userId, password);
+  if (result.ok) {
+    revalidatePath("/gebruikers");
+  }
+  return result;
+}
+
+/** IT permanently deletes a user after confirmation in the UI. */
+export async function deleteUserAction(
+  userId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const gate = await requireUitvoerderAction();
+  if (!gate.ok) {
+    return { ok: false, error: gate.error };
+  }
+
+  const result = await deleteUserAccount(userId, gate.user.id);
   if (result.ok) {
     revalidatePath("/gebruikers");
   }

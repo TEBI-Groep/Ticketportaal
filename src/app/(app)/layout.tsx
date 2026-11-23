@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/AppShell";
 import { requireUser } from "@/data/auth";
+import { countOpenSpoedTickets } from "@/data/tickets";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 /**
@@ -17,9 +18,16 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await requireUser();
+  const [user, spoedCount] = await Promise.all([
+    requireUser(),
+    countOpenSpoedTickets(),
+  ]);
   return (
-    <AppShell user={user} supabaseConfigured={isSupabaseConfigured()}>
+    <AppShell
+      user={user}
+      spoedCount={spoedCount}
+      supabaseConfigured={isSupabaseConfigured()}
+    >
       {children}
     </AppShell>
   );
