@@ -7,8 +7,10 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import {
   PRIORITY_LABEL,
@@ -16,6 +18,7 @@ import {
   TYPE_LABEL,
   formatDate,
 } from "@/lib/labels";
+import { filterTicketsByQuery } from "@/lib/ticket-search";
 import type {
   Ticket,
   TicketPriority,
@@ -291,7 +294,20 @@ interface TicketTableProps {
   emptyMessage?: string;
   emptyHref?: string;
   emptyCta?: string;
+  /** Global free-text search above the table (combined with column filters). */
+  searchPlaceholder?: string;
+  searchLabel?: string;
 }
+
+type PanelCoords = {
+  left: number;
+  maxHeight: number;
+  width: number;
+  /** Prefer opening below the funnel; flip upward when space is tight. */
+  openUp: boolean;
+  top?: number;
+  bottom?: number;
+};
 
 /**
  * Spreadsheet-style ticket overview with sortable + filterable headers.
@@ -303,6 +319,8 @@ export function TicketTable({
   emptyMessage = "Geen tickets gevonden.",
   emptyHref = "/ticket/nieuw",
   emptyCta = "Ticket aanmaken",
+  searchPlaceholder = "Zoek in het overzicht…",
+  searchLabel = "Zoeken in tickets",
 }: TicketTableProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -312,7 +330,14 @@ export function TicketTable({
   const [filters, setFilters] = useState<ColumnFilters>({});
   const [openFilter, setOpenFilter] = useState<TicketSortKey | null>(null);
   const [filterQuery, setFilterQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [panelCoords, setPanelCoords] = useState<PanelCoords | null>(null);
+  const [portalReady, setPortalReady] = useState(false);
   const headerBarRef = useRef<HTMLTableSectionElement | null>(null);
+  const filterPanelRef = useRef<HTMLDivElement | null>(null);
+  const filterBtnRefs = useRef<
+    Partial<Record<TicketSortKey, HTMLButtonElement | null>>
+  >({});
 
   const isDefaultSort =
     sortKey === DEFAULT_SORT_KEY && sortDir === DEFAULT_SORT_DIR;
@@ -322,22 +347,82 @@ export function TicketTable({
     setSortDir(DEFAULT_SORT_DIR);
   }
 
+  function closeFilterPanel() {
+    setOpenFilter(null);
+    setFilterQuery("");
+    setPanelCoords(null);
+  }
+
+  /* Portals need document.body — only after mount. */
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  /* Position the filter panel in the viewport (avoids table overflow clipping). */
+  useEffect(() => {
+    if (!openFilter) {
+      setPanelCoords(null);
+      return;
+    }
+
+    function placePanel() {
+      const btn = filterBtnRefs.current[openFilter!];
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const width = 210;
+      const gap = 4;
+      const left = Math.max(
+        8,
+        Math.min(rect.left, window.innerWidth - width - 8),
+      );
+      const spaceBelow = window.innerHeight - rect.bottom - gap - 8;
+      const spaceAbove = rect.top - gap - 8;
+      const openUp = spaceBelow < 180 && spaceAbove > spaceBelow;
+      const maxHeight = Math.max(
+        120,
+        Math.min(320, openUp ? spaceAbove : spaceBelow),
+      );
+
+      if (openUp) {
+        setPanelCoords({
+          openUp: true,
+          left,
+          width,
+          maxHeight,
+          bottom: window.innerHeight - rect.top + gap,
+        });
+      } else {
+        setPanelCoords({
+          openUp: false,
+          left,
+          width,
+          maxHeight,
+          top: rect.bottom + gap,
+        });
+      }
+    }
+
+    placePanel();
+    window.addEventListener("scroll", placePanel, true);
+    window.addEventListener("resize", placePanel);
+    return () => {
+      window.removeEventListener("scroll", placePanel, true);
+      window.removeEventListener("resize", placePanel);
+    };
+  }, [openFilter]);
+
   /* Close the open filter popover on outside click / Escape. */
   useEffect(() => {
     if (!openFilter) return;
 
     function onPointerDown(e: PointerEvent) {
-      const root = headerBarRef.current;
-      if (root && !root.contains(e.target as Node)) {
-        setOpenFilter(null);
-        setFilterQuery("");
-      }
+      const target = e.target as Node;
+      if (headerBarRef.current?.contains(target)) return;
+      if (filterPanelRef.current?.contains(target)) return;
+      closeFilterPanel();
     }
     function onKey(e: globalThis.KeyboardEvent) {
-      if (e.key === "Escape") {
-        setOpenFilter(null);
-        setFilterQuery("");
-      }
+      if (e.key === "Escape") closeFilterPanel();
     }
 
     document.addEventListener("pointerdown", onPointerDown);
@@ -348,9 +433,15 @@ export function TicketTable({
     };
   }, [openFilter]);
 
+  /* Text first, then Excel column filters — both apply together. */
+  const searched = useMemo(
+    () => filterTicketsByQuery(tickets, searchQuery),
+    [tickets, searchQuery],
+  );
+
   const filtered = useMemo(
-    () => tickets.filter((t) => ticketMatchesFilters(t, filters)),
-    [tickets, filters],
+    () => searched.filter((t) => ticketMatchesFilters(t, filters)),
+    [searched, filters],
   );
 
   const sorted = useMemo(
@@ -361,12 +452,12 @@ export function TicketTable({
     [filtered, sortKey, sortDir],
   );
 
-  /* Options for the open column: values still present after other filters. */
+  /* Options for the open column: values still present after search + other filters. */
   const openFilterOptions = useMemo(() => {
     if (!openFilter) return [];
     const others: ColumnFilters = { ...filters };
     delete others[openFilter];
-    const pool = tickets.filter((t) => ticketMatchesFilters(t, others));
+    const pool = searched.filter((t) => ticketMatchesFilters(t, others));
     const counts = new Map<string, number>();
     for (const ticket of pool) {
       for (const token of filterTokens(ticket, openFilter)) {
@@ -379,8 +470,10 @@ export function TicketTable({
         count,
         label: filterLabel(openFilter, token),
       }))
-      .sort((a, b) => a.label.localeCompare(b.label, "nl", { sensitivity: "base" }));
-  }, [openFilter, filters, tickets]);
+      .sort((a, b) =>
+        a.label.localeCompare(b.label, "nl", { sensitivity: "base" }),
+      );
+  }, [openFilter, filters, searched]);
 
   const visibleFilterOptions = useMemo(() => {
     const q = filterQuery.trim().toLowerCase();
@@ -415,6 +508,7 @@ export function TicketTable({
     setOpenFilter((cur) => {
       if (cur === key) {
         setFilterQuery("");
+        setPanelCoords(null);
         return null;
       }
       setFilterQuery("");
@@ -444,8 +538,7 @@ export function TicketTable({
 
   function clearAllFilters() {
     setFilters({});
-    setOpenFilter(null);
-    setFilterQuery("");
+    closeFilterPanel();
   }
 
   if (tickets.length === 0) {
@@ -462,41 +555,166 @@ export function TicketTable({
   }
 
   const filtersActive = hasAnyColumnFilter(filters);
+  const searchActive = searchQuery.trim().length > 0;
+  const narrowed = filtersActive || searchActive;
+  const openCol = openFilter
+    ? COLUMNS.find((c) => c.key === openFilter)
+    : null;
+  const openSelected = openFilter
+    ? (filters[openFilter] ?? new Set<string>())
+    : new Set<string>();
+  const openFilterActive = openSelected.size > 0;
+
+  const panelStyle: CSSProperties | undefined = panelCoords
+    ? {
+        position: "fixed",
+        left: panelCoords.left,
+        width: panelCoords.width,
+        /* Fixed height so the value list can scroll inside the portaled panel. */
+        height: panelCoords.maxHeight,
+        maxHeight: panelCoords.maxHeight,
+        top: panelCoords.openUp ? undefined : panelCoords.top,
+        bottom: panelCoords.openUp ? panelCoords.bottom : undefined,
+        zIndex: 80,
+      }
+    : undefined;
+
+  const filterPortal =
+    portalReady && openFilter && openCol && panelCoords
+      ? createPortal(
+          <div
+            ref={filterPanelRef}
+            className={styles.filterPanel}
+            style={panelStyle}
+            role="dialog"
+            aria-label={`Filter ${openCol.label}`}
+          >
+            <input
+              className={styles.filterSearch}
+              type="search"
+              value={filterQuery}
+              onChange={(e) => setFilterQuery(e.target.value)}
+              placeholder="Zoek in waarden…"
+              aria-label={`Zoek filterwaarden voor ${openCol.label}`}
+              autoComplete="off"
+            />
+            <div className={styles.filterActions}>
+              <button
+                type="button"
+                className={styles.filterAction}
+                onClick={() => selectAllFilterValues(openFilter)}
+              >
+                Alles
+              </button>
+              <button
+                type="button"
+                className={styles.filterAction}
+                onClick={() => selectAllFilterValues(openFilter)}
+                disabled={!openFilterActive}
+              >
+                Wissen
+              </button>
+            </div>
+            <ul className={styles.filterList}>
+              {visibleFilterOptions.length === 0 ? (
+                <li className={styles.filterEmpty}>Geen waarden</li>
+              ) : (
+                visibleFilterOptions.map((opt) => {
+                  /* Empty selection means “all”; checkboxes show all on. */
+                  const checked =
+                    openSelected.size === 0 || openSelected.has(opt.token);
+                  return (
+                    <li key={opt.token}>
+                      <label className={styles.filterOption}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            /* First uncheck from “all” → keep every other option. */
+                            if (openSelected.size === 0) {
+                              const all = new Set(
+                                openFilterOptions.map((o) => o.token),
+                              );
+                              all.delete(opt.token);
+                              setFilters((prev) => ({
+                                ...prev,
+                                [openFilter]: all,
+                              }));
+                              return;
+                            }
+                            toggleFilterValue(openFilter, opt.token);
+                          }}
+                        />
+                        <span className={styles.filterOptionLabel}>
+                          {opt.label}
+                        </span>
+                        <span className={styles.filterCount}>{opt.count}</span>
+                      </label>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div>
-      {filtersActive || !isDefaultSort ? (
-        <div className={styles.filterBar}>
-          {filtersActive ? (
-            <span className="form-hint" aria-live="polite">
-              {sorted.length} van {tickets.length}
-            </span>
-          ) : null}
-          {!isDefaultSort ? (
-            <button
-              type="button"
-              className={styles.clearFilters}
-              onClick={resetSort}
-              title="Terug naar Streefdatum, dan prioriteit"
-            >
-              Sortering resetten
-            </button>
-          ) : null}
-          {filtersActive ? (
-            <button
-              type="button"
-              className={styles.clearFilters}
-              onClick={clearAllFilters}
-            >
-              Filters wissen
-            </button>
-          ) : null}
-        </div>
-      ) : null}
+      {/* Global search restored; works together with column filters. */}
+      <div className={styles.toolbar}>
+        <input
+          className={`search-input ${styles.searchInput}`}
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={searchPlaceholder}
+          aria-label={searchLabel}
+          autoComplete="off"
+        />
+        {narrowed || !isDefaultSort ? (
+          <div className={styles.filterBar}>
+            {narrowed ? (
+              <span className="form-hint" aria-live="polite">
+                {sorted.length} van {tickets.length}
+              </span>
+            ) : null}
+            {!isDefaultSort ? (
+              <button
+                type="button"
+                className={styles.clearFilters}
+                onClick={resetSort}
+                title="Terug naar Streefdatum, dan prioriteit"
+              >
+                Sortering resetten
+              </button>
+            ) : null}
+            {filtersActive ? (
+              <button
+                type="button"
+                className={styles.clearFilters}
+                onClick={clearAllFilters}
+              >
+                Filters wissen
+              </button>
+            ) : null}
+            {searchActive ? (
+              <button
+                type="button"
+                className={styles.clearFilters}
+                onClick={() => setSearchQuery("")}
+              >
+                Zoekopdracht wissen
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
 
       <div className={styles.wrap}>
         <table className={styles.table}>
-          {/* Ref on thead so body clicks close the open filter panel. */}
+          {/* Funnel buttons stay in thead; the menu itself is portaled to body. */}
           <thead ref={headerBarRef}>
             <tr>
               {COLUMNS.map((col) => {
@@ -504,7 +722,6 @@ export function TicketTable({
                 const colFilter = filters[col.key];
                 const filterActive = (colFilter?.size ?? 0) > 0;
                 const panelOpen = openFilter === col.key;
-                const selected = colFilter ?? new Set<string>();
 
                 return (
                   <th key={col.key} scope="col" className={styles.th}>
@@ -542,6 +759,9 @@ export function TicketTable({
                       {/* Funnel = open column filter; stays filled while active. */}
                       <button
                         type="button"
+                        ref={(el) => {
+                          filterBtnRefs.current[col.key] = el;
+                        }}
                         className={`${styles.filterBtn} ${
                           filterActive ? styles.filterBtnActive : ""
                         } ${panelOpen ? styles.filterBtnOpen : ""}`}
@@ -560,85 +780,6 @@ export function TicketTable({
                         <FilterFunnelIcon active={filterActive} />
                       </button>
                     </div>
-
-                    {panelOpen ? (
-                      <div
-                        className={styles.filterPanel}
-                        role="dialog"
-                        aria-label={`Filter ${col.label}`}
-                      >
-                        <input
-                          className={styles.filterSearch}
-                          type="search"
-                          value={filterQuery}
-                          onChange={(e) => setFilterQuery(e.target.value)}
-                          placeholder="Zoek in waarden…"
-                          aria-label={`Zoek filterwaarden voor ${col.label}`}
-                          autoComplete="off"
-                        />
-                        <div className={styles.filterActions}>
-                          <button
-                            type="button"
-                            className={styles.filterAction}
-                            onClick={() => selectAllFilterValues(col.key)}
-                          >
-                            Alles
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.filterAction}
-                            onClick={() => selectAllFilterValues(col.key)}
-                            disabled={!filterActive}
-                          >
-                            Wissen
-                          </button>
-                        </div>
-                        <ul className={styles.filterList}>
-                          {visibleFilterOptions.length === 0 ? (
-                            <li className={styles.filterEmpty}>Geen waarden</li>
-                          ) : (
-                            visibleFilterOptions.map((opt) => {
-                              /* Empty selection means “all”; checkboxes show all on. */
-                              const checked =
-                                selected.size === 0 || selected.has(opt.token);
-                              return (
-                                <li key={opt.token}>
-                                  <label className={styles.filterOption}>
-                                    <input
-                                      type="checkbox"
-                                      checked={checked}
-                                      onChange={() => {
-                                        /* First uncheck from “all” → select every
-                                           other option; first check from empty set
-                                           is handled by toggleFilterValue. */
-                                        if (selected.size === 0) {
-                                          const all = new Set(
-                                            openFilterOptions.map((o) => o.token),
-                                          );
-                                          all.delete(opt.token);
-                                          setFilters((prev) => ({
-                                            ...prev,
-                                            [col.key]: all,
-                                          }));
-                                          return;
-                                        }
-                                        toggleFilterValue(col.key, opt.token);
-                                      }}
-                                    />
-                                    <span className={styles.filterOptionLabel}>
-                                      {opt.label}
-                                    </span>
-                                    <span className={styles.filterCount}>
-                                      {opt.count}
-                                    </span>
-                                  </label>
-                                </li>
-                              );
-                            })
-                          )}
-                        </ul>
-                      </div>
-                    ) : null}
                   </th>
                 );
               })}
@@ -768,6 +909,9 @@ export function TicketTable({
           </tbody>
         </table>
       </div>
+
+      {/* Fixed portal so the menu isn’t clipped by .wrap overflow-x. */}
+      {filterPortal}
     </div>
   );
 }

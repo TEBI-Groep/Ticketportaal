@@ -20,9 +20,10 @@ async function OverzichtContent() {
         <h1>Overzicht</h1>
       </header>
 
-      {/* No chip filter bar: filtering lives in Excel-like column headers. */}
+      {/* Search + Excel column filters (no chip bar). */}
       <TicketTable
         tickets={tickets}
+        searchPlaceholder="Zoek in het overzicht…"
         emptyMessage="Geen open tickets zichtbaar."
         emptyCta="Ticket aanmaken"
       />
