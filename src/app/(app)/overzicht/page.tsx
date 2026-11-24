@@ -13,25 +13,72 @@ async function OverzichtContent() {
   await requireUser();
   const tickets = await getOverzichtTickets();
 
+  // Spoed sits in its own table above the rest (same TicketTable UX).
+  const spoedTickets = tickets.filter((t) => t.prioriteit === "spoed");
+  const overigeTickets = tickets.filter((t) => t.prioriteit !== "spoed");
+
   return (
     <>
-      {/* Intro copy omitted on Overzicht — table + column filters speak for themselves. */}
+      {/* Intro copy omitted on Overzicht — tables + column filters speak for themselves. */}
       <header className="page-header">
         <h1>Overzicht</h1>
       </header>
 
-      {/* Search + Excel column filters (no chip bar). */}
-      <TicketTable
-        tickets={tickets}
-        searchPlaceholder="Zoek in het overzicht…"
-        emptyMessage="Geen open tickets zichtbaar."
-        emptyCta="Ticket aanmaken"
-      />
+      {/* Urgent tickets first — identical columns/sort/filters/search as below. */}
+      <section aria-labelledby="overzicht-spoed-heading" style={{ marginBottom: "2rem" }}>
+        <h2
+          id="overzicht-spoed-heading"
+          style={{
+            fontSize: "1.15rem",
+            fontWeight: 700,
+            margin: "0 0 0.65rem",
+            color: "var(--ink)",
+          }}
+        >
+          Spoed
+          {spoedTickets.length > 0 ? (
+            <span
+              className="form-hint"
+              style={{ fontWeight: 500, marginLeft: "0.5rem" }}
+            >
+              ({spoedTickets.length})
+            </span>
+          ) : null}
+        </h2>
+        <TicketTable
+          tickets={spoedTickets}
+          searchPlaceholder="Zoek in spoedtickets…"
+          searchLabel="Zoeken in spoedtickets"
+          emptyMessage="Geen spoedtickets — mooi."
+          emptyCta=""
+        />
+      </section>
+
+      {/* Main open-ticket table — Spoed excluded. */}
+      <section aria-labelledby="overzicht-overig-heading">
+        <h2
+          id="overzicht-overig-heading"
+          style={{
+            fontSize: "1.15rem",
+            fontWeight: 700,
+            margin: "0 0 0.65rem",
+            color: "var(--ink)",
+          }}
+        >
+          Overige tickets
+        </h2>
+        <TicketTable
+          tickets={overigeTickets}
+          searchPlaceholder="Zoek in het overzicht…"
+          emptyMessage="Geen open tickets zichtbaar."
+          emptyCta="Ticket aanmaken"
+        />
+      </section>
     </>
   );
 }
 
-/** Spreadsheet-style open-ticket overview for everyone. */
+/** Spreadsheet-style open-ticket overview for everyone (Spoed + rest). */
 export default function OverzichtPage() {
   return (
     <div className="page">

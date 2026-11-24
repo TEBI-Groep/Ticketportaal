@@ -48,15 +48,19 @@ const NAV_ITEMS: Array<
     itOnly: true,
     badgeKey: "nieuwWerkvoorraad",
   },
-  { href: "/spoed", label: "Spoed", short: "Spoed", badgeKey: "spoed" },
   {
     href: "/mijn-tickets",
     label: "Mijn tickets",
     short: "Mijn",
     badgeKey: "wachtOpMelder",
   },
-  /* Spreadsheet-style view with sortable headers (everyone). */
-  { href: "/overzicht", label: "Overzicht", short: "Tabel" },
+  /* Spoed page hidden — Spoed lives as its own table on Overzicht; badge stays here. */
+  {
+    href: "/overzicht",
+    label: "Overzicht",
+    short: "Tabel",
+    badgeKey: "spoed",
+  },
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
   { href: "/mijn-werk", label: "Mijn werk", short: "Eigen", itOnly: true },
   { href: "/gebruikers", label: "Gebruikers", short: "Users", itOnly: true },

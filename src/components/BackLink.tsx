@@ -6,13 +6,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 const ALLOWED_RETURN = new Set([
   "/ranglijst",
   "/werkvoorraad",
-  "/spoed",
   "/mijn-tickets",
   "/overzicht",
   "/mijn-werk",
   "/afgerond",
   "/ticket/nieuw",
 ]);
+
+/** Old Spoed page → Overzicht (Spoed table lives there now). */
+function resolveReturnPath(van: string): string | null {
+  if (van === "/spoed") return "/overzicht";
+  if (ALLOWED_RETURN.has(van)) return van;
+  return null;
+}
 
 /**
  * Goes back to the list the user opened the ticket from.
@@ -24,8 +30,9 @@ export function BackLink() {
   const van = searchParams.get("van");
 
   function handleClick() {
-    if (van && ALLOWED_RETURN.has(van)) {
-      router.push(van);
+    const target = van ? resolveReturnPath(van) : null;
+    if (target) {
+      router.push(target);
       return;
     }
 
