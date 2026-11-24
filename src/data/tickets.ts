@@ -251,6 +251,25 @@ export async function countOpenSpoedTickets(): Promise<number> {
 }
 
 /**
+ * Count tickets with status nieuw (Overzicht blue nav badge).
+ * Same open/nieuw set RLS exposes on Overzicht — includes Spoed.
+ */
+export async function countOpenNieuwTickets(): Promise<number> {
+  if (!isSupabaseConfigured()) return 0;
+  try {
+    const supabase = await createClient();
+    const { count, error } = await supabase
+      .from("tickets")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "nieuw");
+    if (error) return 0;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Count Werkvoorraad tickets with status nieuw (IT nav badge).
  * Same scope as getWerkvoorraadTickets: open and not spoed (incl. Ranglijst).
  */

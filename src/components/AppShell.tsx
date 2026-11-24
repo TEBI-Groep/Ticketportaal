@@ -17,77 +17,108 @@ function LogoutButton() {
   );
 }
 
-type BadgeKey = "spoed" | "nieuwWerkvoorraad" | "wachtOpMelder";
+type BadgeKey = "spoed" | "nieuw" | "nieuwWerkvoorraad" | "wachtOpMelder";
 type BadgeTone = "danger" | "info";
+
+type NavBadge = {
+  count: number;
+  tone: BadgeTone;
+  /** Short aria description (e.g. “spoed”, “nieuw”). */
+  label: string;
+};
 
 type NavItem = {
   href: string;
   label: string;
   short: string;
-  /** Optional count badge (e.g. open spoed tickets). */
-  badge?: number;
-  /** Spoed stays red; other counts use blue. */
-  badgeTone?: BadgeTone;
+  /** Zero or more count badges (Overzicht can show Spoed + Nieuw). */
+  badges: NavBadge[];
 };
 
 type BadgeCounts = {
   spoed: number;
+  nieuw: number;
   nieuwWerkvoorraad: number;
   wachtOpMelder: number;
 };
 
 /** Same order as before; Werkvoorraad only for uitvoerders. */
-const NAV_ITEMS: Array<
-  Omit<NavItem, "badge"> & { itOnly?: boolean; badgeKey?: BadgeKey }
-> = [
+const NAV_ITEMS: Array<{
+  href: string;
+  label: string;
+  short: string;
+  itOnly?: boolean;
+  /** One or more badge keys; rendered left-to-right when count > 0. */
+  badgeKeys?: BadgeKey[];
+}> = [
   { href: "/ranglijst", label: "Ranglijst", short: "Rang" },
   {
     href: "/werkvoorraad",
     label: "Werkvoorraad",
     short: "Werk",
     itOnly: true,
-    badgeKey: "nieuwWerkvoorraad",
+    badgeKeys: ["nieuwWerkvoorraad"],
   },
   {
     href: "/mijn-tickets",
     label: "Mijn tickets",
     short: "Mijn",
-    badgeKey: "wachtOpMelder",
+    badgeKeys: ["wachtOpMelder"],
   },
-  /* Spoed page hidden — Spoed lives as its own table on Overzicht; badge stays here. */
+  /* Spoed page hidden — Spoed + Nieuw badges live on Overzicht. */
   {
     href: "/overzicht",
     label: "Overzicht",
     short: "Tabel",
-    badgeKey: "spoed",
+    badgeKeys: ["spoed", "nieuw"],
   },
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
   { href: "/mijn-werk", label: "Mijn werk", short: "Eigen", itOnly: true },
   { href: "/gebruikers", label: "Gebruikers", short: "Users", itOnly: true },
 ];
 
-function badgeToneForKey(key: BadgeKey | undefined): BadgeTone | undefined {
-  if (!key) return undefined;
+function badgeToneForKey(key: BadgeKey): BadgeTone {
   return key === "spoed" ? "danger" : "info";
 }
 
-function badgeForKey(
-  key: BadgeKey | undefined,
+function badgeLabelForKey(key: BadgeKey): string {
+  switch (key) {
+    case "spoed":
+      return "spoed";
+    case "nieuw":
+    case "nieuwWerkvoorraad":
+      return "nieuw";
+    case "wachtOpMelder":
+      return "wacht op melder";
+  }
+}
+
+function badgesForKeys(
+  keys: BadgeKey[] | undefined,
   counts: BadgeCounts,
-): number | undefined {
-  if (!key) return undefined;
-  const value = counts[key];
-  return value > 0 ? value : undefined;
+): NavBadge[] {
+  if (!keys?.length) return [];
+  const out: NavBadge[] = [];
+  for (const key of keys) {
+    const count = counts[key];
+    if (count > 0) {
+      out.push({
+        count,
+        tone: badgeToneForKey(key),
+        label: badgeLabelForKey(key),
+      });
+    }
+  }
+  return out;
 }
 
 function navForRole(isIt: boolean, counts: BadgeCounts): NavItem[] {
   return NAV_ITEMS.filter((item) => isIt || !item.itOnly).map(
-    ({ href, label, short, badgeKey }) => ({
+    ({ href, label, short, badgeKeys }) => ({
       href,
       label,
       short,
-      badge: badgeForKey(badgeKey, counts),
-      badgeTone: badgeToneForKey(badgeKey),
+      badges: badgesForKeys(badgeKeys, counts),
     }),
   );
 }
@@ -96,10 +127,14 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function badgeClass(tone: BadgeTone | undefined): string {
+function badgeClass(tone: BadgeTone): string {
   return tone === "info"
     ? `${styles.navBadge} ${styles.navBadgeInfo}`
     : styles.navBadge;
+}
+
+function formatBadgeCount(count: number): string {
+  return count > 99 ? "99+" : String(count);
 }
 
 /**
@@ -110,14 +145,17 @@ export function AppShell({
   children,
   user,
   spoedCount = 0,
+  nieuwCount = 0,
   nieuwWerkvoorraadCount = 0,
   wachtOpMelderCount = 0,
   supabaseConfigured = true,
 }: {
   children: React.ReactNode;
   user: User;
-  /** Open tickets with prioriteit spoed (nav badge). */
+  /** Open tickets with prioriteit spoed (red badge on Overzicht). */
   spoedCount?: number;
+  /** Open tickets with status nieuw (blue badge on Overzicht). */
+  nieuwCount?: number;
   /** Werkvoorraad tickets with status nieuw — IT badge on Werkvoorraad. */
   nieuwWerkvoorraadCount?: number;
   /** Wacht-op-melder count in Mijn tickets scope (own + afdeling for managers). */
@@ -129,6 +167,7 @@ export function AppShell({
   const isIt = user.rol === "uitvoerder";
   const desktopItems = navForRole(isIt, {
     spoed: spoedCount,
+    nieuw: nieuwCount,
     nieuwWerkvoorraad: isIt ? nieuwWerkvoorraadCount : 0,
     wachtOpMelder: wachtOpMelderCount,
   });
@@ -167,14 +206,15 @@ export function AppShell({
               }`}
             >
               <span>{item.label}</span>
-              {item.badge != null ? (
+              {item.badges.map((badge) => (
                 <span
-                  className={badgeClass(item.badgeTone)}
-                  aria-label={`${item.badge} open`}
+                  key={badge.label}
+                  className={badgeClass(badge.tone)}
+                  aria-label={`${badge.count} ${badge.label}`}
                 >
-                  {item.badge > 99 ? "99+" : item.badge}
+                  {formatBadgeCount(badge.count)}
                 </span>
-              ) : null}
+              ))}
             </Link>
           ))}
         </nav>
@@ -217,12 +257,18 @@ export function AppShell({
               <span className={styles.bottomIcon} aria-hidden>
                 {item.short.charAt(0)}
               </span>
-              {item.badge != null ? (
-                <span
-                  className={badgeClass(item.badgeTone)}
-                  aria-label={`${item.badge} open`}
-                >
-                  {item.badge > 99 ? "99+" : item.badge}
+              {/* Cluster so Spoed + Nieuw don’t stack on the same corner. */}
+              {item.badges.length > 0 ? (
+                <span className={styles.bottomBadges}>
+                  {item.badges.map((badge) => (
+                    <span
+                      key={badge.label}
+                      className={badgeClass(badge.tone)}
+                      aria-label={`${badge.count} ${badge.label}`}
+                    >
+                      {formatBadgeCount(badge.count)}
+                    </span>
+                  ))}
                 </span>
               ) : null}
             </span>
