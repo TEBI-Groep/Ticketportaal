@@ -9,8 +9,12 @@
   margin-bottom: 0.75rem;
 }
 
+/* Full-width bar; override .search-input flex:1 so it doesn’t grow tall in a column. */
 .searchInput {
-  width: min(100%, 28rem);
+  width: 100%;
+  flex: 0 0 auto;
+  min-width: 0;
+  align-self: stretch;
 }
 
 .wrap {
