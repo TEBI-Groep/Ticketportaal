@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { Ticket } from "@/lib/types";
 import { isStembaar, ratingAantal, ratingGemiddelde } from "@/lib/types";
-import { STATUS_LABEL } from "@/lib/labels";
+import { StatusBadge } from "@/components/StatusBadge";
 import styles from "./SimilarTickets.module.css";
 
 interface SimilarTicketsProps {
@@ -52,8 +52,11 @@ export function SimilarTickets({
                     {ticket.ticketnummer} · {ticket.onderwerp}
                   </Link>
                   <span className={styles.sub}>
-                    {STATUS_LABEL[ticket.status]} · {ticket.systeem}
-                    {count > 0 ? ` · gem. ${avg.toFixed(1)} (${count})` : ""}
+                    <StatusBadge status={ticket.status} />
+                    <span> · {ticket.systeem}</span>
+                    {count > 0 ? (
+                      <span>{` · gem. ${avg.toFixed(1)} (${count})`}</span>
+                    ) : null}
                   </span>
                 </div>
                 <div className={styles.actions}>

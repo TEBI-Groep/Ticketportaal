@@ -42,6 +42,22 @@
   --warn: #b45309;
   --warn-soft: #fef3e2;
 
+  /* Ticket status pills — each status gets a distinct soft/ink pair (light UI). */
+  --status-nieuw-soft: #dbeafe;
+  --status-nieuw-ink: #1d4ed8;
+  --status-ingepland-soft: #e8eef2;
+  --status-ingepland-ink: #395465; /* Tebi slate */
+  --status-in-behandeling-soft: #ffedd5;
+  --status-in-behandeling-ink: #c2410c; /* Tebi orange family */
+  --status-wacht-melder-soft: #fef3e2;
+  --status-wacht-melder-ink: #b45309;
+  --status-wacht-publicatie-soft: #e0f2fe;
+  --status-wacht-publicatie-ink: #0369a1;
+  --status-afgerond-soft: #eaf6ee;
+  --status-afgerond-ink: #15803d;
+  --status-afgewezen-soft: #f3e8ea;
+  --status-afgewezen-ink: #9f2d3a;
+
   /* Layout */
   --radius: 14px;
   --radius-sm: 10px;
@@ -302,6 +318,42 @@ img {
 .badge-brand {
   background: var(--brand-soft);
   color: var(--brand-ink);
+}
+
+/* One tone per ticket status — used by StatusBadge everywhere. */
+.badge-status-nieuw {
+  background: var(--status-nieuw-soft);
+  color: var(--status-nieuw-ink);
+}
+
+.badge-status-ingepland {
+  background: var(--status-ingepland-soft);
+  color: var(--status-ingepland-ink);
+}
+
+.badge-status-in-behandeling {
+  background: var(--status-in-behandeling-soft);
+  color: var(--status-in-behandeling-ink);
+}
+
+.badge-status-wacht-op-melder {
+  background: var(--status-wacht-melder-soft);
+  color: var(--status-wacht-melder-ink);
+}
+
+.badge-status-wacht-op-publicatie {
+  background: var(--status-wacht-publicatie-soft);
+  color: var(--status-wacht-publicatie-ink);
+}
+
+.badge-status-afgerond {
+  background: var(--status-afgerond-soft);
+  color: var(--status-afgerond-ink);
+}
+
+.badge-status-afgewezen {
+  background: var(--status-afgewezen-soft);
+  color: var(--status-afgewezen-ink);
 }
 
 .empty-state {

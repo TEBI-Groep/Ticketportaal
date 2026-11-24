@@ -1,18 +1,24 @@
 import type { TicketPriority, TicketStatus } from "@/lib/types";
 import { PRIORITY_LABEL, STATUS_LABEL } from "@/lib/labels";
 
-/** Compact status pill; spoed gets the only strong semantic color. */
-export function StatusBadge({ status }: { status: TicketStatus }) {
-  const tone =
-    status === "afgerond"
-      ? "badge-ok"
-      : status === "afgewezen"
-        ? "badge-warn"
-        : status === "wacht_op_melder" || status === "wacht_op_publicatie"
-          ? "badge-warn"
-          : "badge-brand";
+/** CSS class per status — one distinct soft/ink pair each (see globals.css). */
+const STATUS_BADGE_CLASS: Record<TicketStatus, string> = {
+  nieuw: "badge-status-nieuw",
+  ingepland: "badge-status-ingepland",
+  in_behandeling: "badge-status-in-behandeling",
+  wacht_op_melder: "badge-status-wacht-op-melder",
+  wacht_op_publicatie: "badge-status-wacht-op-publicatie",
+  afgerond: "badge-status-afgerond",
+  afgewezen: "badge-status-afgewezen",
+};
 
-  return <span className={`badge ${tone}`}>{STATUS_LABEL[status]}</span>;
+/** Compact status pill with a unique color per ticket status. */
+export function StatusBadge({ status }: { status: TicketStatus }) {
+  return (
+    <span className={`badge ${STATUS_BADGE_CLASS[status]}`}>
+      {STATUS_LABEL[status]}
+    </span>
+  );
 }
 
 export function PriorityBadge({ priority }: { priority: TicketPriority }) {
