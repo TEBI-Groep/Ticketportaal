@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { FilteredTicketList } from "@/components/FilteredTicketList";
+import { TicketTable } from "@/components/TicketTable";
 import { requireUser } from "@/data/auth";
 import { getOverzichtTickets } from "@/data/tickets";
 
@@ -15,20 +15,14 @@ async function OverzichtContent() {
 
   return (
     <>
+      {/* Intro copy omitted on Overzicht — table + column filters speak for themselves. */}
       <header className="page-header">
         <h1>Overzicht</h1>
-        <p>
-          Alle open tickets die jij mag zien, in een tabel met sorteerbare
-          kolommen. Klik op een kop om te sorteren; klik op een rij om het
-          ticket te openen.
-        </p>
       </header>
 
-      <FilteredTicketList
+      {/* No chip filter bar: filtering lives in Excel-like column headers. */}
+      <TicketTable
         tickets={tickets}
-        variant="table"
-        filterDims={["systeem", "status", "type", "prioriteit", "afdeling"]}
-        searchPlaceholder="Zoek in het overzicht…"
         emptyMessage="Geen open tickets zichtbaar."
         emptyCta="Ticket aanmaken"
       />
