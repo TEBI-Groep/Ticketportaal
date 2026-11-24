@@ -14,7 +14,12 @@ import { uploadAttachmentAction } from "@/app/actions/attachments";
 import { searchSimilarTicketsAction } from "@/app/actions/search";
 import { createTicketAction } from "@/app/actions/tickets";
 import { SimilarTickets } from "@/components/SimilarTickets";
-import type { Ticket, TicketImpact, TicketSystem, TicketType } from "@/lib/types";
+import type {
+  Ticket,
+  TicketPriority,
+  TicketSystem,
+  TicketType,
+} from "@/lib/types";
 
 interface NieuwTicketFormProps {
   departments: string[];
@@ -84,7 +89,8 @@ export function NieuwTicketForm({
       onderwerp: String(form.get("onderwerp") ?? ""),
       omschrijving: String(form.get("omschrijving") ?? ""),
       afdelingen,
-      impact: String(form.get("impact") ?? "hinderlijk") as TicketImpact,
+      // User-selected Prioriteit (default Laag); Impact is no longer collected.
+      prioriteit: String(form.get("prioriteit") ?? "laag") as TicketPriority,
       prive,
     });
 
@@ -258,20 +264,21 @@ export function NieuwTicketForm({
       </fieldset>
 
       <div className="form-field">
-        <label htmlFor="impact">Impact</label>
+        <label htmlFor="prioriteit">Prioriteit</label>
         <select
-          id="impact"
-          name="impact"
+          id="prioriteit"
+          name="prioriteit"
           className="select-input"
           required
-          defaultValue="hinderlijk"
+          defaultValue="laag"
         >
-          <option value="stil">Werk ligt stil</option>
-          <option value="hinderlijk">Hinderlijk</option>
-          <option value="wens">Wens</option>
+          <option value="laag">Laag</option>
+          <option value="gemiddeld">Gemiddeld</option>
+          <option value="hoog">Hoog</option>
+          <option value="spoed">Spoed</option>
         </select>
         <p className="form-hint" style={{ marginBottom: 0 }}>
-          Bij “Werk ligt stil” wordt de prioriteit automatisch Spoed.
+          Kies hoe dringend dit ticket is. Standaard staat Laag geselecteerd.
         </p>
       </div>
 
