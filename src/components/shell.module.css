@@ -222,10 +222,19 @@
   justify-content: center;
 }
 
-.bottomIconWrap .navBadge {
+/* One or more badges (e.g. Spoed red + Nieuw blue on Overzicht). */
+.bottomBadges {
   position: absolute;
   top: -0.35rem;
-  right: -0.55rem;
+  right: -0.75rem;
+  display: flex;
+  flex-direction: row;
+  gap: 0.12rem;
+  pointer-events: none;
+}
+
+.bottomBadges .navBadge {
+  position: static;
   min-width: 1rem;
   height: 1rem;
   font-size: 0.6rem;
