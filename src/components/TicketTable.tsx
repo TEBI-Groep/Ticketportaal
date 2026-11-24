@@ -80,8 +80,44 @@ const PRIORITY_RANK: Record<TicketPriority, number> = {
 
 const SIZE_RANK: Record<string, number> = { S: 0, M: 1, L: 2 };
 
+/** Default Overzicht order: soonest streefdatum, then Spoed-first prioriteit. */
+const DEFAULT_SORT_KEY: TicketSortKey = "streefdatum";
+const DEFAULT_SORT_DIR: SortDir = "asc";
+
 /** Empty placeholder stored as a stable filter token. */
 const EMPTY_TOKEN = "__empty__";
+
+/** First click direction when activating a column as primary sort. */
+function initialSortDir(key: TicketSortKey): SortDir {
+  return key === "updatedAt" ? "desc" : "asc";
+}
+
+/**
+ * Primary sort, then fixed tie-breakers Streefdatum → prioriteit
+ * (skip whichever is already the primary), then ticketnummer.
+ */
+function compareWithTieBreakers(
+  a: Ticket,
+  b: Ticket,
+  sortKey: TicketSortKey,
+  sortDir: SortDir,
+): number {
+  const primary = compareTickets(a, b, sortKey, sortDir);
+  if (primary !== 0) return primary;
+
+  if (sortKey !== "streefdatum") {
+    const byStreef = compareTickets(a, b, "streefdatum", "asc");
+    if (byStreef !== 0) return byStreef;
+  }
+  if (sortKey !== "prioriteit") {
+    const byPrio = compareTickets(a, b, "prioriteit", "asc");
+    if (byPrio !== 0) return byPrio;
+  }
+
+  return a.ticketnummer.localeCompare(b.ticketnummer, "nl", {
+    numeric: true,
+  });
+}
 
 function compareNullableDate(a?: string, b?: string): number {
   if (!a && !b) return 0;
@@ -259,8 +295,8 @@ interface TicketTableProps {
 
 /**
  * Spreadsheet-style ticket overview with sortable + filterable headers.
- * Sort: click the column title. Filter: funnel button (Excel-like).
- * Default order: Streefdatum ↑, then prioriteit (Spoed first).
+ * Sort: title click cycles activate → flip → reset to default.
+ * Filter: funnel button (Excel-like). Tie-breakers always Streefdatum → prioriteit.
  */
 export function TicketTable({
   tickets,
@@ -271,12 +307,20 @@ export function TicketTable({
   const pathname = usePathname();
   const router = useRouter();
   /* Default: soonest streefdatum first, then priority severity. */
-  const [sortKey, setSortKey] = useState<TicketSortKey>("streefdatum");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [sortKey, setSortKey] = useState<TicketSortKey>(DEFAULT_SORT_KEY);
+  const [sortDir, setSortDir] = useState<SortDir>(DEFAULT_SORT_DIR);
   const [filters, setFilters] = useState<ColumnFilters>({});
   const [openFilter, setOpenFilter] = useState<TicketSortKey | null>(null);
   const [filterQuery, setFilterQuery] = useState("");
   const headerBarRef = useRef<HTMLTableSectionElement | null>(null);
+
+  const isDefaultSort =
+    sortKey === DEFAULT_SORT_KEY && sortDir === DEFAULT_SORT_DIR;
+
+  function resetSort() {
+    setSortKey(DEFAULT_SORT_KEY);
+    setSortDir(DEFAULT_SORT_DIR);
+  }
 
   /* Close the open filter popover on outside click / Escape. */
   useEffect(() => {
@@ -311,18 +355,9 @@ export function TicketTable({
 
   const sorted = useMemo(
     () =>
-      [...filtered].sort((a, b) => {
-        const primary = compareTickets(a, b, sortKey, sortDir);
-        if (primary !== 0) return primary;
-        /* Secondary default: prioriteit (unless already sorting by it). */
-        if (sortKey !== "prioriteit") {
-          const byPrio = compareTickets(a, b, "prioriteit", "asc");
-          if (byPrio !== 0) return byPrio;
-        }
-        return a.ticketnummer.localeCompare(b.ticketnummer, "nl", {
-          numeric: true,
-        });
-      }),
+      [...filtered].sort((a, b) =>
+        compareWithTieBreakers(a, b, sortKey, sortDir),
+      ),
     [filtered, sortKey, sortDir],
   );
 
@@ -357,16 +392,23 @@ export function TicketTable({
   const ticketHref = (id: string) =>
     `/ticket/${id}?van=${encodeURIComponent(pathname)}`;
 
+  /**
+   * Three-state column sort: activate → flip direction → reset to default
+   * (Streefdatum ↑ then prioriteit). Makes “cycling off” land on default.
+   */
   function onSort(key: TicketSortKey) {
     if (key === sortKey) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      const first = initialSortDir(key);
+      if (sortDir === first) {
+        setSortDir(first === "asc" ? "desc" : "asc");
+        return;
+      }
+      /* Second direction already active → clear back to default order. */
+      resetSort();
       return;
     }
     setSortKey(key);
-    /* Dates: newest/latest first when newly selected; streefdatum stays soonest↑. */
-    if (key === "updatedAt") setSortDir("desc");
-    else if (key === "streefdatum") setSortDir("asc");
-    else setSortDir("asc");
+    setSortDir(initialSortDir(key));
   }
 
   function toggleFilterPanel(key: TicketSortKey) {
@@ -423,18 +465,32 @@ export function TicketTable({
 
   return (
     <div>
-      {filtersActive ? (
+      {filtersActive || !isDefaultSort ? (
         <div className={styles.filterBar}>
-          <span className="form-hint" aria-live="polite">
-            {sorted.length} van {tickets.length}
-          </span>
-          <button
-            type="button"
-            className={styles.clearFilters}
-            onClick={clearAllFilters}
-          >
-            Filters wissen
-          </button>
+          {filtersActive ? (
+            <span className="form-hint" aria-live="polite">
+              {sorted.length} van {tickets.length}
+            </span>
+          ) : null}
+          {!isDefaultSort ? (
+            <button
+              type="button"
+              className={styles.clearFilters}
+              onClick={resetSort}
+              title="Terug naar Streefdatum, dan prioriteit"
+            >
+              Sortering resetten
+            </button>
+          ) : null}
+          {filtersActive ? (
+            <button
+              type="button"
+              className={styles.clearFilters}
+              onClick={clearAllFilters}
+            >
+              Filters wissen
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -467,7 +523,13 @@ export function TicketTable({
                               : "descending"
                             : "none"
                         }
-                        title={`Sorteren op ${col.label}`}
+                        title={
+                          sortActive
+                            ? sortDir === initialSortDir(col.key)
+                              ? `Omkeren (${col.label})`
+                              : "Sortering resetten (Streefdatum → prioriteit)"
+                            : `Sorteren op ${col.label}`
+                        }
                       >
                         <span className={styles.sortLabel}>{col.label}</span>
                         {sortActive ? (
