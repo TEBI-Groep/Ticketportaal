@@ -47,10 +47,11 @@
   --status-nieuw-ink: #1d4ed8;
   --status-ingepland-soft: #e8eef2;
   --status-ingepland-ink: #395465; /* Tebi slate */
+  /* Active work = warm orange; waiting on melder = yellow (not amber-orange). */
   --status-in-behandeling-soft: #ffedd5;
-  --status-in-behandeling-ink: #c2410c; /* Tebi orange family */
-  --status-wacht-melder-soft: #fef3e2;
-  --status-wacht-melder-ink: #b45309;
+  --status-in-behandeling-ink: #c2410c;
+  --status-wacht-melder-soft: #fef9c3;
+  --status-wacht-melder-ink: #854d0e;
   --status-wacht-publicatie-soft: #e0f2fe;
   --status-wacht-publicatie-ink: #0369a1;
   --status-afgerond-soft: #eaf6ee;
