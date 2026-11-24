@@ -19,10 +19,22 @@ export interface CreateTicketInput {
   afdelingen: string[];
   type: TicketType;
   systeem: TicketSystem;
-  impact: TicketImpact;
+  /** User-chosen priority on create (default laag in the form). */
+  prioriteit: TicketPriority;
   /** Privé: hide from leidinggevenden (maps to vertrouwelijk). */
   prive?: boolean;
 }
+
+/** Allowed create-time prioriteit values (rejects forged form input). */
+const CREATE_PRIORITIES: readonly TicketPriority[] = [
+  "laag",
+  "gemiddeld",
+  "hoog",
+  "spoed",
+];
+
+/** Legacy Impact placeholder — column stays NOT NULL; UI no longer collects it. */
+const LEGACY_IMPACT_PLACEHOLDER: TicketImpact = "wens";
 
 export interface UpdateTicketItInput {
   id: string;
@@ -38,12 +50,6 @@ export interface UpdateTicketItInput {
   omschrijving?: string;
   /** Privé: hide from leidinggevenden (maps to vertrouwelijk). */
   prive: boolean;
-}
-
-function defaultPrioriteit(impact: TicketImpact): TicketPriority {
-  if (impact === "stil") return "spoed";
-  if (impact === "hinderlijk") return "gemiddeld";
-  return "laag";
 }
 
 function uniqueNames(names: string[]): string[] {
@@ -132,6 +138,11 @@ export async function createTicketAction(
     const depts = await resolveDepartmentIds(supabase, input.afdelingen);
     if (!depts.ok) return depts;
 
+    // Prefer user-selected prioriteit; fall back to Laag if the value is invalid.
+    const prioriteit = CREATE_PRIORITIES.includes(input.prioriteit)
+      ? input.prioriteit
+      : "laag";
+
     const { data, error } = await supabase
       .from("tickets")
       .insert({
@@ -139,8 +150,9 @@ export async function createTicketAction(
         omschrijving,
         type: input.type,
         systeem: input.systeem,
-        impact: input.impact,
-        prioriteit: defaultPrioriteit(input.impact),
+        // Impact is retired in UX; write a neutral legacy value for NOT NULL.
+        impact: LEGACY_IMPACT_PLACEHOLDER,
+        prioriteit,
         melder_id: user.id,
         status: "nieuw",
         vertrouwelijk: Boolean(input.prive),

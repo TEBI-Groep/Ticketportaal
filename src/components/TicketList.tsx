@@ -10,7 +10,6 @@ import {
   ratingGemiddelde,
 } from "@/lib/types";
 import {
-  IMPACT_LABEL,
   PRIORITY_LABEL,
   TYPE_LABEL,
   formatDate,
@@ -99,7 +98,6 @@ export function TicketList({
                   )}
                   <span>{TYPE_LABEL[ticket.type]}</span>
                   <span>{ticket.systeem}</span>
-                  <span>{IMPACT_LABEL[ticket.impact]}</span>
                   <span>{ticket.afdelingen.join(", ") || "—"}</span>
                   <span>Melder: {ticket.melderNaam || "—"}</span>
                   <span>

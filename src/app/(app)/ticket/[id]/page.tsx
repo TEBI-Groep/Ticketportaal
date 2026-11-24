@@ -19,7 +19,6 @@ import {
 import { listDepartments, listUsers, listUitvoerders } from "@/data/users";
 import { isWatchingTicket } from "@/data/watchers";
 import {
-  IMPACT_LABEL,
   TYPE_LABEL,
   formatAfdelingen,
   formatDate,
@@ -135,10 +134,6 @@ async function TicketDetailContent({
             <div className="kv">
               <dt>Systeem</dt>
               <dd>{ticket.systeem}</dd>
-            </div>
-            <div className="kv">
-              <dt>Impact</dt>
-              <dd>{IMPACT_LABEL[ticket.impact]}</dd>
             </div>
             <div className="kv">
               <dt>Afdelingen</dt>

@@ -21,7 +21,7 @@ async function NieuwTicketContent() {
         <h1>Ticket aanmaken</h1>
         <p>
           Beschrijf kort wat er speelt. Verplichte velden: onderwerp,
-          omschrijving, afdeling(en), type, systeem en impact.
+          omschrijving, afdeling(en), type, systeem en prioriteit.
         </p>
       </header>
 
