@@ -24,35 +24,38 @@ async function OverzichtContent() {
         <h1>Overzicht</h1>
       </header>
 
-      {/* Urgent tickets first — identical columns/sort/filters/search as below. */}
-      <section aria-labelledby="overzicht-spoed-heading" style={{ marginBottom: "2rem" }}>
-        <h2
-          id="overzicht-spoed-heading"
-          style={{
-            fontSize: "1.15rem",
-            fontWeight: 700,
-            margin: "0 0 0.65rem",
-            color: "var(--ink)",
-          }}
+      {/* Spoed section only when there is at least one urgent ticket. */}
+      {spoedTickets.length > 0 ? (
+        <section
+          aria-labelledby="overzicht-spoed-heading"
+          style={{ marginBottom: "2rem" }}
         >
-          Spoed
-          {spoedTickets.length > 0 ? (
+          <h2
+            id="overzicht-spoed-heading"
+            style={{
+              fontSize: "1.15rem",
+              fontWeight: 700,
+              margin: "0 0 0.65rem",
+              color: "var(--ink)",
+            }}
+          >
+            Spoed
             <span
               className="form-hint"
               style={{ fontWeight: 500, marginLeft: "0.5rem" }}
             >
               ({spoedTickets.length})
             </span>
-          ) : null}
-        </h2>
-        <TicketTable
-          tickets={spoedTickets}
-          searchPlaceholder="Zoek in spoedtickets…"
-          searchLabel="Zoeken in spoedtickets"
-          emptyMessage="Geen spoedtickets — mooi."
-          emptyCta=""
-        />
-      </section>
+          </h2>
+          <TicketTable
+            tickets={spoedTickets}
+            searchPlaceholder="Zoek in spoedtickets…"
+            searchLabel="Zoeken in spoedtickets"
+            emptyMessage="Geen spoedtickets — mooi."
+            emptyCta=""
+          />
+        </section>
+      ) : null}
 
       {/* Main open-ticket table — Spoed excluded. */}
       <section aria-labelledby="overzicht-overig-heading">
