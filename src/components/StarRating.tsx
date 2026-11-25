@@ -34,6 +34,12 @@ interface StarRatingProps {
 
 const SCORES: StarScore[] = [1, 2, 3, 4, 5];
 
+/** How much of star `score` (1–5) should fill for an exact average (0–1). */
+function starFillFraction(average: number, score: StarScore): number {
+  if (average <= 0) return 0;
+  return Math.max(0, Math.min(1, average - (score - 1)));
+}
+
 /**
  * 1–5 star rating: average + count; click count for who-voted panel.
  * Interactive mode upserts/deletes the signed-in user’s rating.
@@ -220,16 +226,19 @@ export function StarRating({
         }
       >
         {SCORES.map((score) => {
-          const filled =
+          // Hover / own vote use whole stars; community avg uses exact fractions.
+          const fraction =
             displayScore !== null
               ? score <= displayScore
-              : avg > 0 && score <= Math.round(avg);
+                ? 1
+                : 0
+              : starFillFraction(avg, score);
 
           return (
             <button
               key={score}
               type="button"
-              className={`${styles.star} ${filled ? styles.filled : ""}`}
+              className={styles.star}
               disabled={!interactive || pending}
               aria-label={`${score} ster${score === 1 ? "" : "ren"}`}
               aria-checked={interactive ? mine === score : undefined}
@@ -242,7 +251,19 @@ export function StarRating({
                 handleRate(score);
               }}
             >
-              ★
+              <span className={styles.starBase} aria-hidden>
+                ★
+              </span>
+              {/* Overlay fill for full and partial stars (base stays empty gray). */}
+              {fraction > 0 ? (
+                <span
+                  className={styles.starFill}
+                  style={{ width: `${fraction * 100}%` }}
+                  aria-hidden
+                >
+                  ★
+                </span>
+              ) : null}
             </button>
           );
         })}
