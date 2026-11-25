@@ -62,6 +62,7 @@ const NAV_ITEMS: Array<{
     href: "/overzicht",
     label: "Overzicht",
     short: "Tabel",
+    itOnly: true,
     badgeKeys: ["spoed", "nieuw"],
   },
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },

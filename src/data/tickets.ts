@@ -589,6 +589,7 @@ export async function getItNotesForTicket(ticketId: string): Promise<ItNote[]> {
           mentions: [],
           reactions: [],
           reactedByMe: false,
+          myReaction: null,
         };
       });
     }
@@ -611,7 +612,7 @@ export async function getItNotesForTicket(ticketId: string): Promise<ItNote[]> {
 
     const reactionsByNote = new Map<
       string,
-      Array<{ userId: string; naam: string; kind: "thumbs_up" }>
+      Array<{ userId: string; naam: string; kind: string }>
     >();
     for (const row of reactionsRes.data ?? []) {
       const list = reactionsByNote.get(row.note_id) ?? [];
@@ -619,7 +620,8 @@ export async function getItNotesForTicket(ticketId: string): Promise<ItNote[]> {
       list.push({
         userId: row.user_id,
         naam: profile?.naam ?? "IT",
-        kind: "thumbs_up",
+        // `kind` stores the emoji glyph (legacy thumbs_up mapped in migration).
+        kind: row.kind === "thumbs_up" ? "👍" : row.kind,
       });
       reactionsByNote.set(row.note_id, list);
     }
@@ -641,6 +643,7 @@ export async function getItNotesForTicket(ticketId: string): Promise<ItNote[]> {
     return data.map((n) => {
       const profile = one(n.profiles);
       const reactions = reactionsByNote.get(n.id) ?? [];
+      const mine = reactions.find((r) => r.userId === viewerId);
       return {
         id: n.id,
         ticketId: n.ticket_id,
@@ -651,7 +654,8 @@ export async function getItNotesForTicket(ticketId: string): Promise<ItNote[]> {
         createdAt: n.created_at,
         mentions: mentionsByNote.get(n.id) ?? [],
         reactions,
-        reactedByMe: reactions.some((r) => r.userId === viewerId),
+        reactedByMe: Boolean(mine),
+        myReaction: mine?.kind ?? null,
       };
     });
   } catch {

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   listMyNotificationsAction,
@@ -88,7 +87,8 @@ export function NotificationBell({
   }
 
   function hrefFor(n: AppNotification): string {
-    if (!n.ticketId) return "/overzicht";
+    // Fall back to home — Overzicht is IT-only.
+    if (!n.ticketId) return "/ranglijst";
     if (n.payload.noteId) {
       return `/ticket/${n.ticketId}?note=${n.payload.noteId}`;
     }
@@ -213,16 +213,6 @@ export function NotificationBell({
               ))}
             </ul>
           )}
-
-          <footer className={styles.panelFooter}>
-            <Link
-              href="/overzicht"
-              className={styles.footerLink}
-              onClick={() => setOpen(false)}
-            >
-              Naar overzicht
-            </Link>
-          </footer>
         </div>
       ) : null}
     </div>

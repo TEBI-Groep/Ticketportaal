@@ -150,7 +150,12 @@
 }
 
 .reactionRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
   margin-top: 0.45rem;
+  min-height: 1.6rem;
 }
 
 .reactBtn {
@@ -189,6 +194,79 @@
   font-size: 0.75rem;
 }
 
+.reactAddWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+/* “+” only appears on note hover / when picker is open / keyboard focus. */
+.reactAddBtn {
+  appearance: none;
+  width: 1.55rem;
+  height: 1.55rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, background 0.12s ease;
+}
+
+.item:hover .reactAddBtn,
+.item:focus-within .reactAddBtn,
+.reactAddBtn[aria-expanded="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.reactAddBtn:hover:not(:disabled),
+.reactAddBtn[aria-expanded="true"] {
+  background: var(--bg-accent, #f5f5f5);
+  color: var(--ink);
+  border-style: solid;
+}
+
+.emojiPicker {
+  position: absolute;
+  z-index: 25;
+  left: 0;
+  bottom: calc(100% + 0.3rem);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  width: max-content;
+  max-width: 12rem;
+  padding: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--surface-raised, #fff);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.emojiOption {
+  appearance: none;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 1.15rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.emojiOption:hover,
+.emojiOptionActive {
+  background: var(--bg-accent, #f5f5f5);
+}
+
 .composeTools {
   display: flex;
   flex-wrap: wrap;
@@ -197,16 +275,21 @@
   gap: 0.5rem;
 }
 
-.mentionPicker {
+.composeHint {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.composeField {
   position: relative;
 }
 
-.mentionMenu {
+.atMenu {
   position: absolute;
   z-index: 20;
   left: 0;
+  right: 0;
   bottom: calc(100% + 0.25rem);
-  min-width: 11rem;
   max-height: 12rem;
   overflow: auto;
   margin: 0;
@@ -233,6 +316,7 @@
   cursor: pointer;
 }
 
-.mentionOption:hover {
+.mentionOption:hover,
+.mentionOptionActive {
   background: var(--bg-accent, #f5f5f5);
 }
