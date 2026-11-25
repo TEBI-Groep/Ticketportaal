@@ -11,10 +11,10 @@ import {
 import type { ItNote, User, UserRole } from "@/lib/types";
 import { formatDateTime } from "@/lib/labels";
 import {
-  IT_NOTE_REACTION_EMOJIS,
   addItNoteAction,
   setItNoteReactionAction,
 } from "@/app/actions/it-notes";
+import { IT_NOTE_REACTION_EMOJIS } from "@/lib/it-note-reactions";
 import styles from "./ItNotes.module.css";
 
 /** Group reactions by emoji for the compact chip row. */

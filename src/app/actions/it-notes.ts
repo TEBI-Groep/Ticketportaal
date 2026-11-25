@@ -154,18 +154,6 @@ export async function addItNoteAction(
   }
 }
 
-/** Curated reaction palette (common Windows / chat emojis). */
-export const IT_NOTE_REACTION_EMOJIS = [
-  "👍",
-  "👎",
-  "❤️",
-  "😂",
-  "😮",
-  "😢",
-  "🎉",
-  "👀",
-] as const;
-
 /**
  * Set or clear an emoji reaction on an IT note.
  * Same emoji again clears; a different emoji replaces. Notifies the author on add/change.
