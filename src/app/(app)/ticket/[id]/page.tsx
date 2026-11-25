@@ -8,6 +8,7 @@ import { StarRating } from "@/components/StarRating";
 import { TicketAttachments } from "@/components/TicketAttachments";
 import { TicketItDetail } from "@/components/TicketItDetail";
 import { TicketWatchBell } from "@/components/TicketWatchBell";
+import layoutStyles from "@/components/TicketInlineEdit.module.css";
 import { requireUser } from "@/data/auth";
 import { getAttachmentsForTicket } from "@/data/attachments";
 import {
@@ -110,7 +111,8 @@ async function TicketDetailContent({
           viewerRol={user.rol}
         />
       ) : (
-        <div className="detail-grid">
+        /* Same split as IT: main ticket body left, Updates & vragen on the right. */
+        <div className={layoutStyles.detailSplit}>
           <section className="detail-panel">
             <div className="detail-title-row">
               <h1>
@@ -205,8 +207,6 @@ async function TicketDetailContent({
               canDeleteAny={false}
             />
 
-            <CommentThread ticketId={ticket.id} initialComments={comments} />
-
             {canVote ? (
               <div style={{ marginTop: "1.5rem" }}>
                 <h2>Beoordeling</h2>
@@ -226,6 +226,19 @@ async function TicketDetailContent({
               </div>
             ) : null}
           </section>
+
+          <aside
+            className={layoutStyles.sideRail}
+            aria-label="Updates en vragen"
+          >
+            <div className="detail-panel">
+              <CommentThread
+                ticketId={ticket.id}
+                initialComments={comments}
+                embedded
+              />
+            </div>
+          </aside>
         </div>
       )}
     </>
