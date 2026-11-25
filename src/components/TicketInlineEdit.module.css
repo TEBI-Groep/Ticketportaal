@@ -134,21 +134,21 @@
   gap: var(--space-5);
 }
 
-/* IT wide: ticket ~35%, remaining ~65% split evenly across updates + notes. */
+/* IT wide: ticket ~50%, remaining ~50% split evenly across updates + notes. */
 @media (min-width: 960px) {
   .detailSplitIt {
     display: grid;
-    /* 7 : 6.5 : 6.5 ≈ 35% / 32.5% / 32.5% (gap absorbed by fr track sizing). */
-    grid-template-columns: minmax(0, 7fr) minmax(0, 6.5fr) minmax(0, 6.5fr);
+    /* 2 : 1 : 1 ≈ 50% / 25% / 25%. */
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
     align-items: start;
   }
 }
 
-/* Mid width: ticket ~35%, stacked updates+notes share the rest. */
+/* Mid width: ticket ~50%, stacked updates+notes share the rest. */
 @media (min-width: 720px) and (max-width: 959px) {
   .detailSplitIt {
     display: grid;
-    grid-template-columns: minmax(0, 7fr) minmax(0, 13fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--space-5);
     align-items: start;
   }
