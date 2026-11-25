@@ -812,10 +812,16 @@ export function TicketTable({
                   }
                 }
 
+                // Soft blue row tint for Nieuw — Spoed and Overige share TicketTable.
+                const rowClass =
+                  ticket.status === "nieuw"
+                    ? `${styles.dataRow} ${styles.dataRowNieuw}`
+                    : styles.dataRow;
+
                 return (
                   <tr
                     key={ticket.id}
-                    className={styles.dataRow}
+                    className={rowClass}
                     onClick={openTicket}
                     onKeyDown={onRowKey}
                     tabIndex={0}
