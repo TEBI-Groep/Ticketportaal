@@ -6,6 +6,13 @@
   border-top: 1px solid var(--border);
 }
 
+/* Side rail (IT detail): no page-section divider above the heading. */
+.embedded {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 .header {
   margin-bottom: var(--space-4);
 }

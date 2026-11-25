@@ -367,8 +367,6 @@ export function TicketItDetail({
           canDeleteAny
         />
 
-        <CommentThread ticketId={ticket.id} initialComments={comments} />
-
         {canVote ? (
           <div style={{ marginTop: "1.5rem" }}>
             <h2>Beoordeling</h2>
@@ -393,12 +391,22 @@ export function TicketItDetail({
         </div>
       </section>
 
-      <aside className={`detail-panel ${styles.notesAside}`} aria-label="IT-notities">
-        <ItNotes
-          ticketId={ticket.id}
-          initialNotes={itNotes}
-          viewerRol={viewerRol}
-        />
+      {/* Right rail (old IT-paneel spot): Updates & vragen above interne notities. */}
+      <aside className={styles.sideRail} aria-label="Updates en notities">
+        <div className="detail-panel">
+          <CommentThread
+            ticketId={ticket.id}
+            initialComments={comments}
+            embedded
+          />
+        </div>
+        <div className="detail-panel">
+          <ItNotes
+            ticketId={ticket.id}
+            initialNotes={itNotes}
+            viewerRol={viewerRol}
+          />
+        </div>
       </aside>
     </div>
   );

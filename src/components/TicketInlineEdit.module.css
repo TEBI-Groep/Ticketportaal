@@ -109,15 +109,18 @@
   align-items: center;
 }
 
-.notesAside {
-  /* Narrow side rail — notes only, no full IT form. */
-  max-width: 22rem;
+/* Right column: Updates & vragen stacked above interne notities. */
+.sideRail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
 }
 
 @media (min-width: 720px) {
   .detailSplit {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
     gap: var(--space-5);
     align-items: start;
   }
