@@ -41,7 +41,7 @@ export const PRIORITY_LABEL: Record<TicketPriority, string> = {
 export const ROLE_LABEL: Record<UserRole, string> = {
   gebruiker: "Medewerker",
   manager: "Leidinggevende",
-  uitvoerder: "Beheerder (IT)",
+  uitvoerder: "Beheerder",
 };
 
 /** Format ISO date strings for Dutch UI (day month year). */

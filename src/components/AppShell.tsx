@@ -17,7 +17,7 @@ function LogoutButton() {
   );
 }
 
-type BadgeKey = "spoed" | "nieuw" | "nieuwWerkvoorraad" | "wachtOpMelder";
+type BadgeKey = "spoed" | "nieuw" | "wachtOpMelder";
 type BadgeTone = "danger" | "info";
 
 type NavBadge = {
@@ -38,11 +38,10 @@ type NavItem = {
 type BadgeCounts = {
   spoed: number;
   nieuw: number;
-  nieuwWerkvoorraad: number;
   wachtOpMelder: number;
 };
 
-/** Same order as before; Werkvoorraad only for uitvoerders. */
+/** Werkvoorraad + Spoed pages hidden — open tickets live on Overzicht. */
 const NAV_ITEMS: Array<{
   href: string;
   label: string;
@@ -53,19 +52,11 @@ const NAV_ITEMS: Array<{
 }> = [
   { href: "/ranglijst", label: "Ranglijst", short: "Rang" },
   {
-    href: "/werkvoorraad",
-    label: "Werkvoorraad",
-    short: "Werk",
-    itOnly: true,
-    badgeKeys: ["nieuwWerkvoorraad"],
-  },
-  {
     href: "/mijn-tickets",
     label: "Mijn tickets",
     short: "Mijn",
     badgeKeys: ["wachtOpMelder"],
   },
-  /* Spoed page hidden — Spoed + Nieuw badges live on Overzicht. */
   {
     href: "/overzicht",
     label: "Overzicht",
@@ -86,7 +77,6 @@ function badgeLabelForKey(key: BadgeKey): string {
     case "spoed":
       return "spoed";
     case "nieuw":
-    case "nieuwWerkvoorraad":
       return "nieuw";
     case "wachtOpMelder":
       return "wacht op melder";
@@ -146,7 +136,6 @@ export function AppShell({
   user,
   spoedCount = 0,
   nieuwCount = 0,
-  nieuwWerkvoorraadCount = 0,
   wachtOpMelderCount = 0,
   supabaseConfigured = true,
 }: {
@@ -156,8 +145,6 @@ export function AppShell({
   spoedCount?: number;
   /** Open tickets with status nieuw (blue badge on Overzicht). */
   nieuwCount?: number;
-  /** Werkvoorraad tickets with status nieuw — IT badge on Werkvoorraad. */
-  nieuwWerkvoorraadCount?: number;
   /** Wacht-op-melder count in Mijn tickets scope (own + afdeling for managers). */
   wachtOpMelderCount?: number;
   /** False when Supabase URL/anon key are missing on this environment. */
@@ -168,7 +155,6 @@ export function AppShell({
   const desktopItems = navForRole(isIt, {
     spoed: spoedCount,
     nieuw: nieuwCount,
-    nieuwWerkvoorraad: isIt ? nieuwWerkvoorraadCount : 0,
     wachtOpMelder: wachtOpMelderCount,
   });
 

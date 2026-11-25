@@ -42,6 +42,8 @@ export function NieuwTicketForm({
   const [error, setError] = useState<string | null>(null);
   const [onderwerp, setOnderwerp] = useState("");
   const [systeem, setSysteem] = useState<TicketSystem>("NetSuite");
+  // Controlled so we can warn when the user picks Spoed.
+  const [prioriteit, setPrioriteit] = useState<TicketPriority>("laag");
   const [similar, setSimilar] = useState<Ticket[]>([]);
   const [searchPending, startSearch] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -90,7 +92,7 @@ export function NieuwTicketForm({
       omschrijving: String(form.get("omschrijving") ?? ""),
       afdelingen,
       // User-selected Prioriteit (default Laag); Impact is no longer collected.
-      prioriteit: String(form.get("prioriteit") ?? "laag") as TicketPriority,
+      prioriteit,
       prive,
     });
 
@@ -270,7 +272,8 @@ export function NieuwTicketForm({
           name="prioriteit"
           className="select-input"
           required
-          defaultValue="laag"
+          value={prioriteit}
+          onChange={(e) => setPrioriteit(e.target.value as TicketPriority)}
         >
           <option value="laag">Laag</option>
           <option value="gemiddeld">Gemiddeld</option>
@@ -280,6 +283,25 @@ export function NieuwTicketForm({
         <p className="form-hint" style={{ marginBottom: 0 }}>
           Kies hoe dringend dit ticket is. Standaard staat Laag geselecteerd.
         </p>
+        {/* Spoed is reserved for genuine urgent cases — make that unmistakable. */}
+        {prioriteit === "spoed" ? (
+          <p
+            role="alert"
+            style={{
+              margin: "0.65rem 0 0",
+              padding: "0.65rem 0.75rem",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--spoed-soft)",
+              color: "var(--spoed)",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              lineHeight: 1.4,
+            }}
+          >
+            Let op: Spoed is alleen voor échte spoedgevallen — werk ligt stil of
+            er is acute bedrijfsschade. Kies anders Hoog of lager.
+          </p>
+        ) : null}
       </div>
 
       <label
