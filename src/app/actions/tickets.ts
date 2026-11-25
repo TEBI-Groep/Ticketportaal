@@ -198,15 +198,13 @@ export async function createTicketAction(
     });
 
     // Ontvangstbevestiging (in-app + Missive mail when configured).
-    const ticketLabel = data.ticketnummer
-      ? `${data.ticketnummer} · ${data.onderwerp}`
-      : data.onderwerp;
     await notifyTicketUsers({
       ticketId: data.id,
       recipientIds: [user.id],
       kind: "ticket_created",
       title: "Je ticket is aangemaakt",
-      body: ticketLabel,
+      // No body — mail already shows ticketnummer · onderwerp.
+      body: null,
       includeActor: true,
       payload: { actorId: user.id },
     });
@@ -395,7 +393,8 @@ export async function updateTicketItAction(
         recipientIds: recipients,
         kind: "ticket_status_changed",
         title: `${actorNaam} zette status op ${STATUS_LABEL[input.status]}`,
-        body: `${ticketLabel} (${STATUS_LABEL[previousStatus]} → ${STATUS_LABEL[input.status]})`,
+        // Status transition only — mail template already shows ticketnummer · onderwerp.
+        body: `${STATUS_LABEL[previousStatus]} → ${STATUS_LABEL[input.status]}`,
         payload: {
           actorId: user.id,
           actorNaam,
