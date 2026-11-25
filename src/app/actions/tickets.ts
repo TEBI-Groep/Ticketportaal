@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { ATTACHMENTS_BUCKET } from "@/data/attachments";
+import {
+  notifyTicketUsers,
+  resolveTicketNotifyRecipients,
+} from "@/data/notifications";
 import { getTicketById } from "@/data/tickets";
+import { STATUS_LABEL } from "@/lib/labels";
 import type {
   TicketImpact,
   TicketPriority,
@@ -262,7 +267,7 @@ export async function updateTicketItAction(
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("rol")
+      .select("rol, naam")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -285,6 +290,13 @@ export async function updateTicketItAction(
     if (!melder?.id) {
       return { ok: false, error: "Onbekende melder." };
     }
+
+    // Snapshot before update so we can notify watchers on status change.
+    const { data: before } = await supabase
+      .from("tickets")
+      .select("status, ticketnummer, onderwerp, melder_id, eigenaar_id")
+      .eq("id", input.id)
+      .maybeSingle();
 
     const patch: Record<string, unknown> = {
       type: input.type,
@@ -341,6 +353,40 @@ export async function updateTicketItAction(
       );
     if (insertError) {
       return { ok: false, error: insertError.message };
+    }
+
+    // Notify subscribers when status changes (in-app now; mail later).
+    const previousStatus = before?.status as TicketStatus | undefined;
+    if (before && previousStatus && previousStatus !== input.status) {
+      const recipients = await resolveTicketNotifyRecipients(
+        input.id,
+        user.id,
+        {
+          melderId: input.melderId ?? before.melder_id,
+          eigenaarId: input.eigenaarId ?? before.eigenaar_id,
+        },
+      );
+      const actorNaam = profile?.naam ?? "IT";
+      const ticketLabel =
+        before.ticketnummer && before.onderwerp
+          ? `${before.ticketnummer} · ${before.onderwerp}`
+          : (before.ticketnummer ?? "Ticket");
+      const inserted = await notifyTicketUsers({
+        ticketId: input.id,
+        recipientIds: recipients,
+        kind: "ticket_status_changed",
+        title: `${actorNaam} zette status op ${STATUS_LABEL[input.status]}`,
+        body: `${ticketLabel} (${STATUS_LABEL[previousStatus]} → ${STATUS_LABEL[input.status]})`,
+        payload: {
+          actorId: user.id,
+          actorNaam,
+          fromStatus: previousStatus,
+          toStatus: input.status,
+        },
+      });
+      if (inserted > 0) {
+        revalidatePath("/", "layout");
+      }
     }
 
     revalidateTicketPaths(input.id);

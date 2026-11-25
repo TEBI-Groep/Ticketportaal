@@ -25,9 +25,7 @@ export default async function AppLayout({
 }) {
   const user = await requireUser();
 
-  const isIt = user.rol === "uitvoerder";
-
-  // Spoed + nieuw on Overzicht; wacht-op-melder for Mijn tickets; IT bell unread.
+  // Spoed + nieuw on Overzicht; wacht-op-melder for Mijn tickets; inbox for everyone.
   const [spoedCount, nieuwCount, wachtOpMelderCount, unreadNotificationCount] =
     await Promise.all([
       countOpenSpoedTickets(),
@@ -37,7 +35,7 @@ export default async function AppLayout({
         rol: user.rol,
         afdelingId: user.afdelingId,
       }),
-      isIt ? countUnreadNotifications() : Promise.resolve(0),
+      countUnreadNotifications(),
     ]);
 
   return (
