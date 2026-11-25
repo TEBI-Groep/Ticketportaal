@@ -5,10 +5,11 @@ import { usePathname } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { logoutAction } from "@/app/actions/auth";
 import { NotificationBell } from "@/components/NotificationBell";
-import { ROLE_LABEL } from "@/lib/labels";
+import { UserMenu } from "@/components/UserMenu";
 import type { User } from "@/lib/types";
 import styles from "./shell.module.css";
 
+/** Mobile-only logout — desktop uses the name-chip dropdown. */
 function LogoutButton() {
   const { pending } = useFormStatus();
   return (
@@ -218,15 +219,11 @@ export function AppShell({
           {/* Inbox for watchers (status/comments) and IT note mentions/reactions. */}
           <NotificationBell initialUnreadCount={unreadNotificationCount} />
 
-          <div className={styles.userMenu}>
-            <div className={styles.userChip} aria-label="Ingelogde gebruiker">
-              <strong>{user.naam}</strong>
-              <span>{ROLE_LABEL[user.rol]}</span>
-            </div>
-            <form action={logoutAction}>
-              <LogoutButton />
-            </form>
-          </div>
+          {/* Desktop: name dropdown with Voorkeuren. Mobile: logout only. */}
+          <UserMenu user={user} />
+          <form action={logoutAction} className={styles.mobileLogout}>
+            <LogoutButton />
+          </form>
         </div>
       </header>
 
