@@ -134,20 +134,21 @@
   gap: var(--space-5);
 }
 
-/* IT: ticket body | Updates & vragen | Interne notities. */
+/* IT wide: ticket ~35%, remaining ~65% split evenly across updates + notes. */
 @media (min-width: 960px) {
   .detailSplitIt {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(16rem, 1fr) minmax(16rem, 1fr);
+    /* 7 : 6.5 : 6.5 ≈ 35% / 32.5% / 32.5% (gap absorbed by fr track sizing). */
+    grid-template-columns: minmax(0, 7fr) minmax(0, 6.5fr) minmax(0, 6.5fr);
     align-items: start;
   }
 }
 
-/* Mid width: stack the two side panels under the ticket, comments then notes. */
+/* Mid width: ticket ~35%, stacked updates+notes share the rest. */
 @media (min-width: 720px) and (max-width: 959px) {
   .detailSplitIt {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+    grid-template-columns: minmax(0, 7fr) minmax(0, 13fr);
     gap: var(--space-5);
     align-items: start;
   }
