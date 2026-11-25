@@ -21,3 +21,19 @@ export async function isWatchingTicket(
     return false;
   }
 }
+
+/** All user ids watching a ticket (any reason: melder, manual, …). */
+export async function listWatcherUserIds(ticketId: string): Promise<string[]> {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("ticket_watchers")
+      .select("user_id")
+      .eq("ticket_id", ticketId);
+    if (error || !data) return [];
+    return data.map((row) => row.user_id);
+  } catch {
+    return [];
+  }
+}

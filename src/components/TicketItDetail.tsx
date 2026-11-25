@@ -63,6 +63,8 @@ interface TicketItDetailProps {
   viewerRol: UserRole;
   /** Highlight an IT note when opened from a notification. */
   highlightNoteId?: string | null;
+  /** Highlight an Updates & vragen comment from a notification. */
+  highlightCommentId?: string | null;
 }
 
 /**
@@ -81,6 +83,7 @@ export function TicketItDetail({
   currentUserId,
   viewerRol,
   highlightNoteId = null,
+  highlightCommentId = null,
 }: TicketItDetailProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -445,6 +448,7 @@ export function TicketItDetail({
           ticketId={ticket.id}
           initialComments={comments}
           embedded
+          highlightCommentId={highlightCommentId}
         />
       </aside>
 

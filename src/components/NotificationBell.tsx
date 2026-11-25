@@ -92,6 +92,9 @@ export function NotificationBell({
     if (n.payload.noteId) {
       return `/ticket/${n.ticketId}?note=${n.payload.noteId}`;
     }
+    if (n.payload.commentId) {
+      return `/ticket/${n.ticketId}?comment=${n.payload.commentId}`;
+    }
     return `/ticket/${n.ticketId}`;
   }
 

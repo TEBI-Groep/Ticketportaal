@@ -214,10 +214,8 @@ export function AppShell({
             <span aria-hidden>+</span> Ticket
           </Link>
 
-          {/* IT-only inbox for note mentions + reactions. */}
-          {isIt ? (
-            <NotificationBell initialUnreadCount={unreadNotificationCount} />
-          ) : null}
+          {/* Inbox for watchers (status/comments) and IT note mentions/reactions. */}
+          <NotificationBell initialUnreadCount={unreadNotificationCount} />
 
           <div className={styles.userMenu}>
             <div className={styles.userChip} aria-label="Ingelogde gebruiker">

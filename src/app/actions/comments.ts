@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
+import {
+  notificationSnippet,
+  notifyTicketUsers,
+  resolveTicketNotifyRecipients,
+} from "@/data/notifications";
 import type { TicketComment } from "@/lib/types";
 
 export async function addCommentAction(
@@ -39,7 +44,9 @@ export async function addCommentAction(
         body: tekst,
         source: "portal",
       })
-      .select("id, ticket_id, user_id, body, created_at, profiles ( naam, rol )")
+      .select(
+        "id, ticket_id, user_id, body, created_at, profiles!comments_user_id_fkey ( naam, rol )",
+      )
       .single();
 
     if (error || !data) {
@@ -61,7 +68,39 @@ export async function addCommentAction(
       createdAt: data.created_at,
     };
 
+    // Notify watchers / melder / eigenaar (same set as status changes).
+    const { data: ticket } = await supabase
+      .from("tickets")
+      .select("ticketnummer, onderwerp, melder_id, eigenaar_id")
+      .eq("id", ticketId)
+      .maybeSingle();
+
+    const recipients = await resolveTicketNotifyRecipients(ticketId, user.id, {
+      melderId: ticket?.melder_id,
+      eigenaarId: ticket?.eigenaar_id,
+    });
+    const snippet = notificationSnippet(tekst);
+    const ticketLabel = ticket?.ticketnummer
+      ? `${ticket.ticketnummer}${ticket.onderwerp ? ` · ${ticket.onderwerp}` : ""}`
+      : "Ticket";
+    const inserted = await notifyTicketUsers({
+      ticketId,
+      recipientIds: recipients,
+      kind: "ticket_comment",
+      title: `${comment.auteurNaam} plaatste een update`,
+      body: `${ticketLabel}: ${snippet}`,
+      payload: {
+        commentId: comment.id,
+        actorId: user.id,
+        actorNaam: comment.auteurNaam,
+        snippet,
+      },
+    });
+
     revalidatePath(`/ticket/${ticketId}`);
+    if (inserted > 0) {
+      revalidatePath("/", "layout");
+    }
     return { ok: true, comment };
   } catch (err) {
     return {

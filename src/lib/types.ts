@@ -91,8 +91,14 @@ export interface ItNote {
   reactedByMe: boolean;
 }
 
-/** In-app notification for the shell bell (IT first). */
-export type NotificationKind = "it_note_mention" | "it_note_reaction";
+/** In-app notification kinds (email can reuse the same rows later). */
+export type NotificationKind =
+  | "it_note_mention"
+  | "it_note_reaction"
+  | "ticket_status_changed"
+  | "ticket_comment"
+  | "ticket_eigenaar_assigned"
+  | "ticket_eigenaar_removed";
 
 export interface AppNotification {
   id: string;
@@ -100,12 +106,15 @@ export interface AppNotification {
   kind: NotificationKind;
   title: string;
   body: string | null;
-  /** Extra context for deep-links (noteId, actorNaam, …). */
+  /** Extra context for deep-links (noteId, commentId, status, …). */
   payload: {
     noteId?: string;
+    commentId?: string;
     actorId?: string;
     actorNaam?: string;
     snippet?: string;
+    fromStatus?: TicketStatus;
+    toStatus?: TicketStatus;
   };
   readAt: string | null;
   createdAt: string;

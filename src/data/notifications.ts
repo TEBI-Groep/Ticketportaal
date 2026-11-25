@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import type { AppNotification, NotificationKind } from "@/lib/types";
+import { listWatcherUserIds } from "@/data/watchers";
+import type {
+  AppNotification,
+  NotificationKind,
+  TicketStatus,
+} from "@/lib/types";
 
 type NotificationRow = {
   id: string;
@@ -23,10 +28,20 @@ function mapNotification(row: NotificationRow): AppNotification {
     body: row.body,
     payload: {
       noteId: typeof payload.noteId === "string" ? payload.noteId : undefined,
+      commentId:
+        typeof payload.commentId === "string" ? payload.commentId : undefined,
       actorId: typeof payload.actorId === "string" ? payload.actorId : undefined,
       actorNaam:
         typeof payload.actorNaam === "string" ? payload.actorNaam : undefined,
       snippet: typeof payload.snippet === "string" ? payload.snippet : undefined,
+      fromStatus:
+        typeof payload.fromStatus === "string"
+          ? (payload.fromStatus as TicketStatus)
+          : undefined,
+      toStatus:
+        typeof payload.toStatus === "string"
+          ? (payload.toStatus as TicketStatus)
+          : undefined,
     },
     readAt: row.read_at,
     createdAt: row.created_at,
@@ -68,9 +83,63 @@ export async function listMyNotifications(
   }
 }
 
-/** Truncate note body for notification preview. */
+/** Truncate note/comment body for notification preview. */
 export function notificationSnippet(tekst: string, max = 80): string {
   const trimmed = tekst.trim().replace(/\s+/g, " ");
   if (trimmed.length <= max) return trimmed;
   return `${trimmed.slice(0, max - 1)}…`;
+}
+
+export type NotifyPayload = AppNotification["payload"];
+
+/**
+ * Recipients for ticket events: watchers ∪ melder ∪ eigenaar − actor.
+ * Melder is usually already a watcher; eigenaar often is not.
+ */
+export async function resolveTicketNotifyRecipients(
+  ticketId: string,
+  actorId: string,
+  extras?: { melderId?: string | null; eigenaarId?: string | null },
+): Promise<string[]> {
+  const watchers = await listWatcherUserIds(ticketId);
+  const set = new Set(watchers);
+  if (extras?.melderId) set.add(extras.melderId);
+  if (extras?.eigenaarId) set.add(extras.eigenaarId);
+  set.delete(actorId);
+  return [...set];
+}
+
+/**
+ * Fan-out via security-definer RPC (works for non-IT commenters too).
+ * Returns how many rows were inserted (0 on empty/error).
+ */
+export async function notifyTicketUsers(input: {
+  ticketId: string;
+  recipientIds: string[];
+  kind: NotificationKind;
+  title: string;
+  body?: string | null;
+  payload?: NotifyPayload;
+}): Promise<number> {
+  if (!isSupabaseConfigured()) return 0;
+  if (input.recipientIds.length === 0) return 0;
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("notify_ticket_users", {
+      p_ticket_id: input.ticketId,
+      p_recipient_ids: input.recipientIds,
+      p_kind: input.kind,
+      p_title: input.title,
+      p_body: input.body ?? null,
+      p_payload: input.payload ?? {},
+    });
+    if (error) {
+      console.error("notify_ticket_users failed", error.message);
+      return 0;
+    }
+    return typeof data === "number" ? data : 0;
+  } catch (err) {
+    console.error("notify_ticket_users threw", err);
+    return 0;
+  }
 }

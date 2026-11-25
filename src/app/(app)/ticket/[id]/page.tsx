@@ -32,7 +32,7 @@ import {
 
 interface PageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ note?: string }>;
+  searchParams: Promise<{ note?: string; comment?: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -48,10 +48,11 @@ async function TicketDetailContent({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ note?: string }>;
+  searchParams: Promise<{ note?: string; comment?: string }>;
 }) {
   const { id } = await params;
-  const { note: highlightNoteId } = await searchParams;
+  const { note: highlightNoteId, comment: highlightCommentId } =
+    await searchParams;
   const [ticket, user] = await Promise.all([
     getTicketById(id),
     requireUser(),
@@ -114,6 +115,7 @@ async function TicketDetailContent({
           currentUserId={user.id}
           viewerRol={user.rol}
           highlightNoteId={highlightNoteId ?? null}
+          highlightCommentId={highlightCommentId ?? null}
         />
       ) : (
         /* Same split as IT: main ticket body left, Updates & vragen on the right. */
@@ -243,6 +245,7 @@ async function TicketDetailContent({
                 ticketId={ticket.id}
                 initialComments={comments}
                 embedded
+                highlightCommentId={highlightCommentId ?? null}
               />
             </div>
           </aside>
