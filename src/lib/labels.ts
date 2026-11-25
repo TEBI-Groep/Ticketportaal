@@ -43,6 +43,10 @@ export const SYSTEM_OPTIONS: readonly TicketSystem[] = [
   "Werkplek",
 ] as const;
 
+/** Systeem values that count as Netsuite for Ranglijst queries. */
+export const NETSUITE_SYSTEM_OPTIONS: readonly TicketSystem[] =
+  SYSTEM_OPTIONS.filter((s) => s.toLowerCase().includes("netsuite"));
+
 /** Ordered omvang choices for IT sizing. */
 export const SIZE_OPTIONS: readonly TicketSize[] = [
   "S",
