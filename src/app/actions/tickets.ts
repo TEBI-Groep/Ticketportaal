@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { ATTACHMENTS_BUCKET } from "@/data/attachments";
+import { getTicketById } from "@/data/tickets";
 import type {
   TicketImpact,
   TicketPriority,
@@ -51,6 +52,11 @@ export interface UpdateTicketItInput {
   /** Privé: hide from leidinggevenden (maps to vertrouwelijk). */
   prive: boolean;
 }
+
+/** Partial IT patch for blur-to-save inline editors (merged with current row). */
+export type PatchTicketItInput = {
+  id: string;
+} & Partial<Omit<UpdateTicketItInput, "id">>;
 
 function uniqueNames(names: string[]): string[] {
   return [
@@ -191,6 +197,44 @@ export async function createTicketAction(
       error: err instanceof Error ? err.message : "Aanmaken mislukt.",
     };
   }
+}
+
+/**
+ * Save one or more IT fields without resubmitting the whole form.
+ * Loads the current ticket, merges the patch, then reuses updateTicketItAction.
+ */
+export async function patchTicketItAction(
+  input: PatchTicketItInput,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const current = await getTicketById(input.id);
+  if (!current) {
+    return { ok: false, error: "Ticket niet gevonden." };
+  }
+
+  return updateTicketItAction({
+    id: input.id,
+    status: input.status ?? current.status,
+    prioriteit: input.prioriteit ?? current.prioriteit,
+    eigenaarId:
+      input.eigenaarId !== undefined
+        ? input.eigenaarId
+        : (current.eigenaarId ?? null),
+    melderId: input.melderId ?? current.melderId,
+    afdelingen: input.afdelingen ?? current.afdelingen,
+    streefdatum:
+      input.streefdatum !== undefined
+        ? input.streefdatum
+        : (current.streefdatum ?? null),
+    omvang:
+      input.omvang !== undefined ? input.omvang : (current.omvang ?? null),
+    oplossingSamenvatting:
+      input.oplossingSamenvatting !== undefined
+        ? input.oplossingSamenvatting
+        : (current.oplossingSamenvatting ?? null),
+    onderwerp: input.onderwerp ?? current.onderwerp,
+    omschrijving: input.omschrijving ?? current.omschrijving,
+    prive: input.prive ?? current.prive,
+  });
 }
 
 export async function updateTicketItAction(

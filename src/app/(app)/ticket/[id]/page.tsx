@@ -3,11 +3,10 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { BackLink } from "@/components/BackLink";
 import { CommentThread } from "@/components/CommentThread";
-import { ItNotes } from "@/components/ItNotes";
-import { ItTicketEditor } from "@/components/ItTicketEditor";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
 import { TicketAttachments } from "@/components/TicketAttachments";
+import { TicketItDetail } from "@/components/TicketItDetail";
 import { TicketWatchBell } from "@/components/TicketWatchBell";
 import { requireUser } from "@/data/auth";
 import { getAttachmentsForTicket } from "@/data/attachments";
@@ -97,148 +96,143 @@ async function TicketDetailContent({
         </Suspense>
       </p>
 
-      <div className={isIt ? "detail-grid split" : "detail-grid"}>
-        <section className="detail-panel">
-          <div className="detail-title-row">
-            <h1>
-              {ticket.ticketnummer} · {ticket.onderwerp}
-            </h1>
-            <div
-              style={{
-                display: "flex",
-                gap: "0.35rem",
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
-              <StatusBadge status={ticket.status} />
-              <PriorityBadge priority={ticket.prioriteit} />
-              {ticket.prive ? (
-                <span className="badge" title="Alleen melder en IT">
-                  Privé
-                </span>
-              ) : null}
-              <TicketWatchBell
-                ticketId={ticket.id}
-                ticketLabel={ticket.ticketnummer}
-                initiallyWatching={watching}
-              />
+      {isIt ? (
+        <TicketItDetail
+          ticket={ticket}
+          comments={comments}
+          itNotes={itNotes}
+          attachments={attachments}
+          uitvoerders={uitvoerders}
+          melders={activeMelders}
+          departments={departments}
+          watching={watching}
+          currentUserId={user.id}
+          viewerRol={user.rol}
+        />
+      ) : (
+        <div className="detail-grid">
+          <section className="detail-panel">
+            <div className="detail-title-row">
+              <h1>
+                {ticket.ticketnummer} · {ticket.onderwerp}
+              </h1>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "0.35rem",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <StatusBadge status={ticket.status} />
+                <PriorityBadge priority={ticket.prioriteit} />
+                {ticket.prive ? (
+                  <span className="badge" title="Alleen melder en IT">
+                    Privé
+                  </span>
+                ) : null}
+                <TicketWatchBell
+                  ticketId={ticket.id}
+                  ticketLabel={ticket.ticketnummer}
+                  initiallyWatching={watching}
+                />
+              </div>
             </div>
-          </div>
 
-          <dl className="kv-grid" style={{ marginBottom: "1.25rem" }}>
-            <div className="kv">
-              <dt>Type</dt>
-              <dd>{TYPE_LABEL[ticket.type]}</dd>
-            </div>
-            <div className="kv">
-              <dt>Systeem</dt>
-              <dd>{ticket.systeem}</dd>
-            </div>
-            <div className="kv">
-              <dt>Afdelingen</dt>
-              <dd>{formatAfdelingen(ticket.afdelingen)}</dd>
-            </div>
-            <div className="kv">
-              <dt>Melder</dt>
-              <dd>{ticket.melderNaam}</dd>
-            </div>
-            <div className="kv">
-              <dt>Aangemaakt</dt>
-              <dd>{formatDate(ticket.createdAt)}</dd>
-            </div>
-            <div className="kv">
-              <dt>Eigenaar</dt>
-              <dd>{ticket.eigenaarNaam ?? "Nog niet geclaimd"}</dd>
-            </div>
-            <div className="kv">
-              <dt>Streefdatum</dt>
-              <dd>
-                {ticket.streefdatum ? formatDate(ticket.streefdatum) : "—"}
-              </dd>
-            </div>
-            <div className="kv">
-              <dt>Omvang</dt>
-              <dd>{ticket.omvang ?? "—"}</dd>
-            </div>
-            <div className="kv">
-              <dt>Laatst bijgewerkt</dt>
-              <dd>{formatDate(ticket.updatedAt)}</dd>
-            </div>
-            <div className="kv">
-              <dt>Privé</dt>
-              <dd>{ticket.prive ? "Ja" : "Nee"}</dd>
-            </div>
-          </dl>
+            <dl className="kv-grid" style={{ marginBottom: "1.25rem" }}>
+              <div className="kv">
+                <dt>Type</dt>
+                <dd>{TYPE_LABEL[ticket.type]}</dd>
+              </div>
+              <div className="kv">
+                <dt>Systeem</dt>
+                <dd>{ticket.systeem}</dd>
+              </div>
+              <div className="kv">
+                <dt>Afdelingen</dt>
+                <dd>{formatAfdelingen(ticket.afdelingen)}</dd>
+              </div>
+              <div className="kv">
+                <dt>Melder</dt>
+                <dd>{ticket.melderNaam}</dd>
+              </div>
+              <div className="kv">
+                <dt>Aangemaakt</dt>
+                <dd>{formatDate(ticket.createdAt)}</dd>
+              </div>
+              <div className="kv">
+                <dt>Eigenaar</dt>
+                <dd>{ticket.eigenaarNaam ?? "Nog niet geclaimd"}</dd>
+              </div>
+              <div className="kv">
+                <dt>Streefdatum</dt>
+                <dd>
+                  {ticket.streefdatum ? formatDate(ticket.streefdatum) : "—"}
+                </dd>
+              </div>
+              <div className="kv">
+                <dt>Omvang</dt>
+                <dd>{ticket.omvang ?? "—"}</dd>
+              </div>
+              <div className="kv">
+                <dt>Laatst bijgewerkt</dt>
+                <dd>{formatDate(ticket.updatedAt)}</dd>
+              </div>
+              <div className="kv">
+                <dt>Privé</dt>
+                <dd>{ticket.prive ? "Ja" : "Nee"}</dd>
+              </div>
+            </dl>
 
-          <h2>Omschrijving</h2>
-          <p style={{ color: "var(--ink-soft)", marginBottom: "1.25rem" }}>
-            {ticket.omschrijving}
-          </p>
-
-          {ticket.oplossingSamenvatting ? (
-            <>
-              <h2>Oplossing</h2>
-              <p style={{ color: "var(--ink-soft)" }}>{ticket.oplossingSamenvatting}</p>
-            </>
-          ) : null}
-
-          <TicketAttachments
-            ticketId={ticket.id}
-            initialAttachments={attachments}
-            currentUserId={user.id}
-            canDeleteAny={isIt}
-          />
-
-          <CommentThread ticketId={ticket.id} initialComments={comments} />
-
-          {canVote ? (
-            <div style={{ marginTop: "1.5rem" }}>
-              <h2>Beoordeling</h2>
-              <p className="form-hint" style={{ marginBottom: "0.75rem" }}>
-                Beoordeel dit verzoek met 1–5 sterren. Het gemiddelde bepaalt de
-                plek op de ranglijst (advies aan IT).
-              </p>
-              <StarRating
-                key={`${ticket.id}-${mine ?? 0}-${count}`}
-                ticketId={ticket.id}
-                average={avg}
-                count={count}
-                myRating={mine}
-                beoordelingen={ticket.beoordelingen}
-                interactive
-              />
-            </div>
-          ) : null}
-        </section>
-
-        {isIt ? (
-          <aside className="detail-panel" aria-label="IT-gegevens">
-            <h2>IT-paneel</h2>
-            <p className="form-hint" style={{ marginBottom: "1rem" }}>
-              Status, prioriteit, eigenaar en overige IT-velden bewerken.
+            <h2>Omschrijving</h2>
+            <p style={{ color: "var(--ink-soft)", marginBottom: "1.25rem" }}>
+              {ticket.omschrijving}
             </p>
-            <ItTicketEditor
-              ticket={ticket}
-              uitvoerders={uitvoerders}
-              melders={activeMelders}
-              departments={departments}
+
+            {ticket.oplossingSamenvatting ? (
+              <>
+                <h2>Oplossing</h2>
+                <p style={{ color: "var(--ink-soft)" }}>
+                  {ticket.oplossingSamenvatting}
+                </p>
+              </>
+            ) : null}
+
+            <TicketAttachments
+              ticketId={ticket.id}
+              initialAttachments={attachments}
+              currentUserId={user.id}
+              canDeleteAny={false}
             />
-            <div style={{ marginTop: "1.5rem" }}>
-              <ItNotes
-                ticketId={ticket.id}
-                initialNotes={itNotes}
-                viewerRol={user.rol}
-              />
-            </div>
-          </aside>
-        ) : null}
-      </div>
+
+            <CommentThread ticketId={ticket.id} initialComments={comments} />
+
+            {canVote ? (
+              <div style={{ marginTop: "1.5rem" }}>
+                <h2>Beoordeling</h2>
+                <p className="form-hint" style={{ marginBottom: "0.75rem" }}>
+                  Beoordeel dit verzoek met 1–5 sterren. Het gemiddelde bepaalt
+                  de plek op de ranglijst.
+                </p>
+                <StarRating
+                  key={`${ticket.id}-${mine ?? 0}-${count}`}
+                  ticketId={ticket.id}
+                  average={avg}
+                  count={count}
+                  myRating={mine}
+                  beoordelingen={ticket.beoordelingen}
+                  interactive
+                />
+              </div>
+            ) : null}
+          </section>
+        </div>
+      )}
     </>
   );
 }
 
-/** Ticket detail — requester fields + IT panel (IT only) + comments. */
+/** Ticket detail — inline IT editing for uitvoerders; read-only for others. */
 export default function TicketDetailPage({ params }: PageProps) {
   return (
     <div className="page">
