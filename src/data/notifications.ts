@@ -93,8 +93,59 @@ export function notificationSnippet(tekst: string, max = 80): string {
 export type NotifyPayload = AppNotification["payload"];
 
 /**
+ * On privé tickets only Beheerder (uitvoerder) + melder may be notified.
+ * Returns null when the ticket is not privé (no extra filter needed).
+ */
+async function privateNotifyAllowlist(
+  ticketId: string,
+): Promise<{ melderId: string | null } | null> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("tickets")
+      .select("vertrouwelijk, melder_id")
+      .eq("id", ticketId)
+      .maybeSingle();
+    if (error || !data || !data.vertrouwelijk) return null;
+    return { melderId: data.melder_id as string | null };
+  } catch {
+    return null;
+  }
+}
+
+/** Keep melder + active Beheerders; drop watchers/others who cannot see privé. */
+async function filterPrivateNotifyRecipients(
+  recipientIds: string[],
+  melderId: string | null,
+): Promise<string[]> {
+  if (recipientIds.length === 0) return [];
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, rol")
+      .in("id", recipientIds)
+      .eq("actief", true);
+    if (error || !data) {
+      // Fail closed for privé: only melder if present.
+      return melderId && recipientIds.includes(melderId) ? [melderId] : [];
+    }
+    return data
+      .filter(
+        (row) =>
+          row.rol === "uitvoerder" ||
+          (melderId !== null && row.id === melderId),
+      )
+      .map((row) => row.id as string);
+  } catch {
+    return melderId && recipientIds.includes(melderId) ? [melderId] : [];
+  }
+}
+
+/**
  * Recipients for ticket events: watchers ∪ melder ∪ eigenaar − actor.
  * Melder is usually already a watcher; eigenaar often is not.
+ * Privé tickets are narrowed to Beheerder + melder (RPC enforces the same).
  */
 export async function resolveTicketNotifyRecipients(
   ticketId: string,
@@ -106,7 +157,14 @@ export async function resolveTicketNotifyRecipients(
   if (extras?.melderId) set.add(extras.melderId);
   if (extras?.eigenaarId) set.add(extras.eigenaarId);
   set.delete(actorId);
-  return [...set];
+
+  const prive = await privateNotifyAllowlist(ticketId);
+  if (!prive) return [...set];
+
+  const melderId = extras?.melderId ?? prive.melderId;
+  if (melderId) set.add(melderId);
+  set.delete(actorId);
+  return filterPrivateNotifyRecipients([...set], melderId);
 }
 
 /**
