@@ -14,10 +14,12 @@ import {
   normalizeTicketQuery,
 } from "@/lib/ticket-search";
 import {
+  RANGLIJST_TYPES,
   ratingAantal,
   ratingGemiddelde,
   type TicketSystem,
 } from "@/lib/types";
+import { NETSUITE_SYSTEM_OPTIONS } from "@/lib/labels";
 
 type TicketRow = {
   id: string;
@@ -191,8 +193,9 @@ export async function getRanglijstTickets(): Promise<Ticket[]> {
     const { data, error } = await supabase
       .from("tickets")
       .select(TICKET_SELECT)
-      .eq("systeem", "Netsuite")
-      .in("type", ["wijziging", "idee"])
+      // All Netsuite* systemen + wijziging / idee / procesverbetering.
+      .in("systeem", [...NETSUITE_SYSTEM_OPTIONS])
+      .in("type", [...RANGLIJST_TYPES])
       .neq("prioriteit", "spoed")
       .eq("vertrouwelijk", false)
       .not("status", "in", '("afgerond","afgewezen")');

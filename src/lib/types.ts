@@ -188,15 +188,27 @@ export function mijnRating(
   return ticket.beoordelingen.find((r) => r.userId === userId)?.score ?? null;
 }
 
+/** Types that belong on the public Ranglijst (when other rules match). */
+export const RANGLIJST_TYPES: readonly TicketType[] = [
+  "wijziging",
+  "idee",
+  "procesverbetering",
+] as const;
+
+/** True when the systeem name is a Netsuite variant (contains “Netsuite”). */
+export function isNetsuiteSysteem(systeem: string): boolean {
+  return systeem.toLowerCase().includes("netsuite");
+}
+
 /**
- * Netsuite wijziging/idee — belongs on the public Ranglijst when open,
- * not Spoed, and not Privé. Privé tickets stay melder+IT only.
+ * Netsuite* wijziging/idee/procesverbetering — belongs on the public Ranglijst
+ * when open, not Spoed, and not Privé. Privé tickets stay melder+IT only.
  */
 export function isRanglijstKandidaat(ticket: Ticket): boolean {
-  const typeOk = ticket.type === "wijziging" || ticket.type === "idee";
+  const typeOk = (RANGLIJST_TYPES as readonly string[]).includes(ticket.type);
   return (
     typeOk &&
-    ticket.systeem === "Netsuite" &&
+    isNetsuiteSysteem(ticket.systeem) &&
     !ticket.prive &&
     ticket.prioriteit !== "spoed"
   );

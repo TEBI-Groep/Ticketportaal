@@ -19,7 +19,8 @@ async function RanglijstContent() {
       <header className="page-header">
         <h1>Ranglijst</h1>
         <p>
-          NetSuite-wensen en -ideeën, gerangschikt op gemiddelde sterrenrating.
+          NetSuite-wijzigingen, -ideeën en -procesverbeteringen, gerangschikt
+          op gemiddelde sterrenrating.
         </p>
       </header>
 
