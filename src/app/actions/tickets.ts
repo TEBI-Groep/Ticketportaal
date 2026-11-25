@@ -39,6 +39,8 @@ const LEGACY_IMPACT_PLACEHOLDER: TicketImpact = "wens";
 
 export interface UpdateTicketItInput {
   id: string;
+  type: TicketType;
+  systeem: TicketSystem;
   status: TicketStatus;
   prioriteit: TicketPriority;
   eigenaarId: string | null;
@@ -213,6 +215,8 @@ export async function patchTicketItAction(
 
   return updateTicketItAction({
     id: input.id,
+    type: input.type ?? current.type,
+    systeem: input.systeem ?? current.systeem,
     status: input.status ?? current.status,
     prioriteit: input.prioriteit ?? current.prioriteit,
     eigenaarId:
@@ -283,6 +287,8 @@ export async function updateTicketItAction(
     }
 
     const patch: Record<string, unknown> = {
+      type: input.type,
+      systeem: input.systeem,
       status: input.status,
       prioriteit: input.prioriteit,
       eigenaar_id: input.eigenaarId,

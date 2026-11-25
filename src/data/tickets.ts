@@ -191,7 +191,7 @@ export async function getRanglijstTickets(): Promise<Ticket[]> {
     const { data, error } = await supabase
       .from("tickets")
       .select(TICKET_SELECT)
-      .eq("systeem", "NetSuite")
+      .eq("systeem", "Netsuite")
       .in("type", ["wijziging", "idee"])
       .neq("prioriteit", "spoed")
       .eq("vertrouwelijk", false)

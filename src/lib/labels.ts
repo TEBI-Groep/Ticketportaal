@@ -3,7 +3,9 @@
 import type {
   TicketImpact,
   TicketPriority,
+  TicketSize,
   TicketStatus,
+  TicketSystem,
   TicketType,
   UserRole,
 } from "@/lib/types";
@@ -23,7 +25,31 @@ export const TYPE_LABEL: Record<TicketType, string> = {
   wijziging: "Wijziging",
   vraag: "Vraag",
   idee: "Idee",
+  procesverbetering: "Procesverbetering",
 };
+
+/** Ordered systeem choices for create + IT inline edit. */
+export const SYSTEM_OPTIONS: readonly TicketSystem[] = [
+  "Artikelen",
+  "Hardware",
+  "Netsuite",
+  "Netsuite transportplanning",
+  "Netsuite WMS",
+  "Outlook",
+  "Overig",
+  "Software",
+  "Telefonie",
+  "Werkplek",
+] as const;
+
+/** Ordered omvang choices for IT sizing. */
+export const SIZE_OPTIONS: readonly TicketSize[] = [
+  "S",
+  "M",
+  "L",
+  "XL",
+  "XXL",
+] as const;
 
 export const IMPACT_LABEL: Record<TicketImpact, string> = {
   stil: "Werk ligt stil",

@@ -9,15 +9,23 @@ export type Json =
   | Json[];
 
 export type DbUserRole = "gebruiker" | "manager" | "uitvoerder";
-export type DbTicketType = "storing" | "wijziging" | "vraag" | "idee";
+export type DbTicketType =
+  | "storing"
+  | "wijziging"
+  | "vraag"
+  | "idee"
+  | "procesverbetering";
 export type DbTicketSysteem =
-  | "NetSuite"
-  | "WMS"
+  | "Artikelen"
   | "Hardware"
+  | "Netsuite"
+  | "Netsuite transportplanning"
+  | "Netsuite WMS"
   | "Outlook"
   | "Overig"
-  | "Artikelen"
-  | "Transportplanning";
+  | "Software"
+  | "Telefonie"
+  | "Werkplek";
 export type DbTicketImpact = "stil" | "hinderlijk" | "wens";
 export type DbTicketStatus =
   | "nieuw"
@@ -28,7 +36,7 @@ export type DbTicketStatus =
   | "afgerond"
   | "afgewezen";
 export type DbTicketPriority = "spoed" | "hoog" | "gemiddeld" | "laag";
-export type DbTicketSize = "S" | "M" | "L";
+export type DbTicketSize = "S" | "M" | "L" | "XL" | "XXL";
 
 export interface Database {
   public: {
@@ -111,6 +119,8 @@ export interface Database {
         Update: {
           onderwerp?: string;
           omschrijving?: string;
+          type?: DbTicketType;
+          systeem?: DbTicketSysteem;
           status?: DbTicketStatus;
           prioriteit?: DbTicketPriority;
           melder_id?: string;
@@ -118,6 +128,7 @@ export interface Database {
           streefdatum?: string | null;
           omvang?: DbTicketSize | null;
           oplossing_samenvatting?: string | null;
+          vertrouwelijk?: boolean;
         };
       };
       ticket_departments: {

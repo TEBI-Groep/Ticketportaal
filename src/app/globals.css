@@ -155,6 +155,15 @@ img {
   max-width: none;
 }
 
+/* Title row with an optional action on the right (e.g. Mijn werk on Overzicht). */
+.page-headerWithAction {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
 .page-header h1 {
   font-family: var(--font-brand);
   font-size: clamp(1.75rem, 3vw, 2.25rem);

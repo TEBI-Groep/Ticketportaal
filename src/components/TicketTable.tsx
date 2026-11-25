@@ -81,7 +81,13 @@ const PRIORITY_RANK: Record<TicketPriority, number> = {
   laag: 3,
 };
 
-const SIZE_RANK: Record<string, number> = { S: 0, M: 1, L: 2 };
+const SIZE_RANK: Record<string, number> = {
+  S: 0,
+  M: 1,
+  L: 2,
+  XL: 3,
+  XXL: 4,
+};
 
 /** Default Overzicht order: soonest streefdatum, then Spoed-first prioriteit. */
 const DEFAULT_SORT_KEY: TicketSortKey = "streefdatum";

@@ -20,7 +20,9 @@ import { TicketAttachments } from "@/components/TicketAttachments";
 import { TicketWatchBell } from "@/components/TicketWatchBell";
 import {
   PRIORITY_LABEL,
+  SIZE_OPTIONS,
   STATUS_LABEL,
+  SYSTEM_OPTIONS,
   TYPE_LABEL,
   formatAfdelingen,
   formatDate,
@@ -33,6 +35,8 @@ import type {
   TicketPriority,
   TicketSize,
   TicketStatus,
+  TicketSystem,
+  TicketType,
   User,
   UserRole,
 } from "@/lib/types";
@@ -174,11 +178,49 @@ export function TicketItDetail({
         <dl className="kv-grid" style={{ marginBottom: "1.25rem" }}>
           <div className="kv">
             <dt>Type</dt>
-            <dd>{TYPE_LABEL[local.type]}</dd>
+            <dd>
+              <InlineSelect
+                label="Type"
+                value={local.type}
+                display={TYPE_LABEL[local.type]}
+                options={(Object.keys(TYPE_LABEL) as TicketType[]).map(
+                  (type) => ({
+                    value: type,
+                    label: TYPE_LABEL[type],
+                  }),
+                )}
+                pending={pending}
+                error={errorKey === "type" ? fieldError : null}
+                onSave={(type) => {
+                  const next = type as TicketType;
+                  if (next === local.type) return;
+                  setLocal((t) => ({ ...t, type: next }));
+                  save("type", { type: next });
+                }}
+              />
+            </dd>
           </div>
           <div className="kv">
             <dt>Systeem</dt>
-            <dd>{local.systeem}</dd>
+            <dd>
+              <InlineSelect
+                label="Systeem"
+                value={local.systeem}
+                display={local.systeem}
+                options={SYSTEM_OPTIONS.map((systeem) => ({
+                  value: systeem,
+                  label: systeem,
+                }))}
+                pending={pending}
+                error={errorKey === "systeem" ? fieldError : null}
+                onSave={(systeem) => {
+                  const next = systeem as TicketSystem;
+                  if (next === local.systeem) return;
+                  setLocal((t) => ({ ...t, systeem: next }));
+                  save("systeem", { systeem: next });
+                }}
+              />
+            </dd>
           </div>
           <div className="kv">
             <dt>Afdelingen</dt>
@@ -282,9 +324,10 @@ export function TicketItDetail({
                 display={local.omvang ?? "—"}
                 options={[
                   { value: "", label: "—" },
-                  { value: "S", label: "S" },
-                  { value: "M", label: "M" },
-                  { value: "L", label: "L" },
+                  ...SIZE_OPTIONS.map((size) => ({
+                    value: size,
+                    label: size,
+                  })),
                 ]}
                 pending={pending}
                 error={errorKey === "omvang" ? fieldError : null}
