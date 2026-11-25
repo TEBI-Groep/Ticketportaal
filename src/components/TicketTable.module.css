@@ -46,7 +46,8 @@
   text-overflow: ellipsis;
 }
 
-/* Column budget — keeps the full grid inside the page width. */
+/* Column budget — keeps the full grid inside the page width.
+   Offsets shift by +1 when .tableWithRank prepends the # column. */
 .table th:nth-child(1),
 .table td:nth-child(1) {
   width: 5.5%;
@@ -105,6 +106,51 @@
 .table th:nth-child(12),
 .table td:nth-child(12) {
   width: 8%;
+}
+
+/* Ranglijst: frozen # column. */
+.colRank {
+  width: 3% !important;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank {
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+/* Omvang is S–XXL only — keep it tight (esp. on Ranglijst with # + Stemmen). */
+.colOmvang {
+  width: 3.5% !important;
+  max-width: 3.25rem;
+  text-align: center;
+}
+
+/* Stemmen column — allow the compact StarRating to wrap. */
+.colVote {
+  width: 9% !important;
+  white-space: normal;
+  overflow: visible;
+}
+
+.colVote .sortLabel {
+  text-transform: uppercase;
+}
+
+.tableWithRank th:nth-child(1),
+.tableWithRank td:nth-child(1) {
+  width: 3%;
+}
+
+.tableWithRank th:nth-child(2),
+.tableWithRank td:nth-child(2) {
+  width: 5%;
+}
+
+.tableWithRank th:nth-child(3),
+.tableWithRank td:nth-child(3) {
+  width: 13%;
 }
 
 .table th,

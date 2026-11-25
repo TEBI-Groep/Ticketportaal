@@ -12,6 +12,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
+import { StarRating } from "@/components/StarRating";
 import {
   PRIORITY_LABEL,
   STATUS_LABEL,
@@ -24,6 +25,12 @@ import type {
   TicketPriority,
   TicketStatus,
   TicketType,
+} from "@/lib/types";
+import {
+  isStembaar,
+  mijnRating,
+  ratingAantal,
+  ratingGemiddelde,
 } from "@/lib/types";
 import styles from "./TicketTable.module.css";
 
@@ -40,14 +47,16 @@ export type TicketSortKey =
   | "eigenaar"
   | "streefdatum"
   | "omvang"
-  | "updatedAt";
+  | "updatedAt"
+  /** Ranglijst only — avg rating then vote count. */
+  | "rating";
 
 type SortDir = "asc" | "desc";
 
 /** Active column filters: empty/missing set = no filter on that column. */
 type ColumnFilters = Partial<Record<TicketSortKey, Set<string>>>;
 
-const COLUMNS: Array<{ key: TicketSortKey; label: string }> = [
+const BASE_COLUMNS: Array<{ key: TicketSortKey; label: string }> = [
   { key: "ticketnummer", label: "Nummer" },
   { key: "onderwerp", label: "Onderwerp" },
   { key: "status", label: "Status" },
@@ -61,6 +70,16 @@ const COLUMNS: Array<{ key: TicketSortKey; label: string }> = [
   { key: "omvang", label: "Omvang" },
   { key: "updatedAt", label: "Bijgewerkt" },
 ];
+
+/** Optional Ranglijst column (sortable + filterable by average). */
+const RATING_COLUMN: { key: TicketSortKey; label: string } = {
+  key: "rating",
+  label: "Stemmen",
+};
+
+function columnsFor(showVote: boolean) {
+  return showVote ? [...BASE_COLUMNS, RATING_COLUMN] : BASE_COLUMNS;
+}
 
 /** Fixed status order so “Nieuw” sorts before “Afgerond”, not alphabetically. */
 const STATUS_RANK: Record<TicketStatus, number> = {
@@ -89,16 +108,20 @@ const SIZE_RANK: Record<string, number> = {
   XXL: 4,
 };
 
-/** Default Overzicht order: soonest streefdatum, then Spoed-first prioriteit. */
+/** Default Overzicht / list order: soonest streefdatum, then Spoed-first prioriteit. */
 const DEFAULT_SORT_KEY: TicketSortKey = "streefdatum";
 const DEFAULT_SORT_DIR: SortDir = "asc";
+
+/** Ranglijst default: highest average rating first. */
+const RANKING_SORT_KEY: TicketSortKey = "rating";
+const RANKING_SORT_DIR: SortDir = "desc";
 
 /** Empty placeholder stored as a stable filter token. */
 const EMPTY_TOKEN = "__empty__";
 
 /** First click direction when activating a column as primary sort. */
 function initialSortDir(key: TicketSortKey): SortDir {
-  return key === "updatedAt" ? "desc" : "asc";
+  return key === "updatedAt" || key === "rating" ? "desc" : "asc";
 }
 
 /**
@@ -191,6 +214,11 @@ function compareTickets(
     case "updatedAt":
       cmp = a.updatedAt.localeCompare(b.updatedAt);
       break;
+    case "rating": {
+      const avgDiff = ratingGemiddelde(a) - ratingGemiddelde(b);
+      cmp = avgDiff !== 0 ? avgDiff : ratingAantal(a) - ratingAantal(b);
+      break;
+    }
   }
   return dir === "asc" ? cmp : -cmp;
 }
@@ -224,6 +252,11 @@ function filterTokens(ticket: Ticket, key: TicketSortKey): string[] {
       return [ticket.omvang || EMPTY_TOKEN];
     case "updatedAt":
       return [ticket.updatedAt];
+    case "rating": {
+      const count = ratingAantal(ticket);
+      if (count === 0) return [EMPTY_TOKEN];
+      return [ratingGemiddelde(ticket).toFixed(1)];
+    }
   }
 }
 
@@ -231,6 +264,7 @@ function filterTokens(ticket: Ticket, key: TicketSortKey): string[] {
 function filterLabel(key: TicketSortKey, token: string): string {
   if (token === EMPTY_TOKEN) {
     if (key === "eigenaar") return "Nog niet geclaimd";
+    if (key === "rating") return "Nog geen stemmen";
     return "—";
   }
   switch (key) {
@@ -243,6 +277,8 @@ function filterLabel(key: TicketSortKey, token: string): string {
     case "streefdatum":
     case "updatedAt":
       return formatDate(token);
+    case "rating":
+      return `${token} ★`;
     default:
       return token;
   }
@@ -260,8 +296,9 @@ function ticketMatchesColumn(
 function ticketMatchesFilters(
   ticket: Ticket,
   filters: ColumnFilters,
+  columns: Array<{ key: TicketSortKey }>,
 ): boolean {
-  for (const col of COLUMNS) {
+  for (const col of columns) {
     const selected = filters[col.key];
     if (selected && selected.size > 0) {
       if (!ticketMatchesColumn(ticket, col.key, selected)) return false;
@@ -270,8 +307,11 @@ function ticketMatchesFilters(
   return true;
 }
 
-function hasAnyColumnFilter(filters: ColumnFilters): boolean {
-  return COLUMNS.some((col) => (filters[col.key]?.size ?? 0) > 0);
+function hasAnyColumnFilter(
+  filters: ColumnFilters,
+  columns: Array<{ key: TicketSortKey }>,
+): boolean {
+  return columns.some((col) => (filters[col.key]?.size ?? 0) > 0);
 }
 
 /** Funnel icon — filled when the column filter is active (Excel cue). */
@@ -303,6 +343,23 @@ interface TicketTableProps {
   /** Global free-text search above the table (combined with column filters). */
   searchPlaceholder?: string;
   searchLabel?: string;
+  /**
+   * Ranglijst: show frozen # from the unfiltered ticket order (server ranking).
+   * Filters/sort change row order but not these numbers.
+   */
+  showRank?: boolean;
+  /** Ranglijst: Stemmen column with compact StarRating outside the row link. */
+  showVote?: boolean;
+  /** Current user id for “Jij: n★” on the Stemmen column. */
+  currentUserId?: string;
+  /**
+   * Hide the built-in search field (parent renders a shared one, e.g. Overzicht).
+   * Pair with searchQuery + onSearchChange.
+   */
+  hideSearch?: boolean;
+  /** Controlled search query — used when the parent owns the search field. */
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
 }
 
 type PanelCoords = {
@@ -318,7 +375,8 @@ type PanelCoords = {
 /**
  * Spreadsheet-style ticket overview with sortable + filterable headers.
  * Sort: title click cycles activate → flip → reset to default.
- * Filter: funnel button (Excel-like). Tie-breakers always Streefdatum → prioriteit.
+ * Filter: funnel button (Excel-like). Tie-breakers always Streefdatum → prioriteit
+ * (except Ranglijst default = rating).
  */
 export function TicketTable({
   tickets,
@@ -327,16 +385,31 @@ export function TicketTable({
   emptyCta = "Ticket aanmaken",
   searchPlaceholder = "Zoek in het overzicht…",
   searchLabel = "Zoeken in tickets",
+  showRank = false,
+  showVote = false,
+  currentUserId = "",
+  hideSearch = false,
+  searchQuery: searchQueryProp,
+  onSearchChange,
 }: TicketTableProps) {
   const pathname = usePathname();
   const router = useRouter();
-  /* Default: soonest streefdatum first, then priority severity. */
-  const [sortKey, setSortKey] = useState<TicketSortKey>(DEFAULT_SORT_KEY);
-  const [sortDir, setSortDir] = useState<SortDir>(DEFAULT_SORT_DIR);
+  const columns = columnsFor(showVote);
+  /* Overzicht-style default, or rating-first on Ranglijst. */
+  const defaultSortKey = showVote ? RANKING_SORT_KEY : DEFAULT_SORT_KEY;
+  const defaultSortDir = showVote ? RANKING_SORT_DIR : DEFAULT_SORT_DIR;
+  const [sortKey, setSortKey] = useState<TicketSortKey>(defaultSortKey);
+  const [sortDir, setSortDir] = useState<SortDir>(defaultSortDir);
   const [filters, setFilters] = useState<ColumnFilters>({});
   const [openFilter, setOpenFilter] = useState<TicketSortKey | null>(null);
   const [filterQuery, setFilterQuery] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  /* Local search unless the parent controls it (shared Overzicht bar). */
+  const [internalSearch, setInternalSearch] = useState("");
+  const searchQuery = searchQueryProp ?? internalSearch;
+  function setSearchQuery(query: string) {
+    if (onSearchChange) onSearchChange(query);
+    else setInternalSearch(query);
+  }
   const [panelCoords, setPanelCoords] = useState<PanelCoords | null>(null);
   const [portalReady, setPortalReady] = useState(false);
   const headerBarRef = useRef<HTMLTableSectionElement | null>(null);
@@ -346,12 +419,22 @@ export function TicketTable({
   >({});
 
   const isDefaultSort =
-    sortKey === DEFAULT_SORT_KEY && sortDir === DEFAULT_SORT_DIR;
+    sortKey === defaultSortKey && sortDir === defaultSortDir;
 
   function resetSort() {
-    setSortKey(DEFAULT_SORT_KEY);
-    setSortDir(DEFAULT_SORT_DIR);
+    setSortKey(defaultSortKey);
+    setSortDir(defaultSortDir);
   }
+
+  /* Frozen # from the unfiltered props order (Ranglijst server ranking). */
+  const frozenRankById = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!showRank) return map;
+    tickets.forEach((ticket, index) => {
+      map.set(ticket.id, index + 1);
+    });
+    return map;
+  }, [tickets, showRank]);
 
   function closeFilterPanel() {
     setOpenFilter(null);
@@ -446,8 +529,8 @@ export function TicketTable({
   );
 
   const filtered = useMemo(
-    () => searched.filter((t) => ticketMatchesFilters(t, filters)),
-    [searched, filters],
+    () => searched.filter((t) => ticketMatchesFilters(t, filters, columns)),
+    [searched, filters, columns],
   );
 
   const sorted = useMemo(
@@ -463,7 +546,9 @@ export function TicketTable({
     if (!openFilter) return [];
     const others: ColumnFilters = { ...filters };
     delete others[openFilter];
-    const pool = searched.filter((t) => ticketMatchesFilters(t, others));
+    const pool = searched.filter((t) =>
+      ticketMatchesFilters(t, others, columns),
+    );
     const counts = new Map<string, number>();
     for (const ticket of pool) {
       for (const token of filterTokens(ticket, openFilter)) {
@@ -479,7 +564,7 @@ export function TicketTable({
       .sort((a, b) =>
         a.label.localeCompare(b.label, "nl", { sensitivity: "base" }),
       );
-  }, [openFilter, filters, searched]);
+  }, [openFilter, filters, searched, columns]);
 
   const visibleFilterOptions = useMemo(() => {
     const q = filterQuery.trim().toLowerCase();
@@ -560,16 +645,20 @@ export function TicketTable({
     );
   }
 
-  const filtersActive = hasAnyColumnFilter(filters);
+  const filtersActive = hasAnyColumnFilter(filters, columns);
   const searchActive = searchQuery.trim().length > 0;
   const narrowed = filtersActive || searchActive;
   const openCol = openFilter
-    ? COLUMNS.find((c) => c.key === openFilter)
+    ? columns.find((c) => c.key === openFilter)
     : null;
   const openSelected = openFilter
     ? (filters[openFilter] ?? new Set<string>())
     : new Set<string>();
   const openFilterActive = openSelected.size > 0;
+  const colCount = columns.length + (showRank ? 1 : 0);
+  const resetSortLabel = showVote
+    ? "Terug naar Stemmen"
+    : "Terug naar Streefdatum, dan prioriteit";
 
   const panelStyle: CSSProperties | undefined = panelCoords
     ? {
@@ -666,71 +755,96 @@ export function TicketTable({
         )
       : null;
 
+  const showToolbarChrome =
+    !hideSearch || narrowed || !isDefaultSort || filtersActive;
+
   return (
     <div>
-      {/* Global search restored; works together with column filters. */}
-      <div className={styles.toolbar}>
-        <input
-          className={`search-input ${styles.searchInput}`}
-          type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={searchPlaceholder}
-          aria-label={searchLabel}
-          autoComplete="off"
-        />
-        {narrowed || !isDefaultSort ? (
-          <div className={styles.filterBar}>
-            {narrowed ? (
-              <span className="form-hint" aria-live="polite">
-                {sorted.length} van {tickets.length}
-              </span>
-            ) : null}
-            {!isDefaultSort ? (
-              <button
-                type="button"
-                className={styles.clearFilters}
-                onClick={resetSort}
-                title="Terug naar Streefdatum, dan prioriteit"
-              >
-                Sortering resetten
-              </button>
-            ) : null}
-            {filtersActive ? (
-              <button
-                type="button"
-                className={styles.clearFilters}
-                onClick={clearAllFilters}
-              >
-                Filters wissen
-              </button>
-            ) : null}
-            {searchActive ? (
-              <button
-                type="button"
-                className={styles.clearFilters}
-                onClick={() => setSearchQuery("")}
-              >
-                Zoekopdracht wissen
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+      {/* Search + filter/sort chrome; search can be owned by the parent. */}
+      {showToolbarChrome ? (
+        <div className={styles.toolbar}>
+          {!hideSearch ? (
+            <input
+              className={`search-input ${styles.searchInput}`}
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={searchPlaceholder}
+              aria-label={searchLabel}
+              autoComplete="off"
+            />
+          ) : null}
+          {narrowed || !isDefaultSort || filtersActive ? (
+            <div className={styles.filterBar}>
+              {narrowed ? (
+                <span className="form-hint" aria-live="polite">
+                  {sorted.length} van {tickets.length}
+                </span>
+              ) : null}
+              {!isDefaultSort ? (
+                <button
+                  type="button"
+                  className={styles.clearFilters}
+                  onClick={resetSort}
+                  title={resetSortLabel}
+                >
+                  Sortering resetten
+                </button>
+              ) : null}
+              {filtersActive ? (
+                <button
+                  type="button"
+                  className={styles.clearFilters}
+                  onClick={clearAllFilters}
+                >
+                  Filters wissen
+                </button>
+              ) : null}
+              {/* Clear search only when this table owns the field. */}
+              {!hideSearch && searchActive ? (
+                <button
+                  type="button"
+                  className={styles.clearFilters}
+                  onClick={() => setSearchQuery("")}
+                >
+                  Zoekopdracht wissen
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className={styles.wrap}>
-        <table className={styles.table}>
+        <table
+          className={`${styles.table} ${showRank ? styles.tableWithRank : ""}`}
+        >
           {/* Funnel buttons stay in thead; the menu itself is portaled to body. */}
           <thead ref={headerBarRef}>
             <tr>
-              {COLUMNS.map((col) => {
+              {showRank ? (
+                <th scope="col" className={`${styles.th} ${styles.colRank}`}>
+                  <span className={styles.sortLabel}>#</span>
+                </th>
+              ) : null}
+              {columns.map((col) => {
                 const sortActive = sortKey === col.key;
                 const colFilter = filters[col.key];
                 const filterActive = (colFilter?.size ?? 0) > 0;
                 const panelOpen = openFilter === col.key;
+                const colClass =
+                  col.key === "rating"
+                    ? styles.colVote
+                    : col.key === "omvang"
+                      ? styles.colOmvang
+                      : undefined;
 
                 return (
-                  <th key={col.key} scope="col" className={styles.th}>
+                  <th
+                    key={col.key}
+                    scope="col"
+                    className={`${styles.th} ${colClass ?? ""}`}
+                  >
                     <div className={styles.thInner}>
                       {/* Title click = sort (Excel: primary header action). */}
                       <button
@@ -750,7 +864,9 @@ export function TicketTable({
                           sortActive
                             ? sortDir === initialSortDir(col.key)
                               ? `Omkeren (${col.label})`
-                              : "Sortering resetten (Streefdatum → prioriteit)"
+                              : showVote
+                                ? "Sortering resetten (Stemmen)"
+                                : "Sortering resetten (Streefdatum → prioriteit)"
                             : `Sorteren op ${col.label}`
                         }
                       >
@@ -794,7 +910,7 @@ export function TicketTable({
           <tbody>
             {sorted.length === 0 ? (
               <tr>
-                <td colSpan={COLUMNS.length} className={styles.emptyCell}>
+                <td colSpan={colCount} className={styles.emptyCell}>
                   Geen tickets voor deze filters.{" "}
                   <button
                     type="button"
@@ -824,6 +940,13 @@ export function TicketTable({
                     ? `${styles.dataRow} ${styles.dataRowNieuw}`
                     : styles.dataRow;
 
+                const canRate = showVote && isStembaar(ticket);
+                const avg = ratingGemiddelde(ticket);
+                const count = ratingAantal(ticket);
+                const mine = mijnRating(ticket, currentUserId);
+                const showStars = showVote && (canRate || count > 0);
+                const frozenRank = frozenRankById.get(ticket.id);
+
                 return (
                   <tr
                     key={ticket.id}
@@ -832,6 +955,20 @@ export function TicketTable({
                     onKeyDown={onRowKey}
                     tabIndex={0}
                   >
+                    {showRank ? (
+                      <td className={styles.colRank}>
+                        <span
+                          className={styles.rank}
+                          aria-label={
+                            frozenRank
+                              ? `Ranglijstpositie ${frozenRank}`
+                              : undefined
+                          }
+                        >
+                          {frozenRank ?? "—"}
+                        </span>
+                      </td>
+                    ) : null}
                     <td title={ticket.ticketnummer}>
                       <Link
                         href={href}
@@ -904,7 +1041,7 @@ export function TicketTable({
                           : "—"}
                       </span>
                     </td>
-                    <td>
+                    <td className={styles.colOmvang}>
                       <span className={styles.cell}>
                         {ticket.omvang ?? "—"}
                       </span>
@@ -914,6 +1051,28 @@ export function TicketTable({
                         {formatDate(ticket.updatedAt)}
                       </span>
                     </td>
+                    {showVote ? (
+                      <td
+                        className={styles.colVote}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
+                        {showStars ? (
+                          <StarRating
+                            key={`${ticket.id}-${mine ?? 0}-${count}`}
+                            ticketId={ticket.id}
+                            average={avg}
+                            count={count}
+                            myRating={mine}
+                            beoordelingen={ticket.beoordelingen}
+                            interactive={canRate}
+                            compact
+                          />
+                        ) : (
+                          <span className={styles.muted}>—</span>
+                        )}
+                      </td>
+                    ) : null}
                   </tr>
                 );
               })

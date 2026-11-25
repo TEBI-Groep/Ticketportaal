@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { FilteredTicketList } from "@/components/FilteredTicketList";
+import { TicketTable } from "@/components/TicketTable";
 import { requireUser } from "@/data/auth";
 import { getRanglijstTickets } from "@/data/tickets";
 
@@ -23,13 +23,14 @@ async function RanglijstContent() {
         </p>
       </header>
 
-      <FilteredTicketList
+      {/* Same table UX as Overzicht; frozen # + Stemmen for ranking/voting. */}
+      <TicketTable
         tickets={tickets}
         showRank
         showVote
         currentUserId={user.id}
-        filterDims={["status", "type", "afdeling"]}
         searchPlaceholder="Zoek in de ranglijst…"
+        searchLabel="Zoeken in de ranglijst"
         emptyMessage="Nog geen NetSuite-wensen. Maak de eerste aan."
       />
     </>

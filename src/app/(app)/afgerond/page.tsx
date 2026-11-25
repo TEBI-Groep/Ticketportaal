@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { FilteredTicketList } from "@/components/FilteredTicketList";
+import { TicketTable } from "@/components/TicketTable";
 import { getAfgerondeTickets } from "@/data/tickets";
 
 export const metadata: Metadata = {
@@ -20,9 +20,8 @@ async function AfgerondContent() {
         </p>
       </header>
 
-      <FilteredTicketList
+      <TicketTable
         tickets={tickets}
-        filterDims={["status", "systeem", "type", "afdeling"]}
         searchPlaceholder="Zoek in opgeloste tickets…"
         searchLabel="Zoeken in afgeronde tickets"
         emptyMessage="Nog geen afgeronde tickets."
