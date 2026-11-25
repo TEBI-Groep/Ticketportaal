@@ -9,6 +9,8 @@ import styles from "./CommentThread.module.css";
 interface CommentThreadProps {
   ticketId: string;
   initialComments: TicketComment[];
+  /** Drop top border/margin when the thread sits in a side panel. */
+  embedded?: boolean;
 }
 
 /**
@@ -17,6 +19,7 @@ interface CommentThreadProps {
 export function CommentThread({
   ticketId,
   initialComments,
+  embedded = false,
 }: CommentThreadProps) {
   const [comments, setComments] = useState(initialComments);
   const [tekst, setTekst] = useState("");
@@ -43,7 +46,10 @@ export function CommentThread({
   }
 
   return (
-    <section className={styles.thread} aria-labelledby="comments-heading">
+    <section
+      className={`${styles.thread} ${embedded ? styles.embedded : ""}`}
+      aria-labelledby="comments-heading"
+    >
       <header className={styles.header}>
         <h2 id="comments-heading">Updates &amp; vragen</h2>
         <p className="form-hint">

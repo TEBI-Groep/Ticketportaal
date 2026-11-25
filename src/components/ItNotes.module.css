@@ -1,9 +1,9 @@
-/* IT-only notes in the detail side rail — quiet, not a second public chat. */
+/* IT-only notes in their own side-rail panel — no top divider inside the card. */
 
 .wrap {
-  margin-top: var(--space-5);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border);
+  margin: 0;
+  padding: 0;
+  border: none;
 }
 
 .header {

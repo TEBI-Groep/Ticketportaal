@@ -1,0 +1,127 @@
+/* Inline IT editors — look like normal detail text until activated. */
+
+.editable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.1rem 0.25rem;
+  margin-left: -0.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.editable:hover,
+.editable:focus-visible {
+  background: color-mix(in srgb, var(--brand-soft) 55%, transparent);
+  border-color: color-mix(in srgb, var(--brand) 25%, var(--border));
+  outline: none;
+}
+
+.editable:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.blockEditable {
+  display: block;
+  width: 100%;
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.editor {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
+.editorSelect,
+.editorInput,
+.editorTextarea {
+  width: 100%;
+  margin: 0;
+}
+
+.error {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--spoed, #b42318);
+}
+
+.saving {
+  margin-left: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.afdelingPanel {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  padding: 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+}
+
+.afdelingLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.titleEdit {
+  flex: 1;
+  min-width: 12rem;
+  font-family: var(--font-brand);
+  font-size: clamp(1.35rem, 2.2vw, 1.7rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.badgeCluster {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Right column: Updates & vragen stacked above interne notities. */
+.sideRail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+@media (min-width: 720px) {
+  .detailSplit {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+    gap: var(--space-5);
+    align-items: start;
+  }
+}
