@@ -110,7 +110,8 @@ export function TicketItDetail({
   }
 
   return (
-    <div className={styles.detailSplit}>
+    {/* IT: ticket | Updates & vragen | Interne notities (side by side on wide screens). */}
+    <div className={styles.detailSplitIt}>
       <section className="detail-panel">
         <div className={styles.titleRow}>
           <InlineText
@@ -434,22 +435,22 @@ export function TicketItDetail({
         </div>
       </section>
 
-      {/* Right rail (old IT-paneel spot): Updates & vragen above interne notities. */}
-      <aside className={styles.sideRail} aria-label="Updates en notities">
-        <div className="detail-panel">
-          <CommentThread
-            ticketId={ticket.id}
-            initialComments={comments}
-            embedded
-          />
-        </div>
-        <div className="detail-panel">
-          <ItNotes
-            ticketId={ticket.id}
-            initialNotes={itNotes}
-            viewerRol={viewerRol}
-          />
-        </div>
+      {/* Updates & vragen — middle column on wide screens. */}
+      <aside className="detail-panel" aria-label="Updates en vragen">
+        <CommentThread
+          ticketId={ticket.id}
+          initialComments={comments}
+          embedded
+        />
+      </aside>
+
+      {/* Interne notities — to the right of Updates & vragen (IT only). */}
+      <aside className="detail-panel" aria-label="Interne notities">
+        <ItNotes
+          ticketId={ticket.id}
+          initialNotes={itNotes}
+          viewerRol={viewerRol}
+        />
       </aside>
     </div>
   );
