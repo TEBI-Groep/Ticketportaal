@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
+import { flushPendingEmailDeliveries } from "@/data/mail";
 import {
   notificationSnippet,
   notifyTicketUsers,
@@ -100,6 +101,7 @@ export async function addCommentAction(
     revalidatePath(`/ticket/${ticketId}`);
     if (inserted > 0) {
       revalidatePath("/", "layout");
+      await flushPendingEmailDeliveries({ ticketId });
     }
     return { ok: true, comment };
   } catch (err) {

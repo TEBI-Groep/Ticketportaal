@@ -93,10 +93,11 @@ export interface ItNote {
   myReaction: string | null;
 }
 
-/** In-app notification kinds (email can reuse the same rows later). */
+/** In-app notification kinds (email reuses create/status/comment in Phase A). */
 export type NotificationKind =
   | "it_note_mention"
   | "it_note_reaction"
+  | "ticket_created"
   | "ticket_status_changed"
   | "ticket_comment"
   | "ticket_eigenaar_assigned"
