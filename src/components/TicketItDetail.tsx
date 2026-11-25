@@ -110,7 +110,6 @@ export function TicketItDetail({
   }
 
   return (
-    {/* IT: ticket | Updates & vragen | Interne notities (side by side on wide screens). */}
     <div className={styles.detailSplitIt}>
       <section className="detail-panel">
         <div className={styles.titleRow}>
