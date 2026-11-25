@@ -2,6 +2,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isMissiveConfigured } from "@/lib/missive/env";
 import { sendMissiveEmail } from "@/lib/missive/client";
 import { buildNotificationEmail } from "@/lib/mail/templates";
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  prefersEmailForKind,
+  type NotificationPreferences,
+} from "@/lib/notification-preferences";
 
 type PendingDeliveryRow = {
   id: string;
@@ -112,6 +117,20 @@ export async function flushPendingEmailDeliveries(options?: {
       continue;
     }
 
+    // Safety net: skip if the user turned this kind off after queueing.
+    const prefs = await loadPreferences(admin, notification.user_id);
+    if (!prefersEmailForKind(prefs, notification.kind)) {
+      await admin
+        .from("notification_deliveries")
+        .update({
+          status: "skipped",
+          error: "Uitgeschakeld in voorkeuren.",
+        })
+        .eq("id", row.id);
+      result.skipped += 1;
+      continue;
+    }
+
     let rootSubject: string | null = null;
     let conversationId: string | null = null;
 
@@ -185,4 +204,25 @@ export async function flushPendingEmailDeliveries(options?: {
   }
 
   return result;
+}
+
+/** Load prefs for one user; missing row means all mail kinds on. */
+async function loadPreferences(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+  userId: string,
+): Promise<NotificationPreferences> {
+  const { data } = await admin
+    .from("notification_preferences")
+    .select(
+      "email_ticket_created, email_ticket_status_changed, email_ticket_comment",
+    )
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!data) return { ...DEFAULT_NOTIFICATION_PREFERENCES };
+  return {
+    emailTicketCreated: data.email_ticket_created,
+    emailTicketStatusChanged: data.email_ticket_status_changed,
+    emailTicketComment: data.email_ticket_comment,
+  };
 }
