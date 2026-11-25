@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
+  deleteAllNotificationsAction,
+  deleteNotificationAction,
   listMyNotificationsAction,
   markAllNotificationsReadAction,
   markNotificationReadAction,
@@ -36,7 +38,7 @@ function BellIcon() {
 }
 
 /**
- * IT shell bell: inbox for mention + reaction notifications on interne notities.
+ * Shell bell: inbox for ticket + IT note notifications, with dismiss.
  */
 export function NotificationBell({
   initialUnreadCount,
@@ -136,8 +138,33 @@ export function NotificationBell({
     });
   }
 
+  /** Remove one row from the inbox (optimistic). */
+  function dismissNotification(n: AppNotification) {
+    startTransition(async () => {
+      const result = await deleteNotificationAction(n.id);
+      if (!result.ok) return;
+      setItems((list) => (list ? list.filter((item) => item.id !== n.id) : list));
+      if (!n.readAt) {
+        setUnreadCount((c) => Math.max(0, c - 1));
+      }
+      router.refresh();
+    });
+  }
+
+  /** Empty the whole inbox. */
+  function clearAll() {
+    startTransition(async () => {
+      const result = await deleteAllNotificationsAction();
+      if (!result.ok) return;
+      setItems([]);
+      setUnreadCount(0);
+      router.refresh();
+    });
+  }
+
   const badge =
     unreadCount > 99 ? "99+" : unreadCount > 0 ? String(unreadCount) : null;
+  const hasItems = (items?.length ?? 0) > 0;
 
   return (
     <div className={styles.wrap} ref={rootRef}>
@@ -167,18 +194,32 @@ export function NotificationBell({
         <div className={styles.panel} role="dialog" aria-label="Meldingen">
           <header className={styles.panelHeader}>
             <strong>Meldingen</strong>
-            {unreadCount > 0 ? (
-              <button
-                type="button"
-                className={styles.markAll}
-                disabled={pending}
-                onClick={() => {
-                  void markAllRead();
-                }}
-              >
-                Alles gelezen
-              </button>
-            ) : null}
+            <div className={styles.headerActions}>
+              {unreadCount > 0 ? (
+                <button
+                  type="button"
+                  className={styles.markAll}
+                  disabled={pending}
+                  onClick={() => {
+                    void markAllRead();
+                  }}
+                >
+                  Alles gelezen
+                </button>
+              ) : null}
+              {hasItems ? (
+                <button
+                  type="button"
+                  className={styles.clearAll}
+                  disabled={pending}
+                  onClick={() => {
+                    void clearAll();
+                  }}
+                >
+                  Wis alles
+                </button>
+              ) : null}
+            </div>
           </header>
 
           {loading || items === null ? (
@@ -188,7 +229,7 @@ export function NotificationBell({
           ) : (
             <ul className={styles.list}>
               {items.map((n) => (
-                <li key={n.id}>
+                <li key={n.id} className={styles.row}>
                   <button
                     type="button"
                     className={`${styles.item} ${
@@ -208,6 +249,20 @@ export function NotificationBell({
                     >
                       {formatDateTime(n.createdAt)}
                     </time>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.dismissBtn}
+                    aria-label="Melding verwijderen"
+                    title="Verwijderen"
+                    disabled={pending}
+                    onClick={(event) => {
+                      // Keep the panel open; don’t open the ticket.
+                      event.stopPropagation();
+                      dismissNotification(n);
+                    }}
+                  >
+                    ×
                   </button>
                 </li>
               ))}
