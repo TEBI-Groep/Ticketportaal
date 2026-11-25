@@ -155,16 +155,26 @@ async function TicketDetailContent({
                 <dd>{formatAfdelingen(ticket.afdelingen)}</dd>
               </div>
               <div className="kv">
+                <dt>Omvang</dt>
+                <dd>{ticket.omvang ?? "—"}</dd>
+              </div>
+              <div className="kv">
+                <dt>Privé</dt>
+                <dd>{ticket.prive ? "Ja" : "Nee"}</dd>
+              </div>
+              {/* People grouped together. */}
+              <div className="kv">
                 <dt>Melder</dt>
                 <dd>{ticket.melderNaam}</dd>
               </div>
               <div className="kv">
-                <dt>Aangemaakt</dt>
-                <dd>{formatDate(ticket.createdAt)}</dd>
-              </div>
-              <div className="kv">
                 <dt>Eigenaar</dt>
                 <dd>{ticket.eigenaarNaam ?? "Nog niet geclaimd"}</dd>
+              </div>
+              {/* Dates grouped together. */}
+              <div className="kv">
+                <dt>Aangemaakt</dt>
+                <dd>{formatDate(ticket.createdAt)}</dd>
               </div>
               <div className="kv">
                 <dt>Streefdatum</dt>
@@ -173,16 +183,8 @@ async function TicketDetailContent({
                 </dd>
               </div>
               <div className="kv">
-                <dt>Omvang</dt>
-                <dd>{ticket.omvang ?? "—"}</dd>
-              </div>
-              <div className="kv">
                 <dt>Laatst bijgewerkt</dt>
                 <dd>{formatDate(ticket.updatedAt)}</dd>
-              </div>
-              <div className="kv">
-                <dt>Privé</dt>
-                <dd>{ticket.prive ? "Ja" : "Nee"}</dd>
               </div>
             </dl>
 

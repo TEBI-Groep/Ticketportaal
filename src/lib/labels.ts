@@ -82,6 +82,19 @@ export function formatDate(iso: string): string {
   });
 }
 
+/** Format ISO datetime for comments / interne notities (date + time). */
+export function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("nl-NL", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /** Join department names for compact list/detail display. */
 export function formatAfdelingen(afdelingen: string[]): string {
   if (afdelingen.length === 0) return "—";

@@ -58,7 +58,7 @@ export async function addCommentAction(
       auteurNaam: profile?.naam ?? "Gebruiker",
       auteurRol: profile?.rol ?? "gebruiker",
       tekst: data.body,
-      createdAt: data.created_at.slice(0, 10),
+      createdAt: data.created_at,
     };
 
     revalidatePath(`/ticket/${ticketId}`);

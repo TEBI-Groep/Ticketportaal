@@ -238,6 +238,57 @@ export function TicketItDetail({
             </dd>
           </div>
           <div className="kv">
+            <dt>Omvang</dt>
+            <dd>
+              <InlineSelect
+                label="Omvang"
+                value={local.omvang ?? ""}
+                display={local.omvang ?? "—"}
+                options={[
+                  { value: "", label: "—" },
+                  ...SIZE_OPTIONS.map((size) => ({
+                    value: size,
+                    label: size,
+                  })),
+                ]}
+                pending={pending}
+                error={errorKey === "omvang" ? fieldError : null}
+                onSave={(omvang) => {
+                  const next = (omvang || null) as TicketSize | null;
+                  if ((local.omvang ?? null) === next) return;
+                  setLocal((t) => ({
+                    ...t,
+                    omvang: next ?? undefined,
+                  }));
+                  save("omvang", { omvang: next });
+                }}
+              />
+            </dd>
+          </div>
+          <div className="kv">
+            <dt>Privé</dt>
+            <dd>
+              <InlineSelect
+                label="Privé"
+                value={local.prive ? "ja" : "nee"}
+                display={local.prive ? "Ja" : "Nee"}
+                options={[
+                  { value: "nee", label: "Nee" },
+                  { value: "ja", label: "Ja" },
+                ]}
+                pending={pending}
+                error={errorKey === "prive" ? fieldError : null}
+                onSave={(value) => {
+                  const prive = value === "ja";
+                  if (prive === local.prive) return;
+                  setLocal((t) => ({ ...t, prive }));
+                  save("prive", { prive });
+                }}
+              />
+            </dd>
+          </div>
+          {/* People grouped together. */}
+          <div className="kv">
             <dt>Melder</dt>
             <dd>
               <InlineSelect
@@ -259,10 +310,6 @@ export function TicketItDetail({
                 }}
               />
             </dd>
-          </div>
-          <div className="kv">
-            <dt>Aangemaakt</dt>
-            <dd>{formatDate(local.createdAt)}</dd>
           </div>
           <div className="kv">
             <dt>Eigenaar</dt>
@@ -293,6 +340,11 @@ export function TicketItDetail({
               />
             </dd>
           </div>
+          {/* Dates grouped together. */}
+          <div className="kv">
+            <dt>Aangemaakt</dt>
+            <dd>{formatDate(local.createdAt)}</dd>
+          </div>
           <div className="kv">
             <dt>Streefdatum</dt>
             <dd>
@@ -316,58 +368,8 @@ export function TicketItDetail({
             </dd>
           </div>
           <div className="kv">
-            <dt>Omvang</dt>
-            <dd>
-              <InlineSelect
-                label="Omvang"
-                value={local.omvang ?? ""}
-                display={local.omvang ?? "—"}
-                options={[
-                  { value: "", label: "—" },
-                  ...SIZE_OPTIONS.map((size) => ({
-                    value: size,
-                    label: size,
-                  })),
-                ]}
-                pending={pending}
-                error={errorKey === "omvang" ? fieldError : null}
-                onSave={(omvang) => {
-                  const next = (omvang || null) as TicketSize | null;
-                  if ((local.omvang ?? null) === next) return;
-                  setLocal((t) => ({
-                    ...t,
-                    omvang: next ?? undefined,
-                  }));
-                  save("omvang", { omvang: next });
-                }}
-              />
-            </dd>
-          </div>
-          <div className="kv">
             <dt>Laatst bijgewerkt</dt>
             <dd>{formatDate(local.updatedAt)}</dd>
-          </div>
-          <div className="kv">
-            <dt>Privé</dt>
-            <dd>
-              <InlineSelect
-                label="Privé"
-                value={local.prive ? "ja" : "nee"}
-                display={local.prive ? "Ja" : "Nee"}
-                options={[
-                  { value: "nee", label: "Nee" },
-                  { value: "ja", label: "Ja" },
-                ]}
-                pending={pending}
-                error={errorKey === "prive" ? fieldError : null}
-                onSave={(value) => {
-                  const prive = value === "ja";
-                  if (prive === local.prive) return;
-                  setLocal((t) => ({ ...t, prive }));
-                  save("prive", { prive });
-                }}
-              />
-            </dd>
           </div>
         </dl>
 

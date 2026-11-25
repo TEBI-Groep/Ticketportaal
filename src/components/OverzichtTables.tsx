@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { TicketTable } from "@/components/TicketTable";
 import type { Ticket } from "@/lib/types";
 import styles from "./TicketTable.module.css";
@@ -8,21 +8,54 @@ import styles from "./TicketTable.module.css";
 interface OverzichtTablesProps {
   spoedTickets: Ticket[];
   overigeTickets: Ticket[];
+  /** When set, show the Mijn werk toggle (IT only). */
+  currentUserId?: string;
+  currentUserNaam?: string;
+  showMijnWerkToggle?: boolean;
 }
 
 /**
- * Overzicht body: one shared search above Spoed (when present) + Overige.
+ * Overzicht body: shared search + optional Mijn werk Eigenaar filter toggle.
  * Search always stays visible even when there are no Spoed tickets.
  */
 export function OverzichtTables({
   spoedTickets,
   overigeTickets,
+  currentUserId,
+  currentUserNaam,
+  showMijnWerkToggle = false,
 }: OverzichtTablesProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  // Toggle filters both tables to tickets owned by the signed-in Beheerder.
+  const [mijnWerk, setMijnWerk] = useState(false);
   const searchActive = searchQuery.trim().length > 0;
+
+  const forcedFilters = useMemo(() => {
+    if (!mijnWerk || !currentUserNaam) return undefined;
+    return { eigenaar: new Set([currentUserNaam]) };
+  }, [mijnWerk, currentUserNaam]);
 
   return (
     <>
+      <header className="page-header page-headerWithAction">
+        <h1>Overzicht</h1>
+        {showMijnWerkToggle && currentUserId && currentUserNaam ? (
+          <button
+            type="button"
+            className={mijnWerk ? "btn btn-primary" : "btn btn-secondary"}
+            aria-pressed={mijnWerk}
+            title={
+              mijnWerk
+                ? "Toon weer alle tickets"
+                : "Toon alleen tickets waar jij Eigenaar van bent"
+            }
+            onClick={() => setMijnWerk((on) => !on)}
+          >
+            Mijn werk
+          </button>
+        ) : null}
+      </header>
+
       {/* Shared search — filters both Spoed and Overige tables. */}
       <div className={styles.toolbar}>
         <input
@@ -34,15 +67,22 @@ export function OverzichtTables({
           aria-label="Zoeken in het overzicht"
           autoComplete="off"
         />
-        {searchActive ? (
+        {searchActive || mijnWerk ? (
           <div className={styles.filterBar}>
-            <button
-              type="button"
-              className={styles.clearFilters}
-              onClick={() => setSearchQuery("")}
-            >
-              Zoekopdracht wissen
-            </button>
+            {mijnWerk ? (
+              <span className="form-hint" aria-live="polite">
+                Filter: Eigenaar = {currentUserNaam}
+              </span>
+            ) : null}
+            {searchActive ? (
+              <button
+                type="button"
+                className={styles.clearFilters}
+                onClick={() => setSearchQuery("")}
+              >
+                Zoekopdracht wissen
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -75,6 +115,7 @@ export function OverzichtTables({
             hideSearch
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            forcedFilters={forcedFilters}
             emptyMessage="Geen spoedtickets — mooi."
             emptyCta=""
           />
@@ -99,6 +140,7 @@ export function OverzichtTables({
           hideSearch
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          forcedFilters={forcedFilters}
           emptyMessage="Geen open tickets zichtbaar."
           emptyCta="Ticket aanmaken"
         />

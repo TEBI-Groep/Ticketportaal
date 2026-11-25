@@ -62,7 +62,7 @@ export async function addItNoteAction(
       userId: data.user_id,
       auteurNaam: author?.naam ?? profile.naam,
       tekst: data.body,
-      createdAt: data.created_at.slice(0, 10),
+      createdAt: data.created_at,
     };
 
     revalidatePath(`/ticket/${ticketId}`);
