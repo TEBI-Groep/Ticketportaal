@@ -32,6 +32,7 @@ import {
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ note?: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -44,10 +45,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 async function TicketDetailContent({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ note?: string }>;
 }) {
   const { id } = await params;
+  const { note: highlightNoteId } = await searchParams;
   const [ticket, user] = await Promise.all([
     getTicketById(id),
     requireUser(),
@@ -109,6 +113,7 @@ async function TicketDetailContent({
           watching={watching}
           currentUserId={user.id}
           viewerRol={user.rol}
+          highlightNoteId={highlightNoteId ?? null}
         />
       ) : (
         /* Same split as IT: main ticket body left, Updates & vragen on the right. */
@@ -248,11 +253,11 @@ async function TicketDetailContent({
 }
 
 /** Ticket detail — inline IT editing for uitvoerders; read-only for others. */
-export default function TicketDetailPage({ params }: PageProps) {
+export default function TicketDetailPage({ params, searchParams }: PageProps) {
   return (
     <div className="page">
       <Suspense fallback={<p className="form-hint">Ticket laden…</p>}>
-        <TicketDetailContent params={params} />
+        <TicketDetailContent params={params} searchParams={searchParams} />
       </Suspense>
     </div>
   );

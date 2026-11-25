@@ -61,6 +61,8 @@ interface TicketItDetailProps {
   watching: boolean;
   currentUserId: string;
   viewerRol: UserRole;
+  /** Highlight an IT note when opened from a notification. */
+  highlightNoteId?: string | null;
 }
 
 /**
@@ -78,6 +80,7 @@ export function TicketItDetail({
   watching,
   currentUserId,
   viewerRol,
+  highlightNoteId = null,
 }: TicketItDetailProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -451,6 +454,9 @@ export function TicketItDetail({
           ticketId={ticket.id}
           initialNotes={itNotes}
           viewerRol={viewerRol}
+          currentUserId={currentUserId}
+          uitvoerders={uitvoerders}
+          highlightNoteId={highlightNoteId}
         />
       </aside>
     </div>

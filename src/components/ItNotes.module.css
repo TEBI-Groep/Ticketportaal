@@ -63,10 +63,16 @@
 .item {
   padding: 0.75rem 0.85rem;
   border-bottom: 1px solid var(--border);
+  transition: background 0.35s ease;
 }
 
 .item:last-child {
   border-bottom: none;
+}
+
+/* Deep-link from the notification bell. */
+.itemHighlight {
+  background: color-mix(in srgb, var(--brand-soft, #e8f0fe) 70%, transparent);
 }
 
 .meta {
@@ -109,4 +115,124 @@
 .actions {
   display: flex;
   justify-content: flex-end;
+}
+
+.mentionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.mentionChip,
+.mentionChipRemovable {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm, 6px);
+  background: color-mix(in srgb, var(--brand-soft, #e8f0fe) 80%, transparent);
+  color: var(--brand-ink, var(--ink));
+  border: 1px solid color-mix(in srgb, var(--brand, #2563eb) 25%, transparent);
+}
+
+.mentionChipRemovable {
+  appearance: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.mentionChipRemovable:hover {
+  background: var(--brand-soft, #e8f0fe);
+}
+
+.reactionRow {
+  margin-top: 0.45rem;
+}
+
+.reactBtn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.reactBtn:hover:not(:disabled) {
+  background: var(--bg-accent, #f5f5f5);
+}
+
+.reactBtnActive {
+  border-color: color-mix(in srgb, var(--brand, #2563eb) 40%, transparent);
+  background: color-mix(in srgb, var(--brand-soft, #e8f0fe) 75%, transparent);
+  color: var(--brand-ink, var(--ink));
+}
+
+.reactBtn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.reactCount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.composeTools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.mentionPicker {
+  position: relative;
+}
+
+.mentionMenu {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  bottom: calc(100% + 0.25rem);
+  min-width: 11rem;
+  max-height: 12rem;
+  overflow: auto;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--surface-raised, #fff);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.mentionOption {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.4rem 0.55rem;
+  border-radius: 4px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.mentionOption:hover {
+  background: var(--bg-accent, #f5f5f5);
 }
