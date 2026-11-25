@@ -70,11 +70,11 @@ export interface ItNoteMention {
   naam: string;
 }
 
-/** Thumbs-up (or future kinds) on an IT note. */
+/** One person’s emoji reaction on an IT note (`kind` is the emoji glyph). */
 export interface ItNoteReaction {
   userId: string;
   naam: string;
-  kind: "thumbs_up";
+  kind: string;
 }
 
 /** Internal IT-only note — never shown to melder/manager in the real app. */
@@ -87,8 +87,10 @@ export interface ItNote {
   createdAt: string;
   mentions: ItNoteMention[];
   reactions: ItNoteReaction[];
-  /** True when the current viewer has a thumbs-up on this note. */
+  /** True when the current viewer has reacted. */
   reactedByMe: boolean;
+  /** Emoji the current viewer used, if any. */
+  myReaction: string | null;
 }
 
 /** In-app notification kinds (email can reuse the same rows later). */

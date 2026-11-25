@@ -139,6 +139,7 @@ export async function addItNoteAction(
       mentions,
       reactions: [],
       reactedByMe: false,
+      myReaction: null,
     };
 
     revalidatePath(`/ticket/${ticketId}`);
@@ -153,16 +154,34 @@ export async function addItNoteAction(
   }
 }
 
+/** Curated reaction palette (common Windows / chat emojis). */
+export const IT_NOTE_REACTION_EMOJIS = [
+  "👍",
+  "👎",
+  "❤️",
+  "😂",
+  "😮",
+  "😢",
+  "🎉",
+  "👀",
+] as const;
+
 /**
- * Toggle thumbs-up on an IT note. Notifies the note author when adding.
+ * Set or clear an emoji reaction on an IT note.
+ * Same emoji again clears; a different emoji replaces. Notifies the author on add/change.
  */
-export async function toggleItNoteReactionAction(
+export async function setItNoteReactionAction(
   noteId: string,
   ticketId: string,
+  emoji: string,
 ): Promise<
-  | { ok: true; reacted: boolean }
+  | { ok: true; reacted: boolean; emoji: string | null }
   | { ok: false; error: string }
 > {
+  const glyph = emoji.trim();
+  if (!glyph || glyph.length > 16) {
+    return { ok: false, error: "Ongeldige emoji." };
+  }
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Supabase is niet geconfigureerd." };
   }
@@ -188,12 +207,13 @@ export async function toggleItNoteReactionAction(
 
     const { data: existing } = await supabase
       .from("it_note_reactions")
-      .select("note_id")
+      .select("note_id, kind")
       .eq("note_id", noteId)
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (existing) {
+    // Clicking the same emoji again removes the reaction.
+    if (existing && existing.kind === glyph) {
       const { error } = await supabase
         .from("it_note_reactions")
         .delete()
@@ -203,7 +223,7 @@ export async function toggleItNoteReactionAction(
         return { ok: false, error: error.message };
       }
       revalidatePath(`/ticket/${ticketId}`);
-      return { ok: true, reacted: false };
+      return { ok: true, reacted: false, emoji: null };
     }
 
     const { data: note, error: noteError } = await supabase
@@ -216,26 +236,38 @@ export async function toggleItNoteReactionAction(
       return { ok: false, error: noteError?.message ?? "Notitie niet gevonden." };
     }
 
+    if (existing) {
+      // One reaction per user — replace by delete + insert (no UPDATE grant).
+      const { error: delError } = await supabase
+        .from("it_note_reactions")
+        .delete()
+        .eq("note_id", noteId)
+        .eq("user_id", user.id);
+      if (delError) {
+        return { ok: false, error: delError.message };
+      }
+    }
+
     const { error: insertError } = await supabase
       .from("it_note_reactions")
       .insert({
         note_id: noteId,
         user_id: user.id,
-        kind: "thumbs_up",
+        kind: glyph,
       });
     if (insertError) {
       return { ok: false, error: insertError.message };
     }
 
-    // Notify the author (skip self-react).
-    if (note.user_id !== user.id) {
+    // Notify the author (skip self-react); only on first add, not replace.
+    if (!existing && note.user_id !== user.id) {
       const actorNaam = profile.naam ?? "IT";
       const snippet = notificationSnippet(note.body);
       await supabase.from("notifications").insert({
         user_id: note.user_id,
         ticket_id: note.ticket_id,
         kind: "it_note_reaction",
-        title: `${actorNaam} gaf een duim omhoog`,
+        title: `${actorNaam} reageerde met ${glyph}`,
         body: snippet,
         payload: {
           noteId,
@@ -247,12 +279,22 @@ export async function toggleItNoteReactionAction(
     }
 
     revalidatePath(`/ticket/${ticketId}`);
-    revalidatePath("/", "layout");
-    return { ok: true, reacted: true };
+    if (!existing) {
+      revalidatePath("/", "layout");
+    }
+    return { ok: true, reacted: true, emoji: glyph };
   } catch (err) {
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Reageren mislukt.",
     };
   }
+}
+
+/** @deprecated Prefer setItNoteReactionAction — kept for older clients. */
+export async function toggleItNoteReactionAction(
+  noteId: string,
+  ticketId: string,
+) {
+  return setItNoteReactionAction(noteId, ticketId, "👍");
 }

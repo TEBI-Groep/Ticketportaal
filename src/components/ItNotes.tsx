@@ -11,10 +11,33 @@ import {
 import type { ItNote, User, UserRole } from "@/lib/types";
 import { formatDateTime } from "@/lib/labels";
 import {
+  IT_NOTE_REACTION_EMOJIS,
   addItNoteAction,
-  toggleItNoteReactionAction,
+  setItNoteReactionAction,
 } from "@/app/actions/it-notes";
 import styles from "./ItNotes.module.css";
+
+/** Group reactions by emoji for the compact chip row. */
+function groupReactions(note: ItNote): Array<{
+  emoji: string;
+  count: number;
+  names: string[];
+  mine: boolean;
+}> {
+  const map = new Map<string, { count: number; names: string[] }>();
+  for (const r of note.reactions) {
+    const cur = map.get(r.kind) ?? { count: 0, names: [] };
+    cur.count += 1;
+    cur.names.push(r.naam);
+    map.set(r.kind, cur);
+  }
+  return [...map.entries()].map(([emoji, v]) => ({
+    emoji,
+    count: v.count,
+    names: v.names,
+    mine: note.myReaction === emoji,
+  }));
+}
 
 interface ItNotesProps {
   ticketId: string;
@@ -62,6 +85,8 @@ export function ItNotes({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reactingId, setReactingId] = useState<string | null>(null);
+  /** Which note’s emoji picker is open (hover-triggered). */
+  const [pickerNoteId, setPickerNoteId] = useState<string | null>(null);
   const itemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -193,40 +218,40 @@ export function ItNotes({
     }
   }
 
-  async function handleReaction(note: ItNote) {
+  async function handleReaction(note: ItNote, emoji: string) {
     if (reactingId || !isIt) return;
     setReactingId(note.id);
-    const prevReacted = note.reactedByMe;
-    // Optimistic UI.
+    setPickerNoteId(null);
+
+    const clearing = note.myReaction === emoji;
+    // Optimistic UI: one reaction per user.
     setNotes((list) =>
       list.map((n) => {
         if (n.id !== note.id) return n;
-        if (prevReacted) {
+        const withoutMe = n.reactions.filter((r) => r.userId !== currentUserId);
+        if (clearing) {
           return {
             ...n,
             reactedByMe: false,
-            reactions: n.reactions.filter((r) => r.userId !== currentUserId),
+            myReaction: null,
+            reactions: withoutMe,
           };
         }
         return {
           ...n,
           reactedByMe: true,
+          myReaction: emoji,
           reactions: [
-            ...n.reactions,
-            {
-              userId: currentUserId,
-              naam: "Jij",
-              kind: "thumbs_up" as const,
-            },
+            ...withoutMe,
+            { userId: currentUserId, naam: "Jij", kind: emoji },
           ],
         };
       }),
     );
 
-    const result = await toggleItNoteReactionAction(note.id, ticketId);
+    const result = await setItNoteReactionAction(note.id, ticketId, emoji);
     setReactingId(null);
     if (!result.ok) {
-      // Roll back on failure.
       setNotes((list) => list.map((n) => (n.id === note.id ? note : n)));
       setError(result.error);
     }
@@ -251,6 +276,8 @@ export function ItNotes({
             <ul className={styles.list}>
               {notes.map((note) => {
                 const highlighted = highlightNoteId === note.id;
+                const groups = groupReactions(note);
+                const pickerOpen = pickerNoteId === note.id;
                 return (
                   <li
                     key={note.id}
@@ -261,6 +288,9 @@ export function ItNotes({
                     ref={(el) => {
                       if (el) itemRefs.current.set(note.id, el);
                       else itemRefs.current.delete(note.id);
+                    }}
+                    onMouseLeave={() => {
+                      if (pickerNoteId === note.id) setPickerNoteId(null);
                     }}
                   >
                     <div className={styles.meta}>
@@ -283,30 +313,70 @@ export function ItNotes({
                       </div>
                     ) : null}
                     <div className={styles.reactionRow}>
-                      <button
-                        type="button"
-                        className={`${styles.reactBtn} ${
-                          note.reactedByMe ? styles.reactBtnActive : ""
-                        }`}
-                        aria-pressed={note.reactedByMe}
-                        aria-label={
-                          note.reactedByMe ? "Duim omhoog verwijderen" : "Duim omhoog geven"
-                        }
-                        disabled={reactingId === note.id}
-                        title={
-                          note.reactions.length
-                            ? note.reactions.map((r) => r.naam).join(", ")
-                            : "Duim omhoog"
-                        }
-                        onClick={() => handleReaction(note)}
-                      >
-                        <span aria-hidden>👍</span>
-                        {note.reactions.length > 0 ? (
-                          <span className={styles.reactCount}>
-                            {note.reactions.length}
-                          </span>
+                      {/* Only show emoji chips that already have reactions. */}
+                      {groups.map((g) => (
+                        <button
+                          key={g.emoji}
+                          type="button"
+                          className={`${styles.reactBtn} ${
+                            g.mine ? styles.reactBtnActive : ""
+                          }`}
+                          aria-pressed={g.mine}
+                          aria-label={
+                            g.mine
+                              ? `${g.emoji} verwijderen`
+                              : `Reageer met ${g.emoji}`
+                          }
+                          disabled={reactingId === note.id}
+                          title={g.names.join(", ")}
+                          onClick={() => handleReaction(note, g.emoji)}
+                        >
+                          <span aria-hidden>{g.emoji}</span>
+                          <span className={styles.reactCount}>{g.count}</span>
+                        </button>
+                      ))}
+
+                      {/* Hover / focus: open a small emoji palette. */}
+                      <div className={styles.reactAddWrap}>
+                        <button
+                          type="button"
+                          className={styles.reactAddBtn}
+                          aria-label="Emoji-reactie toevoegen"
+                          aria-expanded={pickerOpen}
+                          disabled={reactingId === note.id}
+                          onClick={() =>
+                            setPickerNoteId((id) =>
+                              id === note.id ? null : note.id,
+                            )
+                          }
+                        >
+                          +
+                        </button>
+                        {pickerOpen ? (
+                          <div
+                            className={styles.emojiPicker}
+                            role="listbox"
+                            aria-label="Kies een emoji"
+                          >
+                            {IT_NOTE_REACTION_EMOJIS.map((emoji) => (
+                              <button
+                                key={emoji}
+                                type="button"
+                                role="option"
+                                className={`${styles.emojiOption} ${
+                                  note.myReaction === emoji
+                                    ? styles.emojiOptionActive
+                                    : ""
+                                }`}
+                                aria-selected={note.myReaction === emoji}
+                                onClick={() => handleReaction(note, emoji)}
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
                         ) : null}
-                      </button>
+                      </div>
                     </div>
                   </li>
                 );
