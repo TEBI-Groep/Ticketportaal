@@ -96,7 +96,9 @@ export type NotificationKind =
   | "it_note_mention"
   | "it_note_reaction"
   | "ticket_status_changed"
-  | "ticket_comment";
+  | "ticket_comment"
+  | "ticket_eigenaar_assigned"
+  | "ticket_eigenaar_removed";
 
 export interface AppNotification {
   id: string;

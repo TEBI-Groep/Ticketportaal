@@ -355,6 +355,14 @@ export async function updateTicketItAction(
       return { ok: false, error: insertError.message };
     }
 
+    let notified = false;
+    const actorNaam = profile?.naam ?? "IT";
+    const ticketLabel = before
+      ? before.ticketnummer && before.onderwerp
+        ? `${before.ticketnummer} · ${before.onderwerp}`
+        : (before.ticketnummer ?? "Ticket")
+      : "Ticket";
+
     // Notify subscribers when status changes (in-app now; mail later).
     const previousStatus = before?.status as TicketStatus | undefined;
     if (before && previousStatus && previousStatus !== input.status) {
@@ -366,11 +374,6 @@ export async function updateTicketItAction(
           eigenaarId: input.eigenaarId ?? before.eigenaar_id,
         },
       );
-      const actorNaam = profile?.naam ?? "IT";
-      const ticketLabel =
-        before.ticketnummer && before.onderwerp
-          ? `${before.ticketnummer} · ${before.onderwerp}`
-          : (before.ticketnummer ?? "Ticket");
       const inserted = await notifyTicketUsers({
         ticketId: input.id,
         recipientIds: recipients,
@@ -384,9 +387,45 @@ export async function updateTicketItAction(
           toStatus: input.status,
         },
       });
-      if (inserted > 0) {
-        revalidatePath("/", "layout");
+      if (inserted > 0) notified = true;
+    }
+
+    // Notify Beheerders when eigenaar is assigned or taken away.
+    const previousEigenaarId = before?.eigenaar_id ?? null;
+    const nextEigenaarId = input.eigenaarId ?? null;
+    if (previousEigenaarId !== nextEigenaarId) {
+      if (nextEigenaarId && nextEigenaarId !== user.id) {
+        const inserted = await notifyTicketUsers({
+          ticketId: input.id,
+          recipientIds: [nextEigenaarId],
+          kind: "ticket_eigenaar_assigned",
+          title: `${actorNaam} maakte je eigenaar`,
+          body: ticketLabel,
+          payload: {
+            actorId: user.id,
+            actorNaam,
+          },
+        });
+        if (inserted > 0) notified = true;
       }
+      if (previousEigenaarId && previousEigenaarId !== user.id) {
+        const inserted = await notifyTicketUsers({
+          ticketId: input.id,
+          recipientIds: [previousEigenaarId],
+          kind: "ticket_eigenaar_removed",
+          title: `${actorNaam} verwijderde je als eigenaar`,
+          body: ticketLabel,
+          payload: {
+            actorId: user.id,
+            actorNaam,
+          },
+        });
+        if (inserted > 0) notified = true;
+      }
+    }
+
+    if (notified) {
+      revalidatePath("/", "layout");
     }
 
     revalidateTicketPaths(input.id);
