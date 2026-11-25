@@ -233,13 +233,12 @@ export function StarRating({
                 ? 1
                 : 0
               : starFillFraction(avg, score);
-          const fullyFilled = fraction >= 1;
 
           return (
             <button
               key={score}
               type="button"
-              className={`${styles.star} ${fullyFilled ? styles.filled : ""}`}
+              className={styles.star}
               disabled={!interactive || pending}
               aria-label={`${score} ster${score === 1 ? "" : "ren"}`}
               aria-checked={interactive ? mine === score : undefined}
@@ -255,8 +254,8 @@ export function StarRating({
               <span className={styles.starBase} aria-hidden>
                 ★
               </span>
-              {/* Partial community averages (e.g. 3.3 → 30% of the 4th star). */}
-              {fraction > 0 && fraction < 1 ? (
+              {/* Overlay fill for full and partial stars (base stays empty gray). */}
+              {fraction > 0 ? (
                 <span
                   className={styles.starFill}
                   style={{ width: `${fraction * 100}%` }}
