@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/AppShell";
 import { requireUser } from "@/data/auth";
+import { countUnreadNotifications } from "@/data/notifications";
 import {
   countOpenNieuwTickets,
   countOpenSpoedTickets,
@@ -24,16 +25,20 @@ export default async function AppLayout({
 }) {
   const user = await requireUser();
 
-  // Spoed + nieuw on Overzicht; wacht-op-melder for Mijn tickets.
-  const [spoedCount, nieuwCount, wachtOpMelderCount] = await Promise.all([
-    countOpenSpoedTickets(),
-    countOpenNieuwTickets(),
-    countWachtOpMelderTickets({
-      id: user.id,
-      rol: user.rol,
-      afdelingId: user.afdelingId,
-    }),
-  ]);
+  const isIt = user.rol === "uitvoerder";
+
+  // Spoed + nieuw on Overzicht; wacht-op-melder for Mijn tickets; IT bell unread.
+  const [spoedCount, nieuwCount, wachtOpMelderCount, unreadNotificationCount] =
+    await Promise.all([
+      countOpenSpoedTickets(),
+      countOpenNieuwTickets(),
+      countWachtOpMelderTickets({
+        id: user.id,
+        rol: user.rol,
+        afdelingId: user.afdelingId,
+      }),
+      isIt ? countUnreadNotifications() : Promise.resolve(0),
+    ]);
 
   return (
     <AppShell
@@ -41,6 +46,7 @@ export default async function AppLayout({
       spoedCount={spoedCount}
       nieuwCount={nieuwCount}
       wachtOpMelderCount={wachtOpMelderCount}
+      unreadNotificationCount={unreadNotificationCount}
       supabaseConfigured={isSupabaseConfigured()}
     >
       {children}

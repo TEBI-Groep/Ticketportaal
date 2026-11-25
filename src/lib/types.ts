@@ -64,6 +64,19 @@ export interface TicketComment {
   createdAt: string;
 }
 
+/** Beheerder tagged on an IT note. */
+export interface ItNoteMention {
+  userId: string;
+  naam: string;
+}
+
+/** Thumbs-up (or future kinds) on an IT note. */
+export interface ItNoteReaction {
+  userId: string;
+  naam: string;
+  kind: "thumbs_up";
+}
+
 /** Internal IT-only note — never shown to melder/manager in the real app. */
 export interface ItNote {
   id: string;
@@ -71,6 +84,30 @@ export interface ItNote {
   userId: string;
   auteurNaam: string;
   tekst: string;
+  createdAt: string;
+  mentions: ItNoteMention[];
+  reactions: ItNoteReaction[];
+  /** True when the current viewer has a thumbs-up on this note. */
+  reactedByMe: boolean;
+}
+
+/** In-app notification for the shell bell (IT first). */
+export type NotificationKind = "it_note_mention" | "it_note_reaction";
+
+export interface AppNotification {
+  id: string;
+  ticketId: string | null;
+  kind: NotificationKind;
+  title: string;
+  body: string | null;
+  /** Extra context for deep-links (noteId, actorNaam, …). */
+  payload: {
+    noteId?: string;
+    actorId?: string;
+    actorNaam?: string;
+    snippet?: string;
+  };
+  readAt: string | null;
   createdAt: string;
 }
 

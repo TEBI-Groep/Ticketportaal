@@ -508,14 +508,80 @@ export async function getItNotesForTicket(ticketId: string): Promise<ItNote[]> {
   if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const viewerId = user?.id ?? "";
+
     const { data, error } = await supabase
       .from("it_notes")
       .select("id, ticket_id, user_id, body, created_at, profiles ( naam )")
       .eq("ticket_id", ticketId)
       .order("created_at", { ascending: true });
     if (error || !data) return [];
+
+    const noteIds = data.map((n) => n.id);
+    if (noteIds.length === 0) {
+      return data.map((n) => {
+        const profile = one(n.profiles);
+        return {
+          id: n.id,
+          ticketId: n.ticket_id,
+          userId: n.user_id,
+          auteurNaam: profile?.naam ?? "IT",
+          tekst: n.body,
+          createdAt: n.created_at,
+          mentions: [],
+          reactions: [],
+          reactedByMe: false,
+        };
+      });
+    }
+
+    // Load reactions + mentions in parallel; join profiles for display names.
+    const [reactionsRes, mentionsRes] = await Promise.all([
+      supabase
+        .from("it_note_reactions")
+        .select("note_id, user_id, kind, profiles ( naam )")
+        .in("note_id", noteIds),
+      supabase
+        .from("it_note_mentions")
+        .select("note_id, user_id, profiles ( naam )")
+        .in("note_id", noteIds),
+    ]);
+
+    const reactionsByNote = new Map<
+      string,
+      Array<{ userId: string; naam: string; kind: "thumbs_up" }>
+    >();
+    for (const row of reactionsRes.data ?? []) {
+      const list = reactionsByNote.get(row.note_id) ?? [];
+      const profile = one(row.profiles);
+      list.push({
+        userId: row.user_id,
+        naam: profile?.naam ?? "IT",
+        kind: "thumbs_up",
+      });
+      reactionsByNote.set(row.note_id, list);
+    }
+
+    const mentionsByNote = new Map<
+      string,
+      Array<{ userId: string; naam: string }>
+    >();
+    for (const row of mentionsRes.data ?? []) {
+      const list = mentionsByNote.get(row.note_id) ?? [];
+      const profile = one(row.profiles);
+      list.push({
+        userId: row.user_id,
+        naam: profile?.naam ?? "IT",
+      });
+      mentionsByNote.set(row.note_id, list);
+    }
+
     return data.map((n) => {
       const profile = one(n.profiles);
+      const reactions = reactionsByNote.get(n.id) ?? [];
       return {
         id: n.id,
         ticketId: n.ticket_id,
@@ -524,6 +590,9 @@ export async function getItNotesForTicket(ticketId: string): Promise<ItNote[]> {
         tekst: n.body,
         // Keep full ISO timestamp so the UI can show date + time.
         createdAt: n.created_at,
+        mentions: mentionsByNote.get(n.id) ?? [],
+        reactions,
+        reactedByMe: reactions.some((r) => r.userId === viewerId),
       };
     });
   } catch {

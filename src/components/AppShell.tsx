@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { logoutAction } from "@/app/actions/auth";
+import { NotificationBell } from "@/components/NotificationBell";
 import { ROLE_LABEL } from "@/lib/labels";
 import type { User } from "@/lib/types";
 import styles from "./shell.module.css";
@@ -137,6 +138,7 @@ export function AppShell({
   spoedCount = 0,
   nieuwCount = 0,
   wachtOpMelderCount = 0,
+  unreadNotificationCount = 0,
   supabaseConfigured = true,
 }: {
   children: React.ReactNode;
@@ -147,6 +149,8 @@ export function AppShell({
   nieuwCount?: number;
   /** Wacht-op-melder count in Mijn tickets scope (own + afdeling for managers). */
   wachtOpMelderCount?: number;
+  /** Unread in-app notifications (IT bell). */
+  unreadNotificationCount?: number;
   /** False when Supabase URL/anon key are missing on this environment. */
   supabaseConfigured?: boolean;
 }) {
@@ -209,6 +213,11 @@ export function AppShell({
           <Link href="/ticket/nieuw" className={styles.createBtn}>
             <span aria-hidden>+</span> Ticket
           </Link>
+
+          {/* IT-only inbox for note mentions + reactions. */}
+          {isIt ? (
+            <NotificationBell initialUnreadCount={unreadNotificationCount} />
+          ) : null}
 
           <div className={styles.userMenu}>
             <div className={styles.userChip} aria-label="Ingelogde gebruiker">
