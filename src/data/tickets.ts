@@ -515,7 +515,10 @@ export async function getItNotesForTicket(ticketId: string): Promise<ItNote[]> {
 
     const { data, error } = await supabase
       .from("it_notes")
-      .select("id, ticket_id, user_id, body, created_at, profiles ( naam )")
+      // Hint the author FK — mentions/reactions also link notes↔profiles.
+      .select(
+        "id, ticket_id, user_id, body, created_at, profiles!it_notes_user_id_fkey ( naam )",
+      )
       .eq("ticket_id", ticketId)
       .order("created_at", { ascending: true });
     if (error || !data) return [];
@@ -542,11 +545,15 @@ export async function getItNotesForTicket(ticketId: string): Promise<ItNote[]> {
     const [reactionsRes, mentionsRes] = await Promise.all([
       supabase
         .from("it_note_reactions")
-        .select("note_id, user_id, kind, profiles ( naam )")
+        .select(
+          "note_id, user_id, kind, profiles!it_note_reactions_user_id_fkey ( naam )",
+        )
         .in("note_id", noteIds),
       supabase
         .from("it_note_mentions")
-        .select("note_id, user_id, profiles ( naam )")
+        .select(
+          "note_id, user_id, profiles!it_note_mentions_user_id_fkey ( naam )",
+        )
         .in("note_id", noteIds),
     ]);
 

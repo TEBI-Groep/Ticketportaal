@@ -53,7 +53,10 @@ export async function addItNoteAction(
         user_id: user.id,
         body: tekst,
       })
-      .select("id, ticket_id, user_id, body, created_at, profiles ( naam )")
+      // Hint the author FK — mentions/reactions also link notes↔profiles.
+      .select(
+        "id, ticket_id, user_id, body, created_at, profiles!it_notes_user_id_fkey ( naam )",
+      )
       .single();
 
     if (error || !data) {
