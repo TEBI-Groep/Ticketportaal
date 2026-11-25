@@ -40,7 +40,9 @@ export async function sendMissiveEmail(
     subject: input.subject,
     body: input.html,
     send: true,
-    add_default_signature: true,
+    // Avoid the API-token user's personal Missive signature on it@tebi.nl;
+    // our HTML template carries a generic Ticketportaal footer instead.
+    add_default_signature: false,
     from_field: { address: fromEmail, name: fromName },
     to_fields: [
       {
