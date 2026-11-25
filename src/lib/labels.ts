@@ -39,6 +39,7 @@ export const SYSTEM_OPTIONS: readonly TicketSystem[] = [
   "Overig",
   "Software",
   "Telefonie",
+  "Ticketportaal",
   "Werkplek",
 ] as const;
 

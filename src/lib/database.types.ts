@@ -25,6 +25,7 @@ export type DbTicketSysteem =
   | "Overig"
   | "Software"
   | "Telefonie"
+  | "Ticketportaal"
   | "Werkplek";
 export type DbTicketImpact = "stil" | "hinderlijk" | "wens";
 export type DbTicketStatus =

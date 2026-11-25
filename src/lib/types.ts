@@ -17,6 +17,7 @@ export type TicketSystem =
   | "Overig"
   | "Software"
   | "Telefonie"
+  | "Ticketportaal"
   | "Werkplek";
 export type TicketImpact = "stil" | "hinderlijk" | "wens";
 export type TicketStatus =
