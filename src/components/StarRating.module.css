@@ -20,6 +20,7 @@
 
 .star {
   appearance: none;
+  position: relative;
   border: 0;
   background: transparent;
   padding: 0.1rem;
@@ -42,6 +43,29 @@
 .star:not(:disabled):focus-visible {
   color: var(--brand);
   outline: none;
+}
+
+.star:not(:disabled):hover .starFill,
+.star:not(:disabled):focus-visible .starFill {
+  color: var(--brand);
+}
+
+/* Empty glyph; partial fill overlays via clipped .starFill. */
+.starBase {
+  display: block;
+  color: var(--border-strong);
+}
+
+.starFill {
+  position: absolute;
+  left: 0.1rem;
+  top: 0.1rem;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--brand);
+  line-height: 1;
+  font-size: inherit;
+  pointer-events: none;
 }
 
 .filled {

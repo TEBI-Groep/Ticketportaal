@@ -53,7 +53,12 @@ export type TicketSortKey =
 
 type SortDir = "asc" | "desc";
 
-/** Active column filters: empty/missing set = no filter on that column. */
+/**
+ * Active column filters:
+ * - missing key = no filter (all values)
+ * - empty Set = none selected (match nothing; user can tick values after Wissen)
+ * - non-empty Set = only those tokens
+ */
 type ColumnFilters = Partial<Record<TicketSortKey, Set<string>>>;
 
 const BASE_COLUMNS: Array<{ key: TicketSortKey; label: string }> = [
@@ -303,7 +308,8 @@ function ticketMatchesColumn(
   key: TicketSortKey,
   selected: Set<string>,
 ): boolean {
-  if (selected.size === 0) return true;
+  // Empty set = explicit “none” (Wissen); nothing matches until a value is ticked.
+  if (selected.size === 0) return false;
   return filterTokens(ticket, key).some((token) => selected.has(token));
 }
 
@@ -314,7 +320,8 @@ function ticketMatchesFilters(
 ): boolean {
   for (const col of columns) {
     const selected = filters[col.key];
-    if (selected && selected.size > 0) {
+    // Key present (even empty) means this column is filtered.
+    if (selected) {
       if (!ticketMatchesColumn(ticket, col.key, selected)) return false;
     }
   }
@@ -325,7 +332,7 @@ function hasAnyColumnFilter(
   filters: ColumnFilters,
   columns: Array<{ key: TicketSortKey }>,
 ): boolean {
-  return columns.some((col) => (filters[col.key]?.size ?? 0) > 0);
+  return columns.some((col) => filters[col.key] !== undefined);
 }
 
 /** Funnel icon — filled when the column filter is active (Excel cue). */
@@ -647,19 +654,23 @@ export function TicketTable({
       const current = new Set(prev[key] ?? []);
       if (current.has(token)) current.delete(token);
       else current.add(token);
-      const next = { ...prev };
-      if (current.size === 0) delete next[key];
-      else next[key] = current;
-      return next;
+      // Keep an empty Set so Wissen (“none”) stays distinct from Alles (missing).
+      return { ...prev, [key]: current };
     });
   }
 
+  /** Alles — remove the column filter so every value is included again. */
   function selectAllFilterValues(key: TicketSortKey) {
     setFilters((prev) => {
       const next = { ...prev };
       delete next[key];
       return next;
     });
+  }
+
+  /** Wissen — uncheck every value so the user can tick filters manually. */
+  function clearFilterValues(key: TicketSortKey) {
+    setFilters((prev) => ({ ...prev, [key]: new Set() }));
   }
 
   function clearAllFilters() {
@@ -686,10 +697,10 @@ export function TicketTable({
   const openCol = openFilter
     ? columns.find((c) => c.key === openFilter)
     : null;
-  const openSelected = openFilter
-    ? (effectiveFilters[openFilter] ?? new Set<string>())
-    : new Set<string>();
-  const openFilterActive = openSelected.size > 0;
+  // undefined = Alles (all on); empty Set = Wissen (all off); else = selection.
+  const openFilterSet = openFilter ? effectiveFilters[openFilter] : undefined;
+  const openIsNone =
+    openFilterSet !== undefined && openFilterSet.size === 0;
   const colCount = columns.length + (showRank ? 1 : 0);
   const resetSortLabel = showVote
     ? "Terug naar Stemmen"
@@ -739,8 +750,8 @@ export function TicketTable({
               <button
                 type="button"
                 className={styles.filterAction}
-                onClick={() => selectAllFilterValues(openFilter)}
-                disabled={!openFilterActive}
+                onClick={() => clearFilterValues(openFilter)}
+                disabled={openIsNone}
               >
                 Wissen
               </button>
@@ -750,9 +761,10 @@ export function TicketTable({
                 <li className={styles.filterEmpty}>Geen waarden</li>
               ) : (
                 visibleFilterOptions.map((opt) => {
-                  /* Empty selection means “all”; checkboxes show all on. */
+                  /* Missing set = all on; empty set = all off; else membership. */
                   const checked =
-                    openSelected.size === 0 || openSelected.has(opt.token);
+                    openFilterSet === undefined ||
+                    openFilterSet.has(opt.token);
                   return (
                     <li key={opt.token}>
                       <label className={styles.filterOption}>
@@ -761,7 +773,7 @@ export function TicketTable({
                           checked={checked}
                           onChange={() => {
                             /* First uncheck from “all” → keep every other option. */
-                            if (openSelected.size === 0) {
+                            if (openFilterSet === undefined) {
                               const all = new Set(
                                 openFilterOptions.map((o) => o.token),
                               );
@@ -865,7 +877,8 @@ export function TicketTable({
               {columns.map((col) => {
                 const sortActive = sortKey === col.key;
                 const colFilter = effectiveFilters[col.key];
-                const filterActive = (colFilter?.size ?? 0) > 0;
+                // Present key (including empty Wissen) marks the funnel active.
+                const filterActive = colFilter !== undefined;
                 const panelOpen = openFilter === col.key;
                 const colClass =
                   col.key === "rating"
