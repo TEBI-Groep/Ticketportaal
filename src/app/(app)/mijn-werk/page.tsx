@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { FilteredTicketList } from "@/components/FilteredTicketList";
+import { TicketTable } from "@/components/TicketTable";
 import { requireUitvoerder } from "@/data/auth";
 import { getTicketsByEigenaar } from "@/data/tickets";
 
@@ -22,10 +22,10 @@ async function MijnWerkContent() {
         </p>
       </header>
 
-      <FilteredTicketList
+      <TicketTable
         tickets={tickets}
-        filterDims={["systeem", "status", "type", "prioriteit", "afdeling"]}
         searchPlaceholder="Zoek in jouw werk…"
+        searchLabel="Zoeken in jouw werk"
         emptyMessage="Je bent nog nergens Eigenaar van."
         emptyCta=""
       />
