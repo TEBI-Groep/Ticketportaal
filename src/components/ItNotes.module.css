@@ -197,16 +197,21 @@
   gap: 0.5rem;
 }
 
-.mentionPicker {
+.composeHint {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.composeField {
   position: relative;
 }
 
-.mentionMenu {
+.atMenu {
   position: absolute;
   z-index: 20;
   left: 0;
+  right: 0;
   bottom: calc(100% + 0.25rem);
-  min-width: 11rem;
   max-height: 12rem;
   overflow: auto;
   margin: 0;
@@ -233,6 +238,7 @@
   cursor: pointer;
 }
 
-.mentionOption:hover {
+.mentionOption:hover,
+.mentionOptionActive {
   background: var(--bg-accent, #f5f5f5);
 }
