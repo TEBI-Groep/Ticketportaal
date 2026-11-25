@@ -77,8 +77,22 @@ const RATING_COLUMN: { key: TicketSortKey; label: string } = {
   label: "Stemmen",
 };
 
-function columnsFor(showVote: boolean) {
-  return showVote ? [...BASE_COLUMNS, RATING_COLUMN] : BASE_COLUMNS;
+function columnsFor(
+  showVote: boolean,
+  hiddenColumns: readonly TicketSortKey[] = [],
+) {
+  const hidden = new Set(hiddenColumns);
+  const base = BASE_COLUMNS.filter((col) => !hidden.has(col.key));
+  return showVote ? [...base, RATING_COLUMN] : base;
+}
+
+/** Merge local filters with parent-forced filters (forced wins per column). */
+function mergeFilters(
+  local: ColumnFilters,
+  forced?: ColumnFilters,
+): ColumnFilters {
+  if (!forced) return local;
+  return { ...local, ...forced };
 }
 
 /** Fixed status order so “Nieuw” sorts before “Afgerond”, not alphabetically. */
@@ -360,6 +374,13 @@ interface TicketTableProps {
   /** Controlled search query — used when the parent owns the search field. */
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
+  /** Omit these data columns (e.g. Melder/Eigenaar/Bijgewerkt on Ranglijst). */
+  hiddenColumns?: readonly TicketSortKey[];
+  /**
+   * Extra filters applied on top of user funnel filters (e.g. Overzicht “Mijn werk”).
+   * Forced keys win over local filters for the same column.
+   */
+  forcedFilters?: ColumnFilters;
 }
 
 type PanelCoords = {
@@ -391,10 +412,16 @@ export function TicketTable({
   hideSearch = false,
   searchQuery: searchQueryProp,
   onSearchChange,
+  hiddenColumns = [],
+  forcedFilters,
 }: TicketTableProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const columns = columnsFor(showVote);
+  const columns = columnsFor(showVote, hiddenColumns);
+  const hiddenSet = useMemo(
+    () => new Set(hiddenColumns),
+    [hiddenColumns],
+  );
   /* Overzicht-style default, or rating-first on Ranglijst. */
   const defaultSortKey = showVote ? RANKING_SORT_KEY : DEFAULT_SORT_KEY;
   const defaultSortDir = showVote ? RANKING_SORT_DIR : DEFAULT_SORT_DIR;
@@ -528,9 +555,17 @@ export function TicketTable({
     [tickets, searchQuery],
   );
 
+  const effectiveFilters = useMemo(
+    () => mergeFilters(filters, forcedFilters),
+    [filters, forcedFilters],
+  );
+
   const filtered = useMemo(
-    () => searched.filter((t) => ticketMatchesFilters(t, filters, columns)),
-    [searched, filters, columns],
+    () =>
+      searched.filter((t) =>
+        ticketMatchesFilters(t, effectiveFilters, columns),
+      ),
+    [searched, effectiveFilters, columns],
   );
 
   const sorted = useMemo(
@@ -544,7 +579,7 @@ export function TicketTable({
   /* Options for the open column: values still present after search + other filters. */
   const openFilterOptions = useMemo(() => {
     if (!openFilter) return [];
-    const others: ColumnFilters = { ...filters };
+    const others: ColumnFilters = { ...effectiveFilters };
     delete others[openFilter];
     const pool = searched.filter((t) =>
       ticketMatchesFilters(t, others, columns),
@@ -564,7 +599,7 @@ export function TicketTable({
       .sort((a, b) =>
         a.label.localeCompare(b.label, "nl", { sensitivity: "base" }),
       );
-  }, [openFilter, filters, searched, columns]);
+  }, [openFilter, effectiveFilters, searched, columns]);
 
   const visibleFilterOptions = useMemo(() => {
     const q = filterQuery.trim().toLowerCase();
@@ -645,14 +680,14 @@ export function TicketTable({
     );
   }
 
-  const filtersActive = hasAnyColumnFilter(filters, columns);
+  const filtersActive = hasAnyColumnFilter(effectiveFilters, columns);
   const searchActive = searchQuery.trim().length > 0;
   const narrowed = filtersActive || searchActive;
   const openCol = openFilter
     ? columns.find((c) => c.key === openFilter)
     : null;
   const openSelected = openFilter
-    ? (filters[openFilter] ?? new Set<string>())
+    ? (effectiveFilters[openFilter] ?? new Set<string>())
     : new Set<string>();
   const openFilterActive = openSelected.size > 0;
   const colCount = columns.length + (showRank ? 1 : 0);
@@ -829,7 +864,7 @@ export function TicketTable({
               ) : null}
               {columns.map((col) => {
                 const sortActive = sortKey === col.key;
-                const colFilter = filters[col.key];
+                const colFilter = effectiveFilters[col.key];
                 const filterActive = (colFilter?.size ?? 0) > 0;
                 const panelOpen = openFilter === col.key;
                 const colClass =
@@ -1013,21 +1048,25 @@ export function TicketTable({
                         {ticket.afdelingen.join(", ") || "—"}
                       </span>
                     </td>
-                    <td title={ticket.melderNaam || undefined}>
-                      <span className={styles.cell}>
-                        {ticket.melderNaam || "—"}
-                      </span>
-                    </td>
-                    <td
-                      className={
-                        !ticket.eigenaarNaam ? styles.muted : undefined
-                      }
-                      title={ticket.eigenaarNaam ?? "Nog niet geclaimd"}
-                    >
-                      <span className={styles.cell}>
-                        {ticket.eigenaarNaam ?? "Nog niet geclaimd"}
-                      </span>
-                    </td>
+                    {!hiddenSet.has("melder") ? (
+                      <td title={ticket.melderNaam || undefined}>
+                        <span className={styles.cell}>
+                          {ticket.melderNaam || "—"}
+                        </span>
+                      </td>
+                    ) : null}
+                    {!hiddenSet.has("eigenaar") ? (
+                      <td
+                        className={
+                          !ticket.eigenaarNaam ? styles.muted : undefined
+                        }
+                        title={ticket.eigenaarNaam ?? "Nog niet geclaimd"}
+                      >
+                        <span className={styles.cell}>
+                          {ticket.eigenaarNaam ?? "Nog niet geclaimd"}
+                        </span>
+                      </td>
+                    ) : null}
                     <td
                       title={
                         ticket.streefdatum
@@ -1046,11 +1085,13 @@ export function TicketTable({
                         {ticket.omvang ?? "—"}
                       </span>
                     </td>
-                    <td title={formatDate(ticket.updatedAt)}>
-                      <span className={styles.cell}>
-                        {formatDate(ticket.updatedAt)}
-                      </span>
-                    </td>
+                    {!hiddenSet.has("updatedAt") ? (
+                      <td title={formatDate(ticket.updatedAt)}>
+                        <span className={styles.cell}>
+                          {formatDate(ticket.updatedAt)}
+                        </span>
+                      </td>
+                    ) : null}
                     {showVote ? (
                       <td
                         className={styles.colVote}

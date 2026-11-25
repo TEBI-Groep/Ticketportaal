@@ -495,7 +495,8 @@ export async function getCommentsForTicket(
         auteurNaam: profile?.naam ?? "Systeem",
         auteurRol: profile?.rol ?? "gebruiker",
         tekst: c.body,
-        createdAt: c.created_at.slice(0, 10),
+        // Keep full ISO timestamp so the UI can show date + time.
+        createdAt: c.created_at,
       };
     });
   } catch {
@@ -521,7 +522,8 @@ export async function getItNotesForTicket(ticketId: string): Promise<ItNote[]> {
         userId: n.user_id,
         auteurNaam: profile?.naam ?? "IT",
         tekst: n.body,
-        createdAt: n.created_at.slice(0, 10),
+        // Keep full ISO timestamp so the UI can show date + time.
+        createdAt: n.created_at,
       };
     });
   } catch {

@@ -29,6 +29,8 @@ async function RanglijstContent() {
         showRank
         showVote
         currentUserId={user.id}
+        // Slimmer Ranglijst: drop people/activity columns for now.
+        hiddenColumns={["melder", "eigenaar", "updatedAt"]}
         searchPlaceholder="Zoek in de ranglijst…"
         searchLabel="Zoeken in de ranglijst"
         emptyMessage="Nog geen NetSuite-wensen. Maak de eerste aan."

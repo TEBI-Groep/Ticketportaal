@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import type { ItNote, UserRole } from "@/lib/types";
-import { formatDate } from "@/lib/labels";
+import { formatDateTime } from "@/lib/labels";
 import { addItNoteAction } from "@/app/actions/it-notes";
 import styles from "./ItNotes.module.css";
 
@@ -69,7 +69,7 @@ export function ItNotes({ ticketId, initialNotes, viewerRol }: ItNotesProps) {
                   <div className={styles.meta}>
                     <span className={styles.author}>{note.auteurNaam}</span>
                     <time dateTime={note.createdAt}>
-                      {formatDate(note.createdAt)}
+                      {formatDateTime(note.createdAt)}
                     </time>
                   </div>
                   <p className={styles.body}>{note.tekst}</p>
