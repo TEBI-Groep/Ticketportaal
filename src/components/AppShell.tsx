@@ -64,7 +64,7 @@ const NAV_ITEMS: Array<{
     badgeKeys: ["spoed", "nieuw"],
   },
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
-  { href: "/mijn-werk", label: "Mijn werk", short: "Eigen", itOnly: true },
+  // Mijn werk lives on Overzicht (top-right) for now — not in the nav bar.
   { href: "/gebruikers", label: "Gebruikers", short: "Users", itOnly: true },
 ];
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { TicketTable } from "@/components/TicketTable";
 import { requireUser } from "@/data/auth";
@@ -10,7 +11,8 @@ export const metadata: Metadata = {
 
 async function OverzichtContent() {
   // Auth gate; ticket visibility still comes from Postgres RLS.
-  await requireUser();
+  const user = await requireUser();
+  const isIt = user.rol === "uitvoerder";
   const tickets = await getOverzichtTickets();
 
   // Spoed sits in its own table above the rest (same TicketTable UX).
@@ -20,8 +22,14 @@ async function OverzichtContent() {
   return (
     <>
       {/* Intro copy omitted on Overzicht — tables + column filters speak for themselves. */}
-      <header className="page-header">
+      <header className="page-header page-headerWithAction">
         <h1>Overzicht</h1>
+        {/* Mijn werk left the nav; IT reaches it from here for now. */}
+        {isIt ? (
+          <Link href="/mijn-werk" className="btn btn-secondary">
+            Mijn werk
+          </Link>
+        ) : null}
       </header>
 
       {/* Spoed section only when there is at least one urgent ticket. */}

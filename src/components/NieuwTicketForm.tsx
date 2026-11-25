@@ -14,6 +14,7 @@ import { uploadAttachmentAction } from "@/app/actions/attachments";
 import { searchSimilarTicketsAction } from "@/app/actions/search";
 import { createTicketAction } from "@/app/actions/tickets";
 import { SimilarTickets } from "@/components/SimilarTickets";
+import { SYSTEM_OPTIONS, TYPE_LABEL } from "@/lib/labels";
 import type {
   Ticket,
   TicketPriority,
@@ -41,7 +42,7 @@ export function NieuwTicketForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [onderwerp, setOnderwerp] = useState("");
-  const [systeem, setSysteem] = useState<TicketSystem>("NetSuite");
+  const [systeem, setSysteem] = useState<TicketSystem>("Netsuite");
   // Controlled so we can warn when the user picks Spoed.
   const [prioriteit, setPrioriteit] = useState<TicketPriority>("laag");
   const [similar, setSimilar] = useState<Ticket[]>([]);
@@ -87,7 +88,7 @@ export function NieuwTicketForm({
 
     const result = await createTicketAction({
       type: String(form.get("type") ?? "wijziging") as TicketType,
-      systeem: String(form.get("systeem") ?? "NetSuite") as TicketSystem,
+      systeem: String(form.get("systeem") ?? "Netsuite") as TicketSystem,
       onderwerp: String(form.get("onderwerp") ?? ""),
       omschrijving: String(form.get("omschrijving") ?? ""),
       afdelingen,
@@ -154,14 +155,7 @@ export function NieuwTicketForm({
           Type
         </legend>
         <div className="segmented">
-          {(
-            [
-              ["storing", "Storing"],
-              ["wijziging", "Wijziging"],
-              ["vraag", "Vraag"],
-              ["idee", "Idee"],
-            ] as const
-          ).map(([value, label]) => (
+          {(Object.keys(TYPE_LABEL) as TicketType[]).map((value) => (
             <label key={value}>
               <input
                 type="radio"
@@ -170,7 +164,7 @@ export function NieuwTicketForm({
                 defaultChecked={value === "wijziging"}
                 required
               />
-              {label}
+              {TYPE_LABEL[value]}
             </label>
           ))}
         </div>
@@ -186,13 +180,11 @@ export function NieuwTicketForm({
           value={systeem}
           onChange={(e) => setSysteem(e.target.value as TicketSystem)}
         >
-          <option>NetSuite</option>
-          <option>WMS</option>
-          <option>Hardware</option>
-          <option>Outlook</option>
-          <option>Overig</option>
-          <option>Artikelen</option>
-          <option>Transportplanning</option>
+          {SYSTEM_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
         </select>
       </div>
 

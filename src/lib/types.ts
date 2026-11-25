@@ -1,14 +1,24 @@
 /** Shared domain types for the Ticketportaal app. */
 
-export type TicketType = "storing" | "wijziging" | "vraag" | "idee";
+export type TicketType =
+  | "storing"
+  | "wijziging"
+  | "vraag"
+  | "idee"
+  | "procesverbetering";
+/** Canonical systeem options shown in create + IT edit. */
 export type TicketSystem =
-  | "NetSuite"
-  | "WMS"
+  | "Artikelen"
   | "Hardware"
+  | "Netsuite"
+  | "Netsuite transportplanning"
+  | "Netsuite WMS"
   | "Outlook"
   | "Overig"
-  | "Artikelen"
-  | "Transportplanning";
+  | "Software"
+  | "Telefonie"
+  | "Ticketportaal"
+  | "Werkplek";
 export type TicketImpact = "stil" | "hinderlijk" | "wens";
 export type TicketStatus =
   | "nieuw"
@@ -19,7 +29,7 @@ export type TicketStatus =
   | "afgerond"
   | "afgewezen";
 export type TicketPriority = "spoed" | "hoog" | "gemiddeld" | "laag";
-export type TicketSize = "S" | "M" | "L";
+export type TicketSize = "S" | "M" | "L" | "XL" | "XXL";
 export type UserRole = "gebruiker" | "manager" | "uitvoerder";
 
 /** Star rating scale: 1 (laag) … 5 (hoog). */
@@ -131,14 +141,14 @@ export function mijnRating(
 }
 
 /**
- * NetSuite wijziging/idee — belongs on the public Ranglijst when open,
+ * Netsuite wijziging/idee — belongs on the public Ranglijst when open,
  * not Spoed, and not Privé. Privé tickets stay melder+IT only.
  */
 export function isRanglijstKandidaat(ticket: Ticket): boolean {
   const typeOk = ticket.type === "wijziging" || ticket.type === "idee";
   return (
     typeOk &&
-    ticket.systeem === "NetSuite" &&
+    ticket.systeem === "Netsuite" &&
     !ticket.prive &&
     ticket.prioriteit !== "spoed"
   );

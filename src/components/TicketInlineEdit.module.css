@@ -109,7 +109,7 @@
   align-items: center;
 }
 
-/* Right column: Updates & vragen stacked above interne notities. */
+/* Non-IT right column: Updates & vragen only. */
 .sideRail {
   display: flex;
   flex-direction: column;
@@ -117,11 +117,54 @@
   min-width: 0;
 }
 
+/* Non-IT: ticket body | Updates & vragen. */
 @media (min-width: 720px) {
   .detailSplit {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
     gap: var(--space-5);
     align-items: start;
+  }
+}
+
+/* IT default: stack on narrow screens; widen into 3 columns below. */
+.detailSplitIt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* IT wide: ticket ~50%, remaining ~50% split evenly across updates + notes. */
+@media (min-width: 960px) {
+  .detailSplitIt {
+    display: grid;
+    /* 2 : 1 : 1 ≈ 50% / 25% / 25%. */
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* Mid width: ticket ~50%, stacked updates+notes share the rest. */
+@media (min-width: 720px) and (max-width: 959px) {
+  .detailSplitIt {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-5);
+    align-items: start;
+  }
+
+  .detailSplitIt > :nth-child(1) {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .detailSplitIt > :nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .detailSplitIt > :nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
   }
 }
