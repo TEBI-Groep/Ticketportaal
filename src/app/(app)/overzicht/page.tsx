@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { OverzichtTables } from "@/components/OverzichtTables";
-import { requireUser } from "@/data/auth";
+import { requireUitvoerder } from "@/data/auth";
 import { getOverzichtTickets } from "@/data/tickets";
 
 export const metadata: Metadata = {
@@ -9,9 +9,8 @@ export const metadata: Metadata = {
 };
 
 async function OverzichtContent() {
-  // Auth gate; ticket visibility still comes from Postgres RLS.
-  const user = await requireUser();
-  const isIt = user.rol === "uitvoerder";
+  // IT-only spreadsheet overview; non-IT are redirected by requireUitvoerder.
+  const user = await requireUitvoerder();
   const tickets = await getOverzichtTickets();
 
   // Spoed sits in its own table above the rest (same TicketTable UX).
@@ -22,14 +21,14 @@ async function OverzichtContent() {
     <OverzichtTables
       spoedTickets={spoedTickets}
       overigeTickets={overigeTickets}
-      showMijnWerkToggle={isIt}
+      showMijnWerkToggle
       currentUserId={user.id}
       currentUserNaam={user.naam}
     />
   );
 }
 
-/** Spreadsheet-style open-ticket overview for everyone (Spoed + rest). */
+/** Spreadsheet-style open-ticket overview for Beheerders (IT). */
 export default function OverzichtPage() {
   return (
     <div className="page">
