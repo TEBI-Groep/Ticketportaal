@@ -77,3 +77,68 @@ export async function markAllNotificationsReadAction(): Promise<
     };
   }
 }
+
+/** Permanently remove one of your own notifications. */
+export async function deleteNotificationAction(
+  notificationId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Supabase is niet geconfigureerd." };
+  }
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { ok: false, error: "Je bent niet ingelogd." };
+    }
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("id", notificationId)
+      .eq("user_id", user.id);
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+    revalidatePath("/", "layout");
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Verwijderen mislukt.",
+    };
+  }
+}
+
+/** Clear the whole inbox for the current user. */
+export async function deleteAllNotificationsAction(): Promise<
+  { ok: true } | { ok: false; error: string }
+> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Supabase is niet geconfigureerd." };
+  }
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { ok: false, error: "Je bent niet ingelogd." };
+    }
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("user_id", user.id);
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+    revalidatePath("/", "layout");
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Verwijderen mislukt.",
+    };
+  }
+}
