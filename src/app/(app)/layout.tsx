@@ -1,7 +1,6 @@
 import { AppShell } from "@/components/AppShell";
 import { requireUser } from "@/data/auth";
 import {
-  countNieuwWerkvoorraadTickets,
   countOpenNieuwTickets,
   countOpenSpoedTickets,
   countWachtOpMelderTickets,
@@ -24,28 +23,23 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const user = await requireUser();
-  const isIt = user.rol === "uitvoerder";
 
-  // Spoed + nieuw on Overzicht for everyone; Werkvoorraad nieuw for IT;
-  // wacht-op-melder for all (Mijn tickets scope).
-  const [spoedCount, nieuwCount, nieuwWerkvoorraadCount, wachtOpMelderCount] =
-    await Promise.all([
-      countOpenSpoedTickets(),
-      countOpenNieuwTickets(),
-      isIt ? countNieuwWerkvoorraadTickets() : Promise.resolve(0),
-      countWachtOpMelderTickets({
-        id: user.id,
-        rol: user.rol,
-        afdelingId: user.afdelingId,
-      }),
-    ]);
+  // Spoed + nieuw on Overzicht; wacht-op-melder for Mijn tickets.
+  const [spoedCount, nieuwCount, wachtOpMelderCount] = await Promise.all([
+    countOpenSpoedTickets(),
+    countOpenNieuwTickets(),
+    countWachtOpMelderTickets({
+      id: user.id,
+      rol: user.rol,
+      afdelingId: user.afdelingId,
+    }),
+  ]);
 
   return (
     <AppShell
       user={user}
       spoedCount={spoedCount}
       nieuwCount={nieuwCount}
-      nieuwWerkvoorraadCount={nieuwWerkvoorraadCount}
       wachtOpMelderCount={wachtOpMelderCount}
       supabaseConfigured={isSupabaseConfigured()}
     >

@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 /** Allowed in-app return paths for ticket detail “Terug”. */
 const ALLOWED_RETURN = new Set([
   "/ranglijst",
-  "/werkvoorraad",
   "/mijn-tickets",
   "/overzicht",
   "/mijn-werk",
@@ -13,9 +12,9 @@ const ALLOWED_RETURN = new Set([
   "/ticket/nieuw",
 ]);
 
-/** Old Spoed page → Overzicht (Spoed table lives there now). */
+/** Retired list pages → Overzicht (Spoed / Werkvoorraad live there now). */
 function resolveReturnPath(van: string): string | null {
-  if (van === "/spoed") return "/overzicht";
+  if (van === "/spoed" || van === "/werkvoorraad") return "/overzicht";
   if (ALLOWED_RETURN.has(van)) return van;
   return null;
 }
