@@ -42,12 +42,15 @@ export function buildNotificationEmail(input: TemplateInput): MailContent {
 
   const intro =
     input.kind === "ticket_created"
-      ? "We hebben je IT-verzoek ontvangen."
+      ? "We hebben je IT-verzoek ontvangen:"
       : input.kind === "ticket_status_changed"
-        ? "De status van een ticket is gewijzigd."
+        ? "De status van een ticket is gewijzigd:"
         : input.kind === "ticket_comment"
-          ? "Er is een nieuwe update op een ticket."
-          : "Er is een update in het Ticketportaal.";
+          ? "Er is een nieuwe update op een ticket:"
+          : "Er is een update in het Ticketportaal:";
+
+  // Drop body when it only repeats the ticket label (legacy notifications).
+  const bodyText = mailBodyWithoutTicketLabel(input.body, label);
 
   const html = `
 <div style="font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#1a1a1a;">
@@ -55,8 +58,8 @@ export function buildNotificationEmail(input: TemplateInput): MailContent {
   <p style="margin:0 0 4px;"><strong>${escapeHtml(label)}</strong></p>
   <p style="margin:0 0 12px;">${escapeHtml(input.title)}</p>
   ${
-    input.body
-      ? `<p style="margin:0 0 16px;color:#444;">${escapeHtml(input.body)}</p>`
+    bodyText
+      ? `<p style="margin:0 0 16px;color:#444;">${escapeHtml(bodyText)}</p>`
       : ""
   }
   <p style="margin:0 0 20px;">
@@ -74,6 +77,31 @@ export function buildNotificationEmail(input: TemplateInput): MailContent {
 </div>`.trim();
 
   return { subject, html };
+}
+
+/**
+ * Strip a leading “TP-… · onderwerp:” / exact label so the mail does not
+ * repeat the ticket line already shown above the notification title.
+ */
+function mailBodyWithoutTicketLabel(
+  body: string | null | undefined,
+  label: string,
+): string | null {
+  if (!body) return null;
+  const trimmed = body.trim();
+  if (!trimmed || trimmed === label) return null;
+  const prefix = `${label}:`;
+  if (trimmed.startsWith(prefix)) {
+    const rest = trimmed.slice(prefix.length).trim();
+    return rest || null;
+  }
+  // Legacy status bodies: “TP-… · onderwerp (Nieuw → …)”
+  const wrapped = `${label} (`;
+  if (trimmed.startsWith(wrapped) && trimmed.endsWith(")")) {
+    const rest = trimmed.slice(wrapped.length, -1).trim();
+    return rest || null;
+  }
+  return trimmed;
 }
 
 function escapeHtml(value: string): string {

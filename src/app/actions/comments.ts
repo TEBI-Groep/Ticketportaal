@@ -80,16 +80,14 @@ export async function addCommentAction(
       melderId: ticket?.melder_id,
       eigenaarId: ticket?.eigenaar_id,
     });
+    // Body is the update text only — mail template already shows ticketnummer · onderwerp.
     const snippet = notificationSnippet(tekst);
-    const ticketLabel = ticket?.ticketnummer
-      ? `${ticket.ticketnummer}${ticket.onderwerp ? ` · ${ticket.onderwerp}` : ""}`
-      : "Ticket";
     const inserted = await notifyTicketUsers({
       ticketId,
       recipientIds: recipients,
       kind: "ticket_comment",
       title: `${comment.auteurNaam} plaatste een update`,
-      body: `${ticketLabel}: ${snippet}`,
+      body: snippet,
       payload: {
         commentId: comment.id,
         actorId: user.id,
