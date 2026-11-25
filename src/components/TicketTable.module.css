@@ -135,9 +135,19 @@
   cursor: pointer;
 }
 
+/* Very subtle Nieuw highlight — same soft blue family as the Nieuw badge. */
+.dataRowNieuw td {
+  background: color-mix(in srgb, var(--status-nieuw-soft) 32%, transparent);
+}
+
 .dataRow:hover td,
 .dataRow:focus-visible td {
   background: color-mix(in srgb, var(--brand-soft) 35%, transparent);
+}
+
+.dataRowNieuw:hover td,
+.dataRowNieuw:focus-visible td {
+  background: color-mix(in srgb, var(--status-nieuw-soft) 48%, var(--brand-soft));
 }
 
 .dataRow:focus-visible {
