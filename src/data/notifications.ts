@@ -111,7 +111,8 @@ export async function resolveTicketNotifyRecipients(
 
 /**
  * Fan-out via security-definer RPC (works for non-IT commenters too).
- * Returns how many rows were inserted (0 on empty/error).
+ * Also queues email deliveries for Phase A kinds (create / status / comment).
+ * Returns how many notification rows were inserted (0 on empty/error).
  */
 export async function notifyTicketUsers(input: {
   ticketId: string;
@@ -120,6 +121,10 @@ export async function notifyTicketUsers(input: {
   title: string;
   body?: string | null;
   payload?: NotifyPayload;
+  /** Include the acting user (ontvangstbevestiging to melder). */
+  includeActor?: boolean;
+  /** Queue Missive email deliveries (default true for mail-worthy kinds). */
+  queueEmail?: boolean;
 }): Promise<number> {
   if (!isSupabaseConfigured()) return 0;
   if (input.recipientIds.length === 0) return 0;
@@ -132,6 +137,8 @@ export async function notifyTicketUsers(input: {
       p_title: input.title,
       p_body: input.body ?? null,
       p_payload: input.payload ?? {},
+      p_include_actor: Boolean(input.includeActor),
+      p_queue_email: input.queueEmail !== false,
     });
     if (error) {
       console.error("notify_ticket_users failed", error.message);

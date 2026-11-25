@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { ATTACHMENTS_BUCKET } from "@/data/attachments";
+import { flushPendingEmailDeliveries } from "@/data/mail";
 import {
   notifyTicketUsers,
   resolveTicketNotifyRecipients,
@@ -170,7 +171,7 @@ export async function createTicketAction(
         status: "nieuw",
         vertrouwelijk: Boolean(input.prive),
       })
-      .select("id")
+      .select("id, ticketnummer, onderwerp")
       .single();
 
     if (error || !data) {
@@ -189,12 +190,27 @@ export async function createTicketAction(
       return { ok: false, error: linkError.message };
     }
 
-    // Melder starts watching their own ticket (for future update e-mails).
+    // Melder starts watching their own ticket (for update e-mails).
     await supabase.from("ticket_watchers").insert({
       ticket_id: data.id,
       user_id: user.id,
       reason: "melder",
     });
+
+    // Ontvangstbevestiging (in-app + Missive mail when configured).
+    const ticketLabel = data.ticketnummer
+      ? `${data.ticketnummer} · ${data.onderwerp}`
+      : data.onderwerp;
+    await notifyTicketUsers({
+      ticketId: data.id,
+      recipientIds: [user.id],
+      kind: "ticket_created",
+      title: "Je ticket is aangemaakt",
+      body: ticketLabel,
+      includeActor: true,
+      payload: { actorId: user.id },
+    });
+    await flushPendingEmailDeliveries({ ticketId: data.id });
 
     revalidateTicketPaths(data.id);
     return { ok: true, id: data.id };
@@ -363,7 +379,7 @@ export async function updateTicketItAction(
         : (before.ticketnummer ?? "Ticket")
       : "Ticket";
 
-    // Notify subscribers when status changes (in-app now; mail later).
+    // Notify subscribers when status changes (in-app + Missive mail).
     const previousStatus = before?.status as TicketStatus | undefined;
     if (before && previousStatus && previousStatus !== input.status) {
       const recipients = await resolveTicketNotifyRecipients(
@@ -426,6 +442,8 @@ export async function updateTicketItAction(
 
     if (notified) {
       revalidatePath("/", "layout");
+      // Status-change deliveries (eigenaar kinds stay in-app only in Phase A).
+      await flushPendingEmailDeliveries({ ticketId: input.id });
     }
 
     revalidateTicketPaths(input.id);
