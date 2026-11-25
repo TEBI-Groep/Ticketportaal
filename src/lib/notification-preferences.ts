@@ -34,7 +34,7 @@ export const MAIL_PREFERENCE_FIELDS: Array<{
     key: "emailTicketStatusChanged",
     kind: "ticket_status_changed",
     label: "Statuswijzigingen",
-    hint: "Mail wanneer de status van een ticket waarop jij volgt bent wijzigt.",
+    hint: "Mail wanneer de status van een ticket die jij volgt is wijzigt.",
   },
   {
     key: "emailTicketComment",
