@@ -452,18 +452,70 @@ export async function getTicketsByEigenaar(userId: string): Promise<Ticket[]> {
   }
 }
 
-export async function getAfgerondeTickets(): Promise<Ticket[]> {
+/**
+ * Closed tickets (afgerond / afgewezen) with the same visibility as Mijn tickets:
+ * - Beheerder (IT): everything
+ * - Medewerker: only tickets where they are melder
+ * - Leidinggevende: own melder tickets + non-privé tickets of their afdeling
+ */
+export async function getAfgerondeTickets(
+  user: MijnTicketsUser,
+): Promise<Ticket[]> {
   if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase
+
+    // IT sees the full closed archive.
+    if (user.rol === "uitvoerder") {
+      const { data, error } = await supabase
+        .from("tickets")
+        .select(TICKET_SELECT)
+        .in("status", ["afgerond", "afgewezen"]);
+      if (error || !data) return [];
+      return (data as unknown as TicketRow[])
+        .map(mapTicket)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    }
+
+    // Own closed tickets as melder (medewerker + leidinggevende).
+    const { data: ownData, error: ownError } = await supabase
       .from("tickets")
       .select(TICKET_SELECT)
+      .eq("melder_id", user.id)
       .in("status", ["afgerond", "afgewezen"]);
-    if (error || !data) return [];
-    return (data as unknown as TicketRow[])
-      .map(mapTicket)
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    if (ownError) return [];
+    const own = (ownData as unknown as TicketRow[] | null)?.map(mapTicket) ?? [];
+
+    if (user.rol !== "manager" || !user.afdelingId) {
+      return sortOpenTickets(own);
+    }
+
+    const { data: links, error: linkError } = await supabase
+      .from("ticket_departments")
+      .select("ticket_id")
+      .eq("department_id", user.afdelingId);
+    if (linkError || !links || links.length === 0) {
+      return sortOpenTickets(own);
+    }
+
+    // Privé tickets of other melders stay hidden from leidinggevenden.
+    const { data: deptData, error: deptError } = await supabase
+      .from("tickets")
+      .select(TICKET_SELECT)
+      .in(
+        "id",
+        links.map((l) => l.ticket_id),
+      )
+      .eq("vertrouwelijk", false)
+      .in("status", ["afgerond", "afgewezen"]);
+    if (deptError || !deptData) {
+      return sortOpenTickets(own);
+    }
+
+    return mergeTicketsById([
+      own,
+      (deptData as unknown as TicketRow[]).map(mapTicket),
+    ]);
   } catch {
     return [];
   }
