@@ -79,7 +79,7 @@ export function TicketAttachments({
         <h2 id="attachments-heading">Bijlagen</h2>
         <p className="form-hint">
           Screenshots of bestanden bij dit ticket. Max. 5 MB — JPG, PNG, GIF,
-          WebP, HEIC, PDF of Word.
+          WebP, HEIC, PDF, Word, Excel of CSV.
         </p>
       </header>
 
@@ -155,7 +155,7 @@ export function TicketAttachments({
           className={styles.fileInput}
           type="file"
           name="file"
-          accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.doc,.docx,.heic,.heif"
+          accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,.doc,.docx,.xls,.xlsx,.csv,.heic,.heif"
           disabled={uploading}
         />
         {error ? (

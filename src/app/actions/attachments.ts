@@ -7,6 +7,7 @@ import {
   ALLOWED_ATTACHMENT_MIME,
   MAX_ATTACHMENT_BYTES,
   attachmentKindFromMime,
+  resolveAttachmentMime,
   sanitizeFileName,
 } from "@/data/attachments";
 import { createClient } from "@/lib/supabase/server";
@@ -35,12 +36,12 @@ export async function uploadAttachmentAction(
   if (file.size > MAX_ATTACHMENT_BYTES) {
     return { ok: false, error: "Bestand is te groot (max. 5 MB)." };
   }
-  const mime = file.type || "application/octet-stream";
+  const mime = resolveAttachmentMime(file);
   if (!ALLOWED_ATTACHMENT_MIME.has(mime)) {
     return {
       ok: false,
       error:
-        "Alleen afbeeldingen (JPG, PNG, GIF, WebP, HEIC), PDF of Word zijn toegestaan.",
+        "Alleen afbeeldingen (JPG, PNG, GIF, WebP, HEIC), PDF, Word, Excel of CSV zijn toegestaan.",
     };
   }
 

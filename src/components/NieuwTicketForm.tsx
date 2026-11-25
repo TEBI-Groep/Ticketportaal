@@ -326,10 +326,11 @@ export function NieuwTicketForm({
           ref={fileInputRef}
           type="file"
           multiple
-          accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.pdf,.doc,.docx,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.pdf,.doc,.docx,.xls,.xlsx,.csv,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
         />
         <p className="form-hint" style={{ marginBottom: 0 }}>
-          Max. 5 MB per bestand — JPG, PNG, GIF, WebP, HEIC, PDF of Word.
+          Max. 5 MB per bestand — JPG, PNG, GIF, WebP, HEIC, PDF, Word, Excel
+          of CSV.
         </p>
       </div>
 
