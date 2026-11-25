@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { TicketTable } from "@/components/TicketTable";
+import { requireUser } from "@/data/auth";
 import { getAfgerondeTickets } from "@/data/tickets";
 
 export const metadata: Metadata = {
@@ -8,15 +9,21 @@ export const metadata: Metadata = {
 };
 
 async function AfgerondContent() {
-  const tickets = await getAfgerondeTickets();
+  const user = await requireUser();
+  const tickets = await getAfgerondeTickets(user);
+  const isIt = user.rol === "uitvoerder";
+  const isManager = user.rol === "manager";
 
   return (
     <>
       <header className="page-header">
         <h1>Afgerond</h1>
         <p>
-          Afgeronde en afgewezen tickets ter naslag. Zoek of iets al eens is
-          opgelost.
+          {isIt
+            ? "Alle afgeronde en afgewezen tickets ter naslag."
+            : isManager
+              ? "Afgeronde en afgewezen tickets van jouw afdeling (niet-privé), plus tickets die jij hebt aangemaakt."
+              : "Afgeronde en afgewezen tickets die jij hebt aangemaakt (als melder)."}
         </p>
       </header>
 
