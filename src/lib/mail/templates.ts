@@ -1,5 +1,6 @@
 import type { NotificationKind } from "@/lib/types";
 import { getAppBaseUrl } from "@/lib/missive/env";
+import { TEBI_IT_SIGNATURE_HTML } from "@/lib/mail/tebi-it-signature";
 
 export type MailContent = {
   subject: string;
@@ -63,12 +64,10 @@ export function buildNotificationEmail(input: TemplateInput): MailContent {
       Open ticket
     </a>
   </p>
-  <!-- Generic IT signature (Missive personal signatures are disabled for API sends). -->
-  <p style="margin:24px 0 0;padding-top:16px;border-top:1px solid #e5e5e5;font-size:13px;line-height:1.45;color:#444;">
-    Met vriendelijke groet,<br />
-    <strong>Tebi IT</strong><br />
-    <a href="mailto:it@tebi.nl" style="color:#444;">it@tebi.nl</a>
-  </p>
+  <!-- Missive personal signature disabled; embed fixed Tebi IT signature instead. -->
+  <div style="margin-top:24px;">
+    ${TEBI_IT_SIGNATURE_HTML}
+  </div>
   <p style="margin:12px 0 0;font-size:12px;color:#777;">
     Tebi Ticketportaal · je ontvangt deze mail omdat je melder of volger bent.
   </p>
