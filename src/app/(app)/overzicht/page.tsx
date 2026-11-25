@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { TicketTable } from "@/components/TicketTable";
+import { OverzichtTables } from "@/components/OverzichtTables";
 import { requireUser } from "@/data/auth";
 import { getOverzichtTickets } from "@/data/tickets";
 
@@ -32,59 +32,11 @@ async function OverzichtContent() {
         ) : null}
       </header>
 
-      {/* Spoed section only when there is at least one urgent ticket. */}
-      {spoedTickets.length > 0 ? (
-        <section
-          aria-labelledby="overzicht-spoed-heading"
-          style={{ marginBottom: "2rem" }}
-        >
-          <h2
-            id="overzicht-spoed-heading"
-            style={{
-              fontSize: "1.15rem",
-              fontWeight: 700,
-              margin: "0 0 0.65rem",
-              color: "var(--ink)",
-            }}
-          >
-            Spoed
-            <span
-              className="form-hint"
-              style={{ fontWeight: 500, marginLeft: "0.5rem" }}
-            >
-              ({spoedTickets.length})
-            </span>
-          </h2>
-          <TicketTable
-            tickets={spoedTickets}
-            searchPlaceholder="Zoek in spoedtickets…"
-            searchLabel="Zoeken in spoedtickets"
-            emptyMessage="Geen spoedtickets — mooi."
-            emptyCta=""
-          />
-        </section>
-      ) : null}
-
-      {/* Main open-ticket table — Spoed excluded. */}
-      <section aria-labelledby="overzicht-overig-heading">
-        <h2
-          id="overzicht-overig-heading"
-          style={{
-            fontSize: "1.15rem",
-            fontWeight: 700,
-            margin: "0 0 0.65rem",
-            color: "var(--ink)",
-          }}
-        >
-          Overige tickets
-        </h2>
-        <TicketTable
-          tickets={overigeTickets}
-          searchPlaceholder="Zoek in het overzicht…"
-          emptyMessage="Geen open tickets zichtbaar."
-          emptyCta="Ticket aanmaken"
-        />
-      </section>
+      {/* One search above both tables; always visible even without Spoed. */}
+      <OverzichtTables
+        spoedTickets={spoedTickets}
+        overigeTickets={overigeTickets}
+      />
     </>
   );
 }

@@ -352,6 +352,14 @@ interface TicketTableProps {
   showVote?: boolean;
   /** Current user id for “Jij: n★” on the Stemmen column. */
   currentUserId?: string;
+  /**
+   * Hide the built-in search field (parent renders a shared one, e.g. Overzicht).
+   * Pair with searchQuery + onSearchChange.
+   */
+  hideSearch?: boolean;
+  /** Controlled search query — used when the parent owns the search field. */
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
 }
 
 type PanelCoords = {
@@ -380,6 +388,9 @@ export function TicketTable({
   showRank = false,
   showVote = false,
   currentUserId = "",
+  hideSearch = false,
+  searchQuery: searchQueryProp,
+  onSearchChange,
 }: TicketTableProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -392,7 +403,13 @@ export function TicketTable({
   const [filters, setFilters] = useState<ColumnFilters>({});
   const [openFilter, setOpenFilter] = useState<TicketSortKey | null>(null);
   const [filterQuery, setFilterQuery] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  /* Local search unless the parent controls it (shared Overzicht bar). */
+  const [internalSearch, setInternalSearch] = useState("");
+  const searchQuery = searchQueryProp ?? internalSearch;
+  function setSearchQuery(query: string) {
+    if (onSearchChange) onSearchChange(query);
+    else setInternalSearch(query);
+  }
   const [panelCoords, setPanelCoords] = useState<PanelCoords | null>(null);
   const [portalReady, setPortalReady] = useState(false);
   const headerBarRef = useRef<HTMLTableSectionElement | null>(null);
@@ -738,57 +755,65 @@ export function TicketTable({
         )
       : null;
 
+  const showToolbarChrome =
+    !hideSearch || narrowed || !isDefaultSort || filtersActive;
+
   return (
     <div>
-      {/* Global search restored; works together with column filters. */}
-      <div className={styles.toolbar}>
-        <input
-          className={`search-input ${styles.searchInput}`}
-          type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={searchPlaceholder}
-          aria-label={searchLabel}
-          autoComplete="off"
-        />
-        {narrowed || !isDefaultSort ? (
-          <div className={styles.filterBar}>
-            {narrowed ? (
-              <span className="form-hint" aria-live="polite">
-                {sorted.length} van {tickets.length}
-              </span>
-            ) : null}
-            {!isDefaultSort ? (
-              <button
-                type="button"
-                className={styles.clearFilters}
-                onClick={resetSort}
-                title={resetSortLabel}
-              >
-                Sortering resetten
-              </button>
-            ) : null}
-            {filtersActive ? (
-              <button
-                type="button"
-                className={styles.clearFilters}
-                onClick={clearAllFilters}
-              >
-                Filters wissen
-              </button>
-            ) : null}
-            {searchActive ? (
-              <button
-                type="button"
-                className={styles.clearFilters}
-                onClick={() => setSearchQuery("")}
-              >
-                Zoekopdracht wissen
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+      {/* Search + filter/sort chrome; search can be owned by the parent. */}
+      {showToolbarChrome ? (
+        <div className={styles.toolbar}>
+          {!hideSearch ? (
+            <input
+              className={`search-input ${styles.searchInput}`}
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={searchPlaceholder}
+              aria-label={searchLabel}
+              autoComplete="off"
+            />
+          ) : null}
+          {narrowed || !isDefaultSort || filtersActive ? (
+            <div className={styles.filterBar}>
+              {narrowed ? (
+                <span className="form-hint" aria-live="polite">
+                  {sorted.length} van {tickets.length}
+                </span>
+              ) : null}
+              {!isDefaultSort ? (
+                <button
+                  type="button"
+                  className={styles.clearFilters}
+                  onClick={resetSort}
+                  title={resetSortLabel}
+                >
+                  Sortering resetten
+                </button>
+              ) : null}
+              {filtersActive ? (
+                <button
+                  type="button"
+                  className={styles.clearFilters}
+                  onClick={clearAllFilters}
+                >
+                  Filters wissen
+                </button>
+              ) : null}
+              {/* Clear search only when this table owns the field. */}
+              {!hideSearch && searchActive ? (
+                <button
+                  type="button"
+                  className={styles.clearFilters}
+                  onClick={() => setSearchQuery("")}
+                >
+                  Zoekopdracht wissen
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className={styles.wrap}>
         <table
@@ -808,7 +833,11 @@ export function TicketTable({
                 const filterActive = (colFilter?.size ?? 0) > 0;
                 const panelOpen = openFilter === col.key;
                 const colClass =
-                  col.key === "rating" ? styles.colVote : undefined;
+                  col.key === "rating"
+                    ? styles.colVote
+                    : col.key === "omvang"
+                      ? styles.colOmvang
+                      : undefined;
 
                 return (
                   <th
@@ -1012,7 +1041,7 @@ export function TicketTable({
                           : "—"}
                       </span>
                     </td>
-                    <td>
+                    <td className={styles.colOmvang}>
                       <span className={styles.cell}>
                         {ticket.omvang ?? "—"}
                       </span>
