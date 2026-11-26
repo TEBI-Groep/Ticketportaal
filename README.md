@@ -37,7 +37,7 @@ All ticket and user data comes from Supabase. On **Vercel**, set at least `NEXT_
 
 **Missive Phase C (reply-by-mail):** replies in an existing ticket conversation create an Updates & vragen comment. Webhook URL: `POST /api/webhooks/missive`. In Missive: Settings → Rules → trigger **Incoming email** → action **Webhook** → that URL (+ optional signature secret = `MISSIVE_WEBHOOK_SECRET`). Only conversations stored in `ticket_email_threads` are imported.
 
-**Missive Phase D (label → ticket):** apply the shared label `Ticketportaal` (or `MISSIVE_TICKET_LABEL`) in Missive. Rule: **User action / label change** → condition **Added label name** = that label → **Webhook** → same URL. Creates a ticket (defaults: type `vraag`, systeem `Overig`, prioriteit `laag`), links the conversation for Phase C replies, and sends an in-thread ontvangstbevestiging with `TP-…` + Open ticket.
+**Missive Phase D (label → ticket):** apply the shared label `Ticketportaal` (or `MISSIVE_TICKET_LABEL`) in Missive. Rule: **User action / label change** (not Incoming email) → condition **Added label name** = that label → **Webhook** → same URL. Use the **same Signature secret** as Phase C (`MISSIVE_WEBHOOK_SECRET`); without it Missive shows “triggered” but the app returns 401. Creates a ticket (defaults: type `vraag`, systeem `Overig`, prioriteit `laag`), links the conversation for Phase C replies, and sends an in-thread ontvangstbevestiging with `TP-…` + Open ticket.
 
 ## Scripts
 
