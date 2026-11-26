@@ -10,11 +10,11 @@ import {
   useState,
   useTransition,
 } from "react";
-import { uploadAttachmentAction } from "@/app/actions/attachments";
 import { searchSimilarTicketsAction } from "@/app/actions/search";
 import { createTicketAction } from "@/app/actions/tickets";
 import { SimilarTickets } from "@/components/SimilarTickets";
 import { SYSTEM_OPTIONS, TYPE_LABEL } from "@/lib/labels";
+import { uploadTicketAttachment } from "@/lib/upload-attachment";
 import type {
   Ticket,
   TicketPriority,
@@ -103,11 +103,9 @@ export function NieuwTicketForm({
       return;
     }
 
-    // Optional bijlagen after the ticket exists (reuse detail upload path).
+    // Optional bijlagen after the ticket exists (signed Storage upload).
     for (const file of files) {
-      const uploadData = new FormData();
-      uploadData.set("file", file);
-      const uploaded = await uploadAttachmentAction(result.id, uploadData);
+      const uploaded = await uploadTicketAttachment(result.id, file);
       if (!uploaded.ok) {
         setError(
           `Ticket is aangemaakt, maar bijlage "${file.name}" mislukte: ${uploaded.error}`,

@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
-  // Attachment uploads can be up to 10 MB (+ multipart overhead).
+  // Legacy FormData upload path only; UI uses signed Storage uploads.
   experimental: {
     serverActions: {
       bodySizeLimit: "12mb",

@@ -3,11 +3,8 @@
 import { FormEvent, useRef, useState } from "react";
 import type { TicketAttachment } from "@/lib/types";
 import { formatDate } from "@/lib/labels";
-import {
-  deleteAttachmentAction,
-  uploadAttachmentAction,
-} from "@/app/actions/attachments";
-import { validateAttachmentFile } from "@/lib/attachment-rules";
+import { deleteAttachmentAction } from "@/app/actions/attachments";
+import { uploadTicketAttachment } from "@/lib/upload-attachment";
 import styles from "./TicketAttachments.module.css";
 
 interface TicketAttachmentsProps {
@@ -45,19 +42,11 @@ export function TicketAttachments({
     const file = input?.files?.[0];
     if (!file || uploading) return;
 
-    // Fail fast in the browser so oversized/blocked types don’t hang on Uploaden…
-    const clientError = validateAttachmentFile(file);
-    if (clientError) {
-      setError(clientError);
-      return;
-    }
-
     setUploading(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.set("file", file);
-      const result = await uploadAttachmentAction(ticketId, formData);
+      // Browser → Supabase signed upload (avoids Vercel ~4.5 MB body limit).
+      const result = await uploadTicketAttachment(ticketId, file);
       if (!result.ok) {
         setError(result.error);
         return;

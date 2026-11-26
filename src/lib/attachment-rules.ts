@@ -1,7 +1,7 @@
 import type { AttachmentKind } from "@/lib/types";
 
 export const ATTACHMENTS_BUCKET = "ticket-attachments";
-/** Soft cap shown in UI; keep below next.config serverActions.bodySizeLimit. */
+/** Soft cap shown in UI; uploads go browser → Supabase (not through Vercel body). */
 export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 export const MAX_ATTACHMENT_LABEL = "10 MB";
 
