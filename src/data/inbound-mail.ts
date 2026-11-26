@@ -85,29 +85,44 @@ export async function processMissiveIncomingEmail(
   const externalId = messageId ?? `email:${emailMessageId}`;
   const receivedAt = new Date().toISOString();
 
-  // Always audit — including unmatched — so ops can see webhook delivery.
-  const { error: inboundInsertError } = await admin
+  // Upsert: the route may already have written a pending audit row for this id.
+  // Only short-circuit when this message was already fully handled.
+  const { data: existingInbound } = await admin
     .from("inbound_messages")
-    .insert({
-      channel: "missive",
-      external_id: externalId,
-      from_address: fromAddress || null,
-      subject,
-      body_text: latest.preview ?? null,
-      received_at: receivedAt,
-      ticket_id: ticketId,
-      status: ticketId ? "pending" : "ignored",
-      error: ticketId
-        ? null
-        : `no matching ticket (conversation ${conversationId})`,
-      raw: payload as unknown as Record<string, unknown>,
-    });
+    .select("status, ticket_id, comment_id")
+    .eq("external_id", externalId)
+    .maybeSingle();
+  if (
+    existingInbound?.comment_id ||
+    existingInbound?.status === "processed" ||
+    existingInbound?.status === "duplicate"
+  ) {
+    return { ok: true, status: "duplicate" };
+  }
 
-  if (inboundInsertError) {
-    if (inboundInsertError.code === "23505") {
-      return { ok: true, status: "duplicate" };
-    }
-    return { ok: false, error: inboundInsertError.message };
+  const { error: inboundUpsertError } = await admin
+    .from("inbound_messages")
+    .upsert(
+      {
+        channel: "missive",
+        external_id: externalId,
+        from_address: fromAddress || null,
+        subject,
+        body_text: latest.preview ?? null,
+        received_at: receivedAt,
+        ticket_id: ticketId,
+        status: ticketId ? "pending" : "ignored",
+        error: ticketId
+          ? null
+          : `no matching ticket (conversation ${conversationId})`,
+        processed_at: ticketId ? null : new Date().toISOString(),
+        raw: payload as unknown as Record<string, unknown>,
+      },
+      { onConflict: "external_id" },
+    );
+
+  if (inboundUpsertError) {
+    return { ok: false, error: inboundUpsertError.message };
   }
 
   if (!ticketId) {
