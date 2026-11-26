@@ -2,11 +2,46 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
 import type { User, UserRole } from "@/lib/types";
+import type { UserBedrijf } from "@/lib/bedrijf";
+import { USER_BEDRIJVEN } from "@/lib/bedrijf";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function listUitvoerders(): Promise<User[]> {
   const users = await listUsers();
   return users.filter((u) => u.rol === "uitvoerder" && u.actief);
+}
+
+function mapUserRow(p: Record<string, unknown>): User {
+  const links = (p.profile_departments ?? []) as Array<{
+    department_id: string;
+    departments: { naam: string } | Array<{ naam: string }> | null;
+  }>;
+  const afdelingen = [
+    ...new Set(
+      links
+        .map((l) => one(l.departments)?.naam ?? "")
+        .filter((n) => n.length > 0),
+    ),
+  ].sort((a, b) => a.localeCompare(b, "nl"));
+  const legacyDept = one(
+    p.departments as { naam: string } | Array<{ naam: string }> | null,
+  );
+  const list =
+    afdelingen.length > 0
+      ? afdelingen
+      : legacyDept?.naam
+        ? [legacyDept.naam]
+        : [];
+  return {
+    id: p.id as string,
+    naam: p.naam as string,
+    email: p.email as string,
+    rol: p.rol as UserRole,
+    afdeling: list.join(", "),
+    afdelingen: list,
+    bedrijf: (p.bedrijf as UserBedrijf) ?? "TEBI",
+    actief: Boolean(p.actief),
+  };
 }
 
 export async function listUsers(): Promise<User[]> {
@@ -15,20 +50,12 @@ export async function listUsers(): Promise<User[]> {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, naam, email, rol, actief, departments ( naam )")
+      .select(
+        "id, naam, email, rol, actief, bedrijf, afdeling_id, departments ( naam ), profile_departments ( department_id, departments ( naam ) )",
+      )
       .order("naam");
     if (error || !data) return [];
-    return data.map((p) => {
-      const dept = one(p.departments);
-      return {
-        id: p.id,
-        naam: p.naam,
-        email: p.email,
-        rol: p.rol as UserRole,
-        afdeling: dept?.naam ?? "",
-        actief: p.actief,
-      };
-    });
+    return data.map((p) => mapUserRow(p as Record<string, unknown>));
   } catch {
     return [];
   }
@@ -53,11 +80,77 @@ export async function listDepartments(): Promise<string[]> {
   }
 }
 
+/** Resolve department names → ids; requires at least one. */
+async function resolveDepartmentIdsByNames(
+  names: string[],
+): Promise<{ ok: true; ids: string[] } | { ok: false; error: string }> {
+  const unique = [
+    ...new Set(names.map((n) => n.trim()).filter((n) => n.length > 0)),
+  ];
+  if (unique.length === 0) {
+    return { ok: false, error: "Kies minstens één afdeling." };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("departments")
+    .select("id, naam")
+    .in("naam", unique)
+    .eq("actief", true);
+  if (error) return { ok: false, error: error.message };
+  const found = data ?? [];
+  if (found.length !== unique.length) {
+    const known = new Set(found.map((d) => d.naam));
+    const missing = unique.filter((n) => !known.has(n));
+    return { ok: false, error: `Onbekende afdeling: ${missing.join(", ")}.` };
+  }
+  return { ok: true, ids: found.map((d) => d.id) };
+}
+
+function parseBedrijf(value: string): UserBedrijf | null {
+  return (USER_BEDRIJVEN as readonly string[]).includes(value)
+    ? (value as UserBedrijf)
+    : null;
+}
+
+/** Replace profile_departments and sync profiles.afdeling_id (primary). */
+async function syncProfileDepartments(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+  profileId: string,
+  departmentIds: string[],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { error: delError } = await admin
+    .from("profile_departments")
+    .delete()
+    .eq("profile_id", profileId);
+  if (delError) return { ok: false, error: delError.message };
+
+  if (departmentIds.length > 0) {
+    const { error: insError } = await admin.from("profile_departments").insert(
+      departmentIds.map((department_id) => ({
+        profile_id: profileId,
+        department_id,
+      })),
+    );
+    if (insError) return { ok: false, error: insError.message };
+  }
+
+  // Keep legacy FK as the first linked department for Missive / defaults.
+  const { error: fkError } = await admin
+    .from("profiles")
+    .update({ afdeling_id: departmentIds[0] ?? null })
+    .eq("id", profileId);
+  if (fkError) return { ok: false, error: fkError.message };
+
+  return { ok: true };
+}
+
 export interface CreateUserInput {
   naam: string;
   email: string;
   rol: UserRole;
-  afdeling: string;
+  /** One or more afdelingen. */
+  afdelingen: string[];
+  bedrijf: UserBedrijf;
   wachtwoord: string;
   actief?: boolean;
 }
@@ -75,12 +168,13 @@ export async function createUserAccount(
     };
   }
 
-  const supabase = await createClient();
-  const { data: dept } = await supabase
-    .from("departments")
-    .select("id")
-    .eq("naam", input.afdeling)
-    .maybeSingle();
+  const bedrijf = parseBedrijf(input.bedrijf);
+  if (!bedrijf) {
+    return { ok: false, error: "Kies een geldig bedrijf (TEBI, VK of SPL)." };
+  }
+
+  const depts = await resolveDepartmentIdsByNames(input.afdelingen);
+  if (!depts.ok) return depts;
 
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email: input.email,
@@ -98,7 +192,8 @@ export async function createUserAccount(
     .update({
       naam: input.naam,
       rol: input.rol,
-      afdeling_id: dept?.id ?? null,
+      bedrijf,
+      afdeling_id: depts.ids[0] ?? null,
       actief: input.actief ?? true,
     })
     .eq("id", created.user.id);
@@ -107,6 +202,13 @@ export async function createUserAccount(
     return { ok: false, error: updateError.message };
   }
 
+  const sync = await syncProfileDepartments(admin, created.user.id, depts.ids);
+  if (!sync.ok) return sync;
+
+  const afdelingen = [...input.afdelingen].sort((a, b) =>
+    a.localeCompare(b, "nl"),
+  );
+
   return {
     ok: true,
     user: {
@@ -114,7 +216,9 @@ export async function createUserAccount(
       naam: input.naam,
       email: input.email,
       rol: input.rol,
-      afdeling: input.afdeling,
+      afdeling: afdelingen.join(", "),
+      afdelingen,
+      bedrijf,
       actief: input.actief ?? true,
     },
   };
@@ -126,7 +230,8 @@ export interface UpdateUserInput {
   /** New login e-mail; synced to Auth + profiles. */
   email: string;
   rol: UserRole;
-  afdeling: string;
+  afdelingen: string[];
+  bedrijf: UserBedrijf;
   actief: boolean;
 }
 
@@ -138,6 +243,14 @@ export async function updateUserAccount(
     return { ok: false, error: "Vul een geldig e-mailadres in." };
   }
 
+  const bedrijf = parseBedrijf(input.bedrijf);
+  if (!bedrijf) {
+    return { ok: false, error: "Kies een geldig bedrijf (TEBI, VK of SPL)." };
+  }
+
+  const depts = await resolveDepartmentIdsByNames(input.afdelingen);
+  if (!depts.ok) return depts;
+
   const admin = createAdminClient();
   if (!admin) {
     return {
@@ -146,13 +259,6 @@ export async function updateUserAccount(
         "supabase_service_role_key ontbreekt — voeg die toe om e-mailadressen te wijzigen.",
     };
   }
-
-  const supabase = await createClient();
-  const { data: dept } = await supabase
-    .from("departments")
-    .select("id")
-    .eq("naam", input.afdeling)
-    .maybeSingle();
 
   // Current profile e-mail — skip Auth call when unchanged.
   const { data: current, error: currentError } = await admin
@@ -201,7 +307,8 @@ export async function updateUserAccount(
       naam: input.naam,
       email,
       rol: input.rol,
-      afdeling_id: dept?.id ?? null,
+      bedrijf,
+      afdeling_id: depts.ids[0] ?? null,
       actief: input.actief,
     })
     .eq("id", input.id);
@@ -216,6 +323,9 @@ export async function updateUserAccount(
     }
     return { ok: false, error: error.message };
   }
+
+  const sync = await syncProfileDepartments(admin, input.id, depts.ids);
+  if (!sync.ok) return sync;
 
   // Stop queued mail and sessions when IT deactivates an account.
   if (!input.actief) {

@@ -72,7 +72,7 @@ export async function updateSession(request: NextRequest) {
 
   if (user && (pathname === "/login" || pathname === "/")) {
     const homeUrl = request.nextUrl.clone();
-    homeUrl.pathname = "/ranglijst";
+    homeUrl.pathname = "/netsuite";
     homeUrl.search = "";
     return copyCookies(supabaseResponse, NextResponse.redirect(homeUrl));
   }

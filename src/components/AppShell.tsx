@@ -52,19 +52,19 @@ const NAV_ITEMS: Array<{
   /** One or more badge keys; rendered left-to-right when count > 0. */
   badgeKeys?: BadgeKey[];
 }> = [
-  { href: "/ranglijst", label: "Ranglijst", short: "Rang" },
-  {
-    href: "/mijn-tickets",
-    label: "Mijn tickets",
-    short: "Mijn",
-    badgeKeys: ["wachtOpMelder"],
-  },
+  { href: "/netsuite", label: "Netsuite", short: "NS" },
   {
     href: "/overzicht",
     label: "Overzicht",
     short: "Tabel",
     itOnly: true,
     badgeKeys: ["spoed", "nieuw"],
+  },
+  {
+    href: "/mijn-tickets",
+    label: "Mijn tickets",
+    short: "Mijn",
+    badgeKeys: ["wachtOpMelder"],
   },
   { href: "/afgerond", label: "Afgerond", short: "Klaar" },
   // Mijn werk lives on Overzicht (top-right) for now — not in the nav bar.
@@ -183,7 +183,7 @@ export function AppShell({
         </p>
       ) : null}
       <header className={styles.topbar}>
-        <Link href="/ranglijst" className={styles.brand} aria-label="Tebi Ticketportaal home">
+        <Link href="/netsuite" className={styles.brand} aria-label="Tebi Ticketportaal home">
           <span className={styles.brandName}>Tebi</span>
           <span className={styles.brandProduct}>Ticketportaal</span>
         </Link>

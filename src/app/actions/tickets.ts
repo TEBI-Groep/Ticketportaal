@@ -10,6 +10,11 @@ import {
   resolveTicketNotifyRecipients,
 } from "@/data/notifications";
 import { getTicketById } from "@/data/tickets";
+import {
+  resolveTicketBedrijf,
+  type TicketBedrijf,
+  type UserBedrijf,
+} from "@/lib/bedrijf";
 import { STATUS_LABEL } from "@/lib/labels";
 import type {
   TicketImpact,
@@ -30,6 +35,8 @@ export interface CreateTicketInput {
   prioriteit: TicketPriority;
   /** Privé: hide from leidinggevenden (maps to vertrouwelijk). */
   prive?: boolean;
+  /** Company scope; forced to Bedrijfsbreed for certain afdelingen. */
+  bedrijf?: TicketBedrijf;
 }
 
 /** Allowed create-time prioriteit values (rejects forged form input). */
@@ -59,6 +66,8 @@ export interface UpdateTicketItInput {
   omschrijving?: string;
   /** Privé: hide from leidinggevenden (maps to vertrouwelijk). */
   prive: boolean;
+  /** Company scope; forced to Bedrijfsbreed for certain afdelingen. */
+  bedrijf: TicketBedrijf;
 }
 
 /** Partial IT patch for blur-to-save inline editors (merged with current row). */
@@ -103,6 +112,7 @@ async function resolveDepartmentIds(
 
 function revalidateTicketPaths(id: string) {
   revalidatePath(`/ticket/${id}`);
+  revalidatePath("/netsuite");
   revalidatePath("/ranglijst");
   revalidatePath("/werkvoorraad");
   revalidatePath("/spoed");
@@ -143,6 +153,12 @@ export async function createTicketAction(
       ? input.prioriteit
       : "laag";
 
+    const bedrijf = resolveTicketBedrijf(
+      input.bedrijf,
+      input.afdelingen,
+      (user.bedrijf as UserBedrijf) ?? "TEBI",
+    );
+
     const { data, error } = await supabase
       .from("tickets")
       .insert({
@@ -156,6 +172,7 @@ export async function createTicketAction(
         melder_id: user.id,
         status: "nieuw",
         vertrouwelijk: Boolean(input.prive),
+        bedrijf,
       })
       .select("id, ticketnummer, onderwerp")
       .single();
@@ -243,6 +260,7 @@ export async function patchTicketItAction(
     onderwerp: input.onderwerp ?? current.onderwerp,
     omschrijving: input.omschrijving ?? current.omschrijving,
     prive: input.prive ?? current.prive,
+    bedrijf: input.bedrijf ?? current.bedrijf,
   });
 }
 
@@ -284,6 +302,12 @@ export async function updateTicketItAction(
       .eq("id", input.id)
       .maybeSingle();
 
+    const bedrijf = resolveTicketBedrijf(
+      input.bedrijf,
+      input.afdelingen,
+      "TEBI",
+    );
+
     const patch: Record<string, unknown> = {
       type: input.type,
       systeem: input.systeem,
@@ -295,6 +319,7 @@ export async function updateTicketItAction(
       omvang: input.omvang,
       oplossing_samenvatting: input.oplossingSamenvatting?.trim() || null,
       vertrouwelijk: Boolean(input.prive),
+      bedrijf,
     };
 
     if (input.onderwerp !== undefined) {

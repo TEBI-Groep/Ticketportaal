@@ -90,7 +90,7 @@ export function NotificationBell({
 
   function hrefFor(n: AppNotification): string {
     // Fall back to home — Overzicht is IT-only.
-    if (!n.ticketId) return "/ranglijst";
+    if (!n.ticketId) return "/netsuite";
     if (n.payload.noteId) {
       return `/ticket/${n.ticketId}?note=${n.payload.noteId}`;
     }

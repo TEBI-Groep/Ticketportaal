@@ -4,8 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
 import type { User, UserRole } from "@/lib/types";
+import type { UserBedrijf } from "@/lib/bedrijf";
 
-export type AppUser = User & { afdelingId?: string | null };
+export type AppUser = User & {
+  /** Primary afdeling (first alphabetically) for Missive / create defaults. */
+  afdelingId?: string | null;
+  /** All department ids linked via profile_departments. */
+  afdelingIds: string[];
+};
 
 /**
  * Current signed-in profile from Supabase Auth + profiles.
@@ -29,7 +35,9 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, naam, email, rol, actief, afdeling_id, departments(naam)")
+      .select(
+        "id, naam, email, rol, actief, afdeling_id, bedrijf, departments(naam), profile_departments ( department_id, departments ( naam ) )",
+      )
       .eq("id", user.id)
       .maybeSingle();
 
@@ -40,7 +48,10 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
         email: user.email ?? "",
         rol: "gebruiker",
         afdeling: "",
+        afdelingen: [],
+        bedrijf: "TEBI",
         actief: true,
+        afdelingIds: [],
       };
     }
 
@@ -48,15 +59,40 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
       return null;
     }
 
-    const dept = one(profile.departments);
+    const links = (profile.profile_departments ?? []) as unknown as Array<{
+      department_id: string;
+      departments: { naam: string } | Array<{ naam: string }> | null;
+    }>;
+    const afdelingen = [
+      ...new Set(
+        links
+          .map((l) => one(l.departments)?.naam ?? "")
+          .filter((n) => n.length > 0),
+      ),
+    ].sort((a, b) => a.localeCompare(b, "nl"));
+    const afdelingIds = links.map((l) => l.department_id);
+    // Fallback to legacy single FK when junction is empty.
+    const legacyDept = one(profile.departments);
+    const afdeling =
+      afdelingen.length > 0
+        ? afdelingen.join(", ")
+        : (legacyDept?.naam ?? "");
 
     return {
       id: profile.id,
       naam: profile.naam,
       email: profile.email,
       rol: profile.rol as UserRole,
-      afdeling: dept?.naam ?? "",
-      afdelingId: profile.afdeling_id,
+      afdeling,
+      afdelingen: afdelingen.length > 0 ? afdelingen : legacyDept?.naam ? [legacyDept.naam] : [],
+      bedrijf: (profile.bedrijf as UserBedrijf) ?? "TEBI",
+      afdelingId: profile.afdeling_id ?? afdelingIds[0] ?? null,
+      afdelingIds:
+        afdelingIds.length > 0
+          ? afdelingIds
+          : profile.afdeling_id
+            ? [profile.afdeling_id]
+            : [],
       actief: profile.actief,
     };
   } catch {
@@ -114,7 +150,7 @@ export async function requireUser(): Promise<AppUser> {
 export async function requireUitvoerder(): Promise<AppUser> {
   const user = await requireUser();
   if (user.rol !== "uitvoerder") {
-    redirect("/ranglijst");
+    redirect("/netsuite");
   }
   return user;
 }

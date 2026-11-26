@@ -19,6 +19,12 @@ import { StarRating } from "@/components/StarRating";
 import { TicketAttachments } from "@/components/TicketAttachments";
 import { TicketWatchBell } from "@/components/TicketWatchBell";
 import {
+  BEDRIJF_LABEL,
+  forcesBedrijfsbreed,
+  TICKET_BEDRIJVEN,
+  type TicketBedrijf,
+} from "@/lib/bedrijf";
+import {
   PRIORITY_LABEL,
   SIZE_OPTIONS,
   STATUS_LABEL,
@@ -237,8 +243,51 @@ export function TicketItDetail({
                 pending={pending}
                 error={errorKey === "afdelingen" ? fieldError : null}
                 onSave={(afdelingen) => {
-                  setLocal((t) => ({ ...t, afdelingen }));
-                  save("afdelingen", { afdelingen });
+                  const nextBedrijf = forcesBedrijfsbreed(afdelingen)
+                    ? "bedrijfsbreed"
+                    : local.bedrijf;
+                  setLocal((t) => ({
+                    ...t,
+                    afdelingen,
+                    bedrijf: nextBedrijf,
+                  }));
+                  save("afdelingen", {
+                    afdelingen,
+                    bedrijf: nextBedrijf,
+                  });
+                }}
+              />
+            </dd>
+          </div>
+          <div className="kv">
+            <dt>Bedrijf</dt>
+            <dd>
+              <InlineSelect
+                label="Bedrijf"
+                value={
+                  forcesBedrijfsbreed(local.afdelingen)
+                    ? "bedrijfsbreed"
+                    : local.bedrijf
+                }
+                display={
+                  BEDRIJF_LABEL[
+                    forcesBedrijfsbreed(local.afdelingen)
+                      ? "bedrijfsbreed"
+                      : local.bedrijf
+                  ]
+                }
+                options={TICKET_BEDRIJVEN.map((b) => ({
+                  value: b,
+                  label: BEDRIJF_LABEL[b],
+                }))}
+                pending={pending}
+                error={errorKey === "bedrijf" ? fieldError : null}
+                onSave={(value) => {
+                  if (forcesBedrijfsbreed(local.afdelingen)) return;
+                  const next = value as TicketBedrijf;
+                  if (next === local.bedrijf) return;
+                  setLocal((t) => ({ ...t, bedrijf: next }));
+                  save("bedrijf", { bedrijf: next });
                 }}
               />
             </dd>

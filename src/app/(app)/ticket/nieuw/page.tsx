@@ -27,7 +27,8 @@ async function NieuwTicketContent() {
 
       <NieuwTicketForm
         departments={departments}
-        defaultAfdeling={user.afdeling}
+        defaultAfdelingen={user.afdelingen}
+        defaultBedrijf={user.bedrijf}
         canCreate={canCreate}
       />
     </>
