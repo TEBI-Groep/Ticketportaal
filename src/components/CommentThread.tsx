@@ -95,7 +95,9 @@ export function CommentThread({
                 <div className={styles.meta}>
                   <span className={styles.author}>{comment.auteurNaam}</span>
                   <span className={styles.role}>
-                    {ROLE_LABEL[comment.auteurRol]}
+                    {comment.source === "email"
+                      ? "via e-mail"
+                      : ROLE_LABEL[comment.auteurRol]}
                   </span>
                   <time dateTime={comment.createdAt}>
                     {formatDateTime(comment.createdAt)}

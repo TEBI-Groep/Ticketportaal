@@ -29,3 +29,11 @@ export function getAppBaseUrl(): string {
 export function isMissiveConfigured(): boolean {
   return Boolean(getMissiveApiToken() && getMissiveFromEmail());
 }
+
+/**
+ * Optional HMAC secret for Missive rule webhooks (X-Hook-Signature).
+ * When set, real inbound events must present a valid signature.
+ */
+export function getMissiveWebhookSecret(): string | undefined {
+  return process.env.MISSIVE_WEBHOOK_SECRET?.trim() || undefined;
+}

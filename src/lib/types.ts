@@ -62,6 +62,8 @@ export interface TicketComment {
   auteurRol: UserRole;
   tekst: string;
   createdAt: string;
+  /** portal = UI; email = Missive reply-by-mail (Phase C). */
+  source?: "portal" | "email" | "system";
 }
 
 /** Beheerder tagged on an IT note. */
