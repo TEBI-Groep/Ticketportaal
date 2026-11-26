@@ -40,28 +40,19 @@ export function buildNotificationEmail(input: TemplateInput): MailContent {
         ? root
         : `Re: ${root}`;
 
-  const intro =
-    input.kind === "ticket_created"
-      ? "We hebben je IT-verzoek ontvangen:"
-      : input.kind === "ticket_status_changed"
-        ? "De status van een ticket is gewijzigd:"
-        : input.kind === "ticket_comment"
-          ? "Er is een nieuwe update op een ticket:"
-          : "Er is een update in het Ticketportaal:";
-
   // Drop body when it only repeats the ticket label (legacy notifications).
   const bodyText = mailBodyWithoutTicketLabel(input.body, label);
 
+  const mainHtml =
+    input.kind === "ticket_created"
+      ? createdMailBody(label, bodyText)
+      : updateMailBody(input.title, label, bodyText);
+
   const html = `
 <div style="font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#1a1a1a;">
-  <p style="margin:0 0 12px;">${escapeHtml(intro)}</p>
-  <p style="margin:0 0 4px;"><strong>${escapeHtml(label)}</strong></p>
-  <p style="margin:0 0 12px;">${escapeHtml(input.title)}</p>
-  ${
-    bodyText
-      ? `<p style="margin:0 0 16px;color:#444;">${escapeHtml(bodyText)}</p>`
-      : ""
-  }
+  ${mainHtml}
+  <!-- Extra blank line between content and the Open ticket button. -->
+  <p style="margin:0 0 20px;">&nbsp;</p>
   <p style="margin:0 0 20px;">
     <a href="${escapeAttr(ticketUrl)}" style="display:inline-block;padding:10px 14px;background:#111;color:#fff;text-decoration:none;border-radius:6px;">
       Open ticket
@@ -80,8 +71,42 @@ export function buildNotificationEmail(input: TemplateInput): MailContent {
 }
 
 /**
+ * Ontvangstbevestiging: short intro + ticket label (no redundant title line).
+ */
+function createdMailBody(label: string, bodyText: string | null): string {
+  return `
+  <p style="margin:0 0 12px;">We hebben je IT-verzoek ontvangen:</p>
+  <p style="margin:0 0 12px;"><strong>${escapeHtml(label)}</strong></p>
+  ${
+    bodyText
+      ? `<p style="margin:0;color:#444;">${escapeHtml(bodyText)}</p>`
+      : ""
+  }`.trim();
+}
+
+/**
+ * Update mails: “{naam} plaatste een update op TP-… · onderwerp:” then body.
+ */
+function updateMailBody(
+  title: string,
+  label: string,
+  bodyText: string | null,
+): string {
+  const headline = `${title} op ${label}:`;
+  // Both lines at 17px (previous larger headline size); blank line between them.
+  return `
+  <p style="margin:0 0 12px;font-size:17px;line-height:1.4;">${escapeHtml(headline)}</p>
+  ${
+    bodyText
+      ? `<p style="margin:0 0 12px;">&nbsp;</p>
+  <p style="margin:0;color:#1a1a1a;font-size:17px;line-height:1.4;"><strong>${escapeHtml(bodyText)}</strong></p>`
+      : ""
+  }`.trim();
+}
+
+/**
  * Strip a leading “TP-… · onderwerp:” / exact label so the mail does not
- * repeat the ticket line already shown above the notification title.
+ * repeat the ticket line already shown in the headline.
  */
 function mailBodyWithoutTicketLabel(
   body: string | null | undefined,
