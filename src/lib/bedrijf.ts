@@ -47,20 +47,55 @@ export function forcesBedrijfsbreed(afdelingen: string[]): boolean {
   );
 }
 
-/** Resolve ticket bedrijf from selection + afdelingen rule. */
+/**
+ * Ticket bedrijf choices for a user: own company + Bedrijfsbreed only
+ * (never the other two companies).
+ */
+export function allowedTicketBedrijven(
+  userBedrijf: UserBedrijf,
+): TicketBedrijf[] {
+  return [userBedrijf, "bedrijfsbreed"];
+}
+
+/** True when value is a known ticket bedrijf. */
+export function isTicketBedrijf(
+  value: string | null | undefined,
+): value is TicketBedrijf {
+  return (TICKET_BEDRIJVEN as readonly string[]).includes(value ?? "");
+}
+
+/**
+ * Create-form rule: only own bedrijf or Bedrijfsbreed
+ * (forced afdelingen → Bedrijfsbreed).
+ */
+export function isAllowedCreateTicketBedrijf(
+  selected: TicketBedrijf | string | null | undefined,
+  userBedrijf: UserBedrijf,
+  afdelingen: string[],
+): boolean {
+  if (forcesBedrijfsbreed(afdelingen)) {
+    return selected === "bedrijfsbreed" || selected == null;
+  }
+  return selected === "bedrijfsbreed" || selected === userBedrijf;
+}
+
+/**
+ * Resolve ticket bedrijf from selection + afdelingen rule.
+ * Create path: only own + Bedrijfsbreed. Beheer may set any company later.
+ */
 export function resolveTicketBedrijf(
   selected: TicketBedrijf | string | null | undefined,
   afdelingen: string[],
-  fallback: UserBedrijf = "TEBI",
+  userBedrijf: UserBedrijf = "TEBI",
+  options?: { allowAnyBedrijf?: boolean },
 ): TicketBedrijf {
   if (forcesBedrijfsbreed(afdelingen)) return "bedrijfsbreed";
-  if (
-    selected === "TEBI" ||
-    selected === "VK" ||
-    selected === "SPL" ||
-    selected === "bedrijfsbreed"
-  ) {
+  if (selected === "bedrijfsbreed" || selected === userBedrijf) {
     return selected;
   }
-  return fallback;
+  // Beheer editing a ticket may choose TEBI / VK / SPL / Bedrijfsbreed.
+  if (options?.allowAnyBedrijf && isTicketBedrijf(selected)) {
+    return selected;
+  }
+  return userBedrijf;
 }

@@ -14,9 +14,9 @@ import { searchSimilarTicketsAction } from "@/app/actions/search";
 import { createTicketAction } from "@/app/actions/tickets";
 import { SimilarTickets } from "@/components/SimilarTickets";
 import {
+  allowedTicketBedrijven,
   BEDRIJF_LABEL,
   forcesBedrijfsbreed,
-  TICKET_BEDRIJVEN,
   type TicketBedrijf,
   type UserBedrijf,
 } from "@/lib/bedrijf";
@@ -63,6 +63,8 @@ export function NieuwTicketForm({
   const [searchPending, startSearch] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lockedBedrijfsbreed = forcesBedrijfsbreed(afdelingen);
+  // Only own bedrijf or Bedrijfsbreed — never the other companies.
+  const bedrijfOptions = allowedTicketBedrijven(defaultBedrijf);
 
   const runSimilarSearch = useEffectEvent(
     (query: string, system: TicketSystem) => {
@@ -233,7 +235,7 @@ export function NieuwTicketForm({
           disabled={lockedBedrijfsbreed}
           onChange={(e) => setBedrijf(e.target.value as TicketBedrijf)}
         >
-          {TICKET_BEDRIJVEN.map((option) => (
+          {bedrijfOptions.map((option) => (
             <option key={option} value={option}>
               {BEDRIJF_LABEL[option]}
             </option>
@@ -246,7 +248,8 @@ export function NieuwTicketForm({
           </p>
         ) : (
           <p className="form-hint">
-            Bedrijfsbreed is zichtbaar voor TEBI, VK en SPL.
+            Alleen {defaultBedrijf} of Bedrijfsbreed (zichtbaar voor TEBI, VK en
+            SPL).
           </p>
         )}
       </div>

@@ -283,6 +283,7 @@ export function TicketItDetail({
                 pending={pending}
                 error={errorKey === "bedrijf" ? fieldError : null}
                 onSave={(value) => {
+                  // Beheer may set any company later on the ticket.
                   if (forcesBedrijfsbreed(local.afdelingen)) return;
                   const next = value as TicketBedrijf;
                   if (next === local.bedrijf) return;

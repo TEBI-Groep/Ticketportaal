@@ -11,6 +11,8 @@ import {
 } from "@/data/notifications";
 import { getTicketById } from "@/data/tickets";
 import {
+  isAllowedCreateTicketBedrijf,
+  isTicketBedrijf,
   resolveTicketBedrijf,
   type TicketBedrijf,
   type UserBedrijf,
@@ -153,10 +155,25 @@ export async function createTicketAction(
       ? input.prioriteit
       : "laag";
 
+    const userBedrijf = (user.bedrijf as UserBedrijf) ?? "TEBI";
+    // Create: only own bedrijf or Bedrijfsbreed (Beheer can change later).
+    if (
+      input.bedrijf &&
+      !isAllowedCreateTicketBedrijf(
+        input.bedrijf,
+        userBedrijf,
+        input.afdelingen,
+      )
+    ) {
+      return {
+        ok: false,
+        error: "Je mag alleen je eigen bedrijf of Bedrijfsbreed kiezen.",
+      };
+    }
     const bedrijf = resolveTicketBedrijf(
       input.bedrijf,
       input.afdelingen,
-      (user.bedrijf as UserBedrijf) ?? "TEBI",
+      userBedrijf,
     );
 
     const { data, error } = await supabase
@@ -298,14 +315,20 @@ export async function updateTicketItAction(
     // Snapshot before update so we can notify watchers on status change.
     const { data: before } = await supabase
       .from("tickets")
-      .select("status, ticketnummer, onderwerp, melder_id, eigenaar_id")
+      .select("status, ticketnummer, onderwerp, melder_id, eigenaar_id, bedrijf")
       .eq("id", input.id)
       .maybeSingle();
 
+    const userBedrijf = (user.bedrijf as UserBedrijf) ?? "TEBI";
+    // Beheer may set any TEBI / VK / SPL / Bedrijfsbreed on the ticket.
+    if (input.bedrijf && !isTicketBedrijf(input.bedrijf)) {
+      return { ok: false, error: "Ongeldig bedrijf." };
+    }
     const bedrijf = resolveTicketBedrijf(
       input.bedrijf,
       input.afdelingen,
-      "TEBI",
+      userBedrijf,
+      { allowAnyBedrijf: true },
     );
 
     const patch: Record<string, unknown> = {
