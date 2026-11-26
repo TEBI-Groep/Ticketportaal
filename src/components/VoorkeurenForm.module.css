@@ -1,8 +1,15 @@
 .wrap {
   max-width: 36rem;
+  display: grid;
+  gap: 2.5rem;
 }
 
 .section {
+  display: grid;
+  gap: 1rem;
+}
+
+.passwordForm {
   display: grid;
   gap: 1rem;
 }

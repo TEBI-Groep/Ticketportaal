@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { changeOwnPassword } from "@/data/auth";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -68,4 +69,13 @@ export async function logoutAction(): Promise<void> {
     }
   }
   redirect("/login");
+}
+
+/** Self-service password change from /voorkeuren (any logged-in user). */
+export async function changeOwnPasswordAction(
+  currentPassword: string,
+  newPassword: string,
+  confirmPassword: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  return changeOwnPassword(currentPassword, newPassword, confirmPassword);
 }
