@@ -175,11 +175,11 @@ export async function changeOwnPassword(
   newPassword: string,
   confirmPassword: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return {
-      ok: false,
-      error: "Supabase is niet geconfigureerd op deze omgeving.",
-    };
+  // Inactive accounts must not change passwords either.
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  if (!gate.user.email) {
+    return { ok: false, error: "Je bent niet ingelogd." };
   }
 
   const trimmedNew = newPassword.trim();
@@ -206,18 +206,10 @@ export async function changeOwnPassword(
 
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user?.email) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
 
     // Confirm the caller knows the current password before updating.
     const { error: verifyError } = await supabase.auth.signInWithPassword({
-      email: user.email,
+      email: gate.user.email,
       password: currentPassword,
     });
     if (verifyError) {
