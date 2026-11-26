@@ -53,12 +53,21 @@ type TicketRow = {
 };
 
 function mapTicket(row: TicketRow): Ticket {
-  const beoordelingen: TicketRating[] = (row.ratings ?? []).map((r) => ({
-    userId: r.user_id,
-    naam: r.profiles?.naam ?? "Onbekend",
-    afdeling: r.profiles?.departments?.naam ?? "",
-    score: r.score as TicketRating["score"],
-  }));
+  const beoordelingen: TicketRating[] = (row.ratings ?? []).map((r) => {
+    const dept = one(
+      r.profiles?.departments as
+        | { naam: string }
+        | Array<{ naam: string }>
+        | null
+        | undefined,
+    );
+    return {
+      userId: r.user_id,
+      naam: r.profiles?.naam ?? "Onbekend",
+      afdeling: dept?.naam ?? "",
+      score: r.score as TicketRating["score"],
+    };
+  });
 
   const afdelingen = [
     ...new Set(
@@ -94,6 +103,10 @@ function mapTicket(row: TicketRow): Ticket {
   };
 }
 
+/**
+ * Shared ticket embed. After profile_departments, profiles→departments is
+ * ambiguous — always disambiguate with !profiles_afdeling_id_fkey.
+ */
 const TICKET_SELECT = `
   id, ticketnummer, onderwerp, omschrijving, type, systeem, impact, status, prioriteit,
   melder_id, eigenaar_id, streefdatum, omvang, oplossing_samenvatting, vertrouwelijk, bedrijf,
@@ -101,7 +114,14 @@ const TICKET_SELECT = `
   ticket_departments ( departments ( naam ) ),
   melder:profiles!tickets_melder_id_fkey ( id, naam ),
   eigenaar:profiles!tickets_eigenaar_id_fkey ( id, naam ),
-  ratings ( user_id, score, profiles ( naam, departments ( naam ) ) )
+  ratings (
+    user_id,
+    score,
+    profiles (
+      naam,
+      departments!profiles_afdeling_id_fkey ( naam )
+    )
+  )
 `;
 
 function sortOpenTickets(tickets: Ticket[]): Ticket[] {
@@ -127,7 +147,11 @@ export async function getTicketById(id: string): Promise<Ticket | undefined> {
       .select(TICKET_SELECT)
       .eq("id", id)
       .maybeSingle();
-    if (error || !data) return undefined;
+    if (error) {
+      console.error("getTicketById", error.message);
+      return undefined;
+    }
+    if (!data) return undefined;
     return mapTicket(data as unknown as TicketRow);
   } catch {
     return undefined;
@@ -206,7 +230,11 @@ export async function getNetsuiteTickets(): Promise<Ticket[]> {
       .neq("prioriteit", "spoed")
       .eq("vertrouwelijk", false)
       .not("status", "in", '("afgerond","afgewezen")');
-    if (error || !data) return [];
+    if (error) {
+      console.error("getNetsuiteTickets", error.message);
+      return [];
+    }
+    if (!data) return [];
     return (data as unknown as TicketRow[])
       .map(mapTicket)
       .sort((a, b) => {
@@ -366,7 +394,11 @@ export async function getOverzichtTickets(): Promise<Ticket[]> {
       .from("tickets")
       .select(TICKET_SELECT)
       .not("status", "in", '("afgerond","afgewezen")');
-    if (error || !data) return [];
+    if (error) {
+      console.error("getOverzichtTickets", error.message);
+      return [];
+    }
+    if (!data) return [];
     return sortOpenTickets(
       (data as unknown as TicketRow[]).map(mapTicket),
     );
