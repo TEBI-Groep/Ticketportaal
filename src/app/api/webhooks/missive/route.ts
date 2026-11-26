@@ -16,7 +16,7 @@ import {
 } from "@/lib/missive/webhook";
 
 /** Deploy marker so we can confirm production has this build. */
-const WEBHOOK_BUILD = "always-audit-v1";
+const WEBHOOK_BUILD = "label-from-author-v1";
 
 /**
  * Missive rule webhook:
@@ -151,6 +151,19 @@ export async function POST(request: Request) {
       ruleType: payload.rule?.type ?? null,
       usePhaseD,
     });
+    // Finalize the pre-insert audit row when handlers return ignored/duplicate
+    // without updating it (avoids stuck "pending").
+    if (result.ok && (result.status === "ignored" || result.status === "duplicate")) {
+      await auditWebhookReceipt(payload, {
+        status: result.status,
+        error: result.detail ?? null,
+      });
+    } else if (!result.ok) {
+      await auditWebhookReceipt(payload, {
+        status: "failed",
+        error: result.error,
+      });
+    }
     if (!result.ok) {
       // Return 200 so Missive does not disable the rule on transient app errors;
       // failures are stored on inbound_messages when possible.

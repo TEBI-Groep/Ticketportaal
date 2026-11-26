@@ -84,24 +84,17 @@ export async function processMissiveLabelToTicket(
     };
   }
 
-  const fromAddress = (
-    latest?.from_field?.address ??
-    payload.conversation?.authors?.[0]?.address ??
-    ""
-  )
-    .trim()
-    .toLowerCase();
-  const fromName = (
-    latest?.from_field?.name ??
-    payload.conversation?.authors?.[0]?.name ??
-    ""
-  ).trim();
+  // Latest message may be from it@tebi.nl (team inbox reply). Prefer an
+  // external conversation author so label→ticket still creates a melder.
   const ourFrom = (getMissiveFromEmail() ?? "").toLowerCase();
-  if (fromAddress && ourFrom && fromAddress === ourFrom) {
+  const sender = resolveExternalSender(payload, latest, ourFrom);
+  const fromAddress = sender.address;
+  const fromName = sender.name;
+  if (!fromAddress && ourFrom && (latest?.from_field?.address ?? "").toLowerCase() === ourFrom) {
     return {
       ok: true,
       status: "ignored",
-      detail: "own outbound address",
+      detail: "own outbound address (no external author)",
     };
   }
 
@@ -152,26 +145,44 @@ export async function processMissiveLabelToTicket(
       : `label:${conversationId}:${labelName}`);
   const receivedAt = new Date().toISOString();
 
-  const { error: inboundInsertError } = await admin
+  // Upsert: the route may already have written a pending audit row for this
+  // external_id. Treat only fully processed rows (with ticket_id) as duplicates.
+  const { data: existingInbound } = await admin
     .from("inbound_messages")
-    .insert({
-      channel: "missive",
-      external_id: externalId,
-      from_address: fromAddress || null,
-      subject: subjectRaw,
-      body_text: bodyText,
-      received_at: receivedAt,
-      ticket_id: null,
-      status: "pending",
-      error: null,
-      raw: payload as unknown as Record<string, unknown>,
-    });
+    .select("status, ticket_id")
+    .eq("external_id", externalId)
+    .maybeSingle();
+  if (existingInbound?.ticket_id) {
+    return { ok: true, status: "duplicate" };
+  }
+  if (
+    existingInbound?.status === "processed" ||
+    existingInbound?.status === "duplicate"
+  ) {
+    return { ok: true, status: "duplicate" };
+  }
 
-  if (inboundInsertError) {
-    if (inboundInsertError.code === "23505") {
-      return { ok: true, status: "duplicate" };
-    }
-    return { ok: false, error: inboundInsertError.message };
+  const { error: inboundUpsertError } = await admin
+    .from("inbound_messages")
+    .upsert(
+      {
+        channel: "missive",
+        external_id: externalId,
+        from_address: fromAddress || null,
+        subject: subjectRaw,
+        body_text: bodyText,
+        received_at: receivedAt,
+        ticket_id: null,
+        status: "pending",
+        error: null,
+        processed_at: null,
+        raw: payload as unknown as Record<string, unknown>,
+      },
+      { onConflict: "external_id" },
+    );
+
+  if (inboundUpsertError) {
+    return { ok: false, error: inboundUpsertError.message };
   }
 
   const { data: ticket, error: ticketError } = await admin
@@ -304,6 +315,39 @@ export async function processMissiveLabelToTicket(
     status: "created",
     detail: `${ticket.ticketnummer} (${getAppBaseUrl()}/ticket/${ticket.id})`,
   };
+}
+
+/**
+ * Prefer a non-Missive author for melder. Team-inbox threads often have
+ * latest_message.from_field = it@tebi.nl even when the request came from a colleague.
+ */
+function resolveExternalSender(
+  payload: MissiveWebhookPayload,
+  latest: ReturnType<typeof getWebhookMessage>,
+  ourFrom: string,
+): { address: string; name: string } {
+  const candidates: Array<{ address: string; name: string }> = [];
+
+  for (const author of payload.conversation?.authors ?? []) {
+    const address = (author.address ?? "").trim().toLowerCase();
+    if (!address) continue;
+    candidates.push({
+      address,
+      name: (author.name ?? "").trim(),
+    });
+  }
+
+  const latestAddress = (latest?.from_field?.address ?? "").trim().toLowerCase();
+  if (latestAddress) {
+    candidates.unshift({
+      address: latestAddress,
+      name: (latest?.from_field?.name ?? "").trim(),
+    });
+  }
+
+  const external = candidates.find((c) => !ourFrom || c.address !== ourFrom);
+  if (external) return external;
+  return { address: latestAddress, name: (latest?.from_field?.name ?? "").trim() };
 }
 
 async function findTicketIdByConversation(
