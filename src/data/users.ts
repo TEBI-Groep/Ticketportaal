@@ -123,6 +123,8 @@ export async function createUserAccount(
 export interface UpdateUserInput {
   id: string;
   naam: string;
+  /** New login e-mail; synced to Auth + profiles. */
+  email: string;
   rol: UserRole;
   afdeling: string;
   actief: boolean;
@@ -131,6 +133,20 @@ export interface UpdateUserInput {
 export async function updateUserAccount(
   input: UpdateUserInput,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  const email = input.email.trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: "Vul een geldig e-mailadres in." };
+  }
+
+  const admin = createAdminClient();
+  if (!admin) {
+    return {
+      ok: false,
+      error:
+        "supabase_service_role_key ontbreekt — voeg die toe om e-mailadressen te wijzigen.",
+    };
+  }
+
   const supabase = await createClient();
   const { data: dept } = await supabase
     .from("departments")
@@ -138,17 +154,68 @@ export async function updateUserAccount(
     .eq("naam", input.afdeling)
     .maybeSingle();
 
-  const { error } = await supabase
+  // Current profile e-mail — skip Auth call when unchanged.
+  const { data: current, error: currentError } = await admin
+    .from("profiles")
+    .select("email")
+    .eq("id", input.id)
+    .maybeSingle();
+  if (currentError) {
+    return { ok: false, error: currentError.message };
+  }
+  if (!current) {
+    return { ok: false, error: "Gebruiker niet gevonden." };
+  }
+
+  const previousEmail = (current.email as string).trim().toLowerCase();
+  const emailChanged = previousEmail !== email;
+
+  if (emailChanged) {
+    // Block duplicates in profiles before touching Auth.
+    const { data: taken } = await admin
+      .from("profiles")
+      .select("id")
+      .ilike("email", email)
+      .neq("id", input.id)
+      .maybeSingle();
+    if (taken?.id) {
+      return { ok: false, error: "Dit e-mailadres is al in gebruik." };
+    }
+
+    // Auth is source of truth for login; confirm immediately (IT admin change).
+    const { error: authError } = await admin.auth.admin.updateUserById(
+      input.id,
+      {
+        email,
+        email_confirm: true,
+      },
+    );
+    if (authError) {
+      return { ok: false, error: authError.message };
+    }
+  }
+
+  const { error } = await admin
     .from("profiles")
     .update({
       naam: input.naam,
+      email,
       rol: input.rol,
       afdeling_id: dept?.id ?? null,
       actief: input.actief,
     })
     .eq("id", input.id);
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    // Best-effort rollback Auth e-mail if profile write fails after Auth change.
+    if (emailChanged) {
+      await admin.auth.admin.updateUserById(input.id, {
+        email: previousEmail,
+        email_confirm: true,
+      });
+    }
+    return { ok: false, error: error.message };
+  }
   return { ok: true };
 }
 

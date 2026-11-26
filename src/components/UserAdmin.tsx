@@ -204,10 +204,22 @@ export function UserAdmin({
         return;
       }
 
+      // Same uniqueness check as create, but allow keeping the current address.
+      if (
+        users.some(
+          (u) =>
+            u.id !== editing.id && u.email.toLowerCase() === email,
+        )
+      ) {
+        setError("Dit e-mailadres bestaat al.");
+        return;
+      }
+
       setSaving(true);
       const result = await updateUserAction({
         id: editing.id,
         naam,
+        email,
         rol: draft.rol,
         afdeling: draft.afdeling,
         actief: draft.actief,
@@ -219,6 +231,14 @@ export function UserAdmin({
         return;
       }
 
+      const patchedUser = {
+        naam,
+        email,
+        rol: draft.rol,
+        afdeling: draft.afdeling,
+        actief: draft.actief,
+      };
+
       if (newPassword) {
         const pwResult = await setUserPasswordAction(editing.id, newPassword);
         setSaving(false);
@@ -228,30 +248,14 @@ export function UserAdmin({
           );
           setUsers((prev) =>
             prev.map((u) =>
-              u.id === editing.id
-                ? {
-                    ...u,
-                    naam,
-                    rol: draft.rol,
-                    afdeling: draft.afdeling,
-                    actief: draft.actief,
-                  }
-                : u,
+              u.id === editing.id ? { ...u, ...patchedUser } : u,
             ),
           );
           return;
         }
         setUsers((prev) =>
           prev.map((u) =>
-            u.id === editing.id
-              ? {
-                  ...u,
-                  naam,
-                  rol: draft.rol,
-                  afdeling: draft.afdeling,
-                  actief: draft.actief,
-                }
-              : u,
+            u.id === editing.id ? { ...u, ...patchedUser } : u,
           ),
         );
         setNotice(
@@ -264,18 +268,14 @@ export function UserAdmin({
       setSaving(false);
       setUsers((prev) =>
         prev.map((u) =>
-          u.id === editing.id
-            ? {
-                ...u,
-                naam,
-                rol: draft.rol,
-                afdeling: draft.afdeling,
-                actief: draft.actief,
-              }
-            : u,
+          u.id === editing.id ? { ...u, ...patchedUser } : u,
         ),
       );
-      setNotice(`Gebruiker ${naam} bijgewerkt.`);
+      setNotice(
+        email !== editing.email.toLowerCase()
+          ? `Gebruiker ${naam} bijgewerkt. Nieuw e-mailadres: ${email}.`
+          : `Gebruiker ${naam} bijgewerkt.`,
+      );
       setMode({ kind: "list" });
     }
   }
@@ -315,11 +315,13 @@ export function UserAdmin({
               value={draft.email}
               onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
               required
-              disabled={!isCreate}
               autoComplete="email"
             />
             {!isCreate ? (
-              <p className="form-hint">E-mail wijzigen gebeurt later via Auth.</p>
+              <p className="form-hint">
+                Wijzigen past login én profiel aan. De collega logt daarna in met
+                het nieuwe adres.
+              </p>
             ) : null}
           </div>
 
