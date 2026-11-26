@@ -33,33 +33,38 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
       return null;
     }
 
-    const { data: profile } = await supabase
+    // Keep embeds simple: nested profile_departments→departments can fail
+    // PostgREST (ambiguous FK) and used to fall through as “medewerker”.
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select(
-        "id, naam, email, rol, actief, afdeling_id, bedrijf, departments(naam), profile_departments ( department_id, departments ( naam ) )",
+        "id, naam, email, rol, actief, afdeling_id, bedrijf, departments!profiles_afdeling_id_fkey ( naam )",
       )
       .eq("id", user.id)
       .maybeSingle();
 
+    if (profileError) {
+      console.error("getCurrentUser profile", profileError.message);
+      return null;
+    }
     if (!profile) {
-      return {
-        id: user.id,
-        naam: user.email?.split("@")[0] ?? "Gebruiker",
-        email: user.email ?? "",
-        rol: "gebruiker",
-        afdeling: "",
-        afdelingen: [],
-        bedrijf: "TEBI",
-        actief: true,
-        afdelingIds: [],
-      };
+      // Auth session without a profiles row — do not invent a medewerker.
+      return null;
     }
 
     if (!profile.actief) {
       return null;
     }
 
-    const links = (profile.profile_departments ?? []) as unknown as Array<{
+    const { data: linkRows, error: linkError } = await supabase
+      .from("profile_departments")
+      .select("department_id, departments ( naam )")
+      .eq("profile_id", user.id);
+    if (linkError) {
+      console.error("getCurrentUser profile_departments", linkError.message);
+    }
+
+    const links = (linkRows ?? []) as unknown as Array<{
       department_id: string;
       departments: { naam: string } | Array<{ naam: string }> | null;
     }>;
@@ -84,7 +89,12 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
       email: profile.email,
       rol: profile.rol as UserRole,
       afdeling,
-      afdelingen: afdelingen.length > 0 ? afdelingen : legacyDept?.naam ? [legacyDept.naam] : [],
+      afdelingen:
+        afdelingen.length > 0
+          ? afdelingen
+          : legacyDept?.naam
+            ? [legacyDept.naam]
+            : [],
       bedrijf: (profile.bedrijf as UserBedrijf) ?? "TEBI",
       afdelingId: profile.afdeling_id ?? afdelingIds[0] ?? null,
       afdelingIds:

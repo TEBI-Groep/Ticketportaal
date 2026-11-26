@@ -48,14 +48,51 @@ export async function listUsers(): Promise<User[]> {
   if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
+    // Load profiles + junction separately (nested embed was ambiguous/failing).
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, naam, email, rol, actief, bedrijf, afdeling_id, departments ( naam ), profile_departments ( department_id, departments ( naam ) )",
+        "id, naam, email, rol, actief, bedrijf, afdeling_id, departments!profiles_afdeling_id_fkey ( naam )",
       )
       .order("naam");
-    if (error || !data) return [];
-    return data.map((p) => mapUserRow(p as Record<string, unknown>));
+    if (error || !data) {
+      if (error) console.error("listUsers", error.message);
+      return [];
+    }
+
+    const { data: allLinks, error: linkError } = await supabase
+      .from("profile_departments")
+      .select("profile_id, department_id, departments ( naam )");
+    if (linkError) {
+      console.error("listUsers profile_departments", linkError.message);
+    }
+
+    const linksByProfile = new Map<
+      string,
+      Array<{
+        department_id: string;
+        departments: { naam: string } | Array<{ naam: string }> | null;
+      }>
+    >();
+    for (const row of allLinks ?? []) {
+      const pid = row.profile_id as string;
+      const list = linksByProfile.get(pid) ?? [];
+      list.push({
+        department_id: row.department_id as string,
+        departments: row.departments as
+          | { naam: string }
+          | Array<{ naam: string }>
+          | null,
+      });
+      linksByProfile.set(pid, list);
+    }
+
+    return data.map((p) =>
+      mapUserRow({
+        ...(p as Record<string, unknown>),
+        profile_departments: linksByProfile.get(p.id) ?? [],
+      }),
+    );
   } catch {
     return [];
   }
