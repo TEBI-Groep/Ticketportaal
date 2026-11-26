@@ -93,12 +93,13 @@ function updateMailBody(
   bodyText: string | null,
 ): string {
   const headline = `${title} op ${label}:`;
-  // Slightly larger than body text so the ticket line reads as the lead.
+  // Same font size as the update body; blank line between headline and text.
   return `
-  <p style="margin:0 0 12px;font-size:17px;line-height:1.4;">${escapeHtml(headline)}</p>
+  <p style="margin:0 0 12px;">${escapeHtml(headline)}</p>
   ${
     bodyText
-      ? `<p style="margin:0;color:#1a1a1a;"><strong>${escapeHtml(bodyText)}</strong></p>`
+      ? `<p style="margin:0 0 12px;">&nbsp;</p>
+  <p style="margin:0;color:#1a1a1a;"><strong>${escapeHtml(bodyText)}</strong></p>`
       : ""
   }`.trim();
 }
