@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireActiveUserAction } from "@/data/auth";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { ATTACHMENTS_BUCKET } from "@/data/attachments";
 import { flushPendingEmailDeliveries } from "@/data/mail";
 import {
@@ -120,34 +120,20 @@ export async function createTicketAction(
   if (!onderwerp || !omschrijving) {
     return { ok: false, error: "Onderwerp en omschrijving zijn verplicht." };
   }
-  if (!isSupabaseConfigured()) {
+
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
+
+  if (user.rol !== "manager" && user.rol !== "uitvoerder") {
     return {
       ok: false,
-      error: "Supabase is niet geconfigureerd op deze omgeving.",
+      error: "Alleen managers en uitvoerders mogen tickets aanmaken.",
     };
   }
 
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("rol")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profile?.rol !== "manager" && profile?.rol !== "uitvoerder") {
-      return {
-        ok: false,
-        error: "Alleen managers en uitvoerders mogen tickets aanmaken.",
-      };
-    }
 
     const depts = await resolveDepartmentIds(supabase, input.afdelingen);
     if (!depts.ok) return depts;
@@ -263,31 +249,17 @@ export async function patchTicketItAction(
 export async function updateTicketItAction(
   input: UpdateTicketItInput,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return {
-      ok: false,
-      error: "Supabase is niet geconfigureerd op deze omgeving.",
-    };
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
+
+  if (user.rol !== "uitvoerder") {
+    return { ok: false, error: "Alleen uitvoerders mogen tickets bewerken." };
   }
 
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("rol, naam")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profile?.rol !== "uitvoerder") {
-      return { ok: false, error: "Alleen uitvoerders mogen tickets bewerken." };
-    }
+    const profile = { rol: user.rol, naam: user.naam };
 
     if (!input.melderId) {
       return { ok: false, error: "Kies een melder." };
@@ -462,31 +434,15 @@ export async function updateTicketItAction(
 export async function deleteTicketItAction(
   ticketId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return {
-      ok: false,
-      error: "Supabase is niet geconfigureerd op deze omgeving.",
-    };
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+
+  if (gate.user.rol !== "uitvoerder") {
+    return { ok: false, error: "Alleen uitvoerders mogen tickets verwijderen." };
   }
 
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("rol")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profile?.rol !== "uitvoerder") {
-      return { ok: false, error: "Alleen uitvoerders mogen tickets verwijderen." };
-    }
 
     const { data: attachments } = await supabase
       .from("ticket_attachments")

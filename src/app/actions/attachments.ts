@@ -11,6 +11,7 @@ import {
   resolveAttachmentMime,
   sanitizeFileName,
 } from "@/data/attachments";
+import { requireActiveUserAction } from "@/data/auth";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
@@ -72,14 +73,11 @@ export async function prepareAttachmentUploadAction(
     };
   }
 
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
 
     const safeName = sanitizeFileName(input.fileName);
     const storagePath = `${ticketId}/${randomUUID()}-${safeName}`;
@@ -142,14 +140,12 @@ export async function finalizeAttachmentUploadAction(
     };
   }
 
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
+
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
 
     const kind = attachmentKindFromMime(input.mimeType);
     const safeName = sanitizeFileName(input.fileName);
@@ -261,21 +257,12 @@ export async function deleteAttachmentAction(
   attachmentId: string,
   ticketId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return {
-      ok: false,
-      error: "Supabase is niet geconfigureerd op deze omgeving.",
-    };
-  }
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
 
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
 
     const { data: row, error: fetchError } = await supabase
       .from("ticket_attachments")

@@ -18,7 +18,7 @@ type PendingDeliveryRow = {
     kind: string;
     title: string;
     body: string | null;
-    profiles: { naam: string; email: string } | null;
+    profiles: { naam: string; email: string; actief: boolean } | null;
     tickets: {
       id: string;
       ticketnummer: string;
@@ -80,7 +80,7 @@ export async function flushPendingEmailDeliveries(options?: {
         kind,
         title,
         body,
-        profiles!notifications_user_id_fkey ( naam, email ),
+        profiles!notifications_user_id_fkey ( naam, email, actief ),
         tickets!notifications_ticket_id_fkey ( id, ticketnummer, onderwerp )
       )
     `,
@@ -114,6 +114,19 @@ export async function flushPendingEmailDeliveries(options?: {
         })
         .eq("id", row.id);
       result.failed += 1;
+      continue;
+    }
+
+    // Never mail inactive accounts (queued before deactivate, or race).
+    if (!profile.actief) {
+      await admin
+        .from("notification_deliveries")
+        .update({
+          status: "skipped",
+          error: "Account is inactief.",
+        })
+        .eq("id", row.id);
+      result.skipped += 1;
       continue;
     }
 

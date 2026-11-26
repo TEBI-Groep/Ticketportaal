@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireActiveUserAction } from "@/data/auth";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { StarScore } from "@/lib/types";
 
 /**
@@ -16,21 +16,12 @@ export async function rateTicketAction(
   | { ok: true; myRating: StarScore | null }
   | { ok: false; error: string }
 > {
-  if (!isSupabaseConfigured()) {
-    return {
-      ok: false,
-      error: "Supabase is niet geconfigureerd op deze omgeving.",
-    };
-  }
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
 
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
 
     const { data: existing } = await supabase
       .from("ratings")

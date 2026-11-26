@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireActiveUserAction } from "@/data/auth";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
 import { notificationSnippet } from "@/data/notifications";
 import type { ItNote } from "@/lib/types";
@@ -19,32 +19,18 @@ export async function addItNoteAction(
   if (!tekst) {
     return { ok: false, error: "Notitie mag niet leeg zijn." };
   }
-  if (!isSupabaseConfigured()) {
-    return {
-      ok: false,
-      error:
-        "Supabase is niet geconfigureerd (NEXT_PUBLIC_SUPABASE_URL / anon key of SUPABASE_URL / SUPABASE_ANON_KEY ontbreken).",
-    };
+
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
+
+  if (user.rol !== "uitvoerder") {
+    return { ok: false, error: "Alleen uitvoerders mogen IT-notities plaatsen." };
   }
 
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("naam, rol")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profile?.rol !== "uitvoerder") {
-      return { ok: false, error: "Alleen uitvoerders mogen IT-notities plaatsen." };
-    }
+    const profile = { naam: user.naam, rol: user.rol };
 
     const { data, error } = await supabase
       .from("it_notes")
@@ -170,28 +156,18 @@ export async function setItNoteReactionAction(
   if (!glyph || glyph.length > 16) {
     return { ok: false, error: "Ongeldige emoji." };
   }
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Supabase is niet geconfigureerd." };
+
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
+
+  if (user.rol !== "uitvoerder") {
+    return { ok: false, error: "Alleen uitvoerders mogen reageren." };
   }
 
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("naam, rol")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profile?.rol !== "uitvoerder") {
-      return { ok: false, error: "Alleen uitvoerders mogen reageren." };
-    }
+    const profile = { naam: user.naam, rol: user.rol };
 
     const { data: existing } = await supabase
       .from("it_note_reactions")
