@@ -4,8 +4,15 @@
  */
 export function htmlEmailToCommentText(html: string | null | undefined): string {
   if (!html) return "";
-  // Remove signature / quote wrappers in HTML before stripping tags.
+  // Remove non-visible / quote / signature wrappers before stripping tags.
+  // Outlook often embeds <style>P{margin-top:0;…}</style>; tag-only strip
+  // would leave that CSS in the comment body.
   let cleaned = html
+    .replace(/<style[\s\S]*?<\/style>/gi, "\n")
+    .replace(/<script[\s\S]*?<\/script>/gi, "\n")
+    .replace(/<head[\s\S]*?<\/head>/gi, "\n")
+    .replace(/<!--\[if[\s\S]*?<!\[endif\]-->/gi, "\n")
+    .replace(/<!--[\s\S]*?-->/g, "\n")
     .replace(/<blockquote[\s\S]*?<\/blockquote>/gi, "\n")
     .replace(/<div[^>]*class="[^"]*gmail_quote[^"]*"[\s\S]*$/gi, "\n")
     .replace(/<div[^>]*(?:id|class)="[^"]*[Ss]ignature[^"]*"[\s\S]*$/gi, "\n")
@@ -32,10 +39,21 @@ export function htmlEmailToCommentText(html: string | null | undefined): string 
     .replace(/&#39;/gi, "'");
 
   text = stripQuotedReply(text);
+  text = stripLeakedCss(text);
   // Collapse excess blank lines / trailing space.
   return text
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** Drop leftover CSS rules if a style block still leaked into plain text. */
+function stripLeakedCss(text: string): string {
+  return text
+    .replace(
+      /(?:^|\n)\s*[A-Za-z.#*][^{;\n]{0,80}\{[^}]{0,200}\}\s*/g,
+      "\n",
+    )
     .trim();
 }
 
