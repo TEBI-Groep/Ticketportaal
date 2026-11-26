@@ -10,11 +10,11 @@ import {
   useState,
   useTransition,
 } from "react";
-import { uploadAttachmentAction } from "@/app/actions/attachments";
 import { searchSimilarTicketsAction } from "@/app/actions/search";
 import { createTicketAction } from "@/app/actions/tickets";
 import { SimilarTickets } from "@/components/SimilarTickets";
 import { SYSTEM_OPTIONS, TYPE_LABEL } from "@/lib/labels";
+import { uploadTicketAttachment } from "@/lib/upload-attachment";
 import type {
   Ticket,
   TicketPriority,
@@ -103,11 +103,9 @@ export function NieuwTicketForm({
       return;
     }
 
-    // Optional bijlagen after the ticket exists (reuse detail upload path).
+    // Optional bijlagen after the ticket exists (signed Storage upload).
     for (const file of files) {
-      const uploadData = new FormData();
-      uploadData.set("file", file);
-      const uploaded = await uploadAttachmentAction(result.id, uploadData);
+      const uploaded = await uploadTicketAttachment(result.id, file);
       if (!uploaded.ok) {
         setError(
           `Ticket is aangemaakt, maar bijlage "${file.name}" mislukte: ${uploaded.error}`,
@@ -326,10 +324,11 @@ export function NieuwTicketForm({
           ref={fileInputRef}
           type="file"
           multiple
-          accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.pdf,.doc,.docx,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.pdf,.doc,.docx,.xls,.xlsx,.xlsm,.csv,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12,text/csv"
         />
         <p className="form-hint" style={{ marginBottom: 0 }}>
-          Max. 5 MB per bestand — JPG, PNG, GIF, WebP, HEIC, PDF of Word.
+          Max. 10 MB per bestand — JPG, PNG, GIF, WebP, HEIC, PDF, Word, Excel
+          (xls/xlsx/xlsm) of CSV.
         </p>
       </div>
 

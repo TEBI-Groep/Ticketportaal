@@ -3,10 +3,8 @@
 import { FormEvent, useRef, useState } from "react";
 import type { TicketAttachment } from "@/lib/types";
 import { formatDate } from "@/lib/labels";
-import {
-  deleteAttachmentAction,
-  uploadAttachmentAction,
-} from "@/app/actions/attachments";
+import { deleteAttachmentAction } from "@/app/actions/attachments";
+import { uploadTicketAttachment } from "@/lib/upload-attachment";
 import styles from "./TicketAttachments.module.css";
 
 interface TicketAttachmentsProps {
@@ -46,18 +44,24 @@ export function TicketAttachments({
 
     setUploading(true);
     setError(null);
-    const formData = new FormData();
-    formData.set("file", file);
-    const result = await uploadAttachmentAction(ticketId, formData);
-    setUploading(false);
-
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    try {
+      // Browser → Supabase signed upload (avoids Vercel ~4.5 MB body limit).
+      const result = await uploadTicketAttachment(ticketId, file);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setItems((prev) => [...prev, result.attachment]);
+      if (input) input.value = "";
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Upload mislukt. Probeer opnieuw of kies een kleiner bestand.",
+      );
+    } finally {
+      setUploading(false);
     }
-
-    setItems((prev) => [...prev, result.attachment]);
-    if (input) input.value = "";
   }
 
   async function handleDelete(attachment: TicketAttachment) {
@@ -78,8 +82,8 @@ export function TicketAttachments({
       <header className={styles.header}>
         <h2 id="attachments-heading">Bijlagen</h2>
         <p className="form-hint">
-          Screenshots of bestanden bij dit ticket. Max. 5 MB — JPG, PNG, GIF,
-          WebP, HEIC, PDF of Word.
+          Screenshots of bestanden bij dit ticket. Max. 10 MB — JPG, PNG, GIF,
+          WebP, HEIC, PDF, Word, Excel (xls/xlsx/xlsm) of CSV.
         </p>
       </header>
 
@@ -155,7 +159,7 @@ export function TicketAttachments({
           className={styles.fileInput}
           type="file"
           name="file"
-          accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.doc,.docx,.heic,.heif"
+          accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12,text/csv,.doc,.docx,.xls,.xlsx,.xlsm,.csv,.heic,.heif"
           disabled={uploading}
         />
         {error ? (
