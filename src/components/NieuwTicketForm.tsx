@@ -93,46 +93,66 @@ export function NieuwTicketForm({
     setError(null);
     setSubmitting(true);
 
-    const form = new FormData(event.currentTarget);
+    // Keep a stable form ref — currentTarget is null after awaits.
+    const formEl = event.currentTarget;
+    const form = new FormData(formEl);
     const prive = form.get("prive") === "on";
     const files = fileInputRef.current?.files
       ? Array.from(fileInputRef.current.files)
       : [];
 
-    const result = await createTicketAction({
-      type: String(form.get("type") ?? "wijziging") as TicketType,
-      systeem: String(form.get("systeem") ?? "Netsuite") as TicketSystem,
-      onderwerp: String(form.get("onderwerp") ?? ""),
-      omschrijving: String(form.get("omschrijving") ?? ""),
-      afdelingen,
-      // User-selected Prioriteit (default Laag); Impact is no longer collected.
-      prioriteit,
-      prive,
-      bedrijf: lockedBedrijfsbreed ? "bedrijfsbreed" : bedrijf,
-    });
+    try {
+      const result = await createTicketAction({
+        type: String(form.get("type") ?? "wijziging") as TicketType,
+        systeem: String(form.get("systeem") ?? "Netsuite") as TicketSystem,
+        onderwerp: String(form.get("onderwerp") ?? ""),
+        omschrijving: String(form.get("omschrijving") ?? ""),
+        afdelingen,
+        // User-selected Prioriteit (default Laag); Impact is no longer collected.
+        prioriteit,
+        prive,
+        bedrijf: lockedBedrijfsbreed ? "bedrijfsbreed" : bedrijf,
+      });
 
-    if (!result.ok) {
-      setError(result.error);
-      setSubmitting(false);
-      return;
-    }
-
-    // Optional bijlagen after the ticket exists (signed Storage upload).
-    for (const file of files) {
-      const uploaded = await uploadTicketAttachment(result.id, file);
-      if (!uploaded.ok) {
-        setError(
-          `Ticket is aangemaakt, maar bijlage "${file.name}" mislukte: ${uploaded.error}`,
-        );
-        setSubmitting(false);
-        router.push(`/ticket/${result.id}`);
-        router.refresh();
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
-    }
 
-    router.push(`/ticket/${result.id}`);
-    router.refresh();
+      // Optional bijlagen after the ticket exists (signed Storage upload).
+      for (const file of files) {
+        const uploaded = await uploadTicketAttachment(result.id, file);
+        if (!uploaded.ok) {
+          setError(
+            `Ticket is aangemaakt, maar bijlage "${file.name}" mislukte: ${uploaded.error}`,
+          );
+          // Still leave the create form so the user can open the ticket.
+          router.replace(`/ticket/${result.id}`);
+          return;
+        }
+      }
+
+      // Reset controlled fields so a soft-nav glitch does not leave a filled form.
+      setOnderwerp("");
+      setSysteem("Netsuite");
+      setPrioriteit("laag");
+      setAfdelingen(
+        defaultAfdelingen.filter((a) => departments.includes(a)),
+      );
+      setBedrijf(defaultBedrijf);
+      setSimilar([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      formEl.reset();
+
+      // replace (no refresh race) — avoids staying on /ticket/nieuw with Bezig…
+      router.replace(`/ticket/${result.id}`);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Ticket aanmaken mislukt.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (!canCreate) {

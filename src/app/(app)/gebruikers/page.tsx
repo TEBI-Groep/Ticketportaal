@@ -21,8 +21,8 @@ async function GebruikersContent() {
       <header className="page-header">
         <h1>Gebruikers</h1>
         <p>
-          Accounts aanmaken en bewerken: rol, afdeling en actief-status.
-          Aanmaken via Auth vereist <code>supabase_service_role_key</code>.
+          Accounts aanmaken en bewerken: rol, afdeling(en), bedrijf en
+          actief-status.
         </p>
       </header>
 
