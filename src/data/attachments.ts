@@ -2,75 +2,21 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
 import type { AttachmentKind, TicketAttachment } from "@/lib/types";
+import { ATTACHMENTS_BUCKET } from "@/lib/attachment-rules";
 
-export const ATTACHMENTS_BUCKET = "ticket-attachments";
-export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
-
-/** Excel / CSV MIME types accepted as ticket bijlagen. */
-export const EXCEL_CSV_MIME = {
-  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  xls: "application/vnd.ms-excel",
-  csv: "text/csv",
-} as const;
-
-export const ALLOWED_ATTACHMENT_MIME = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "image/heic",
-  "image/heif",
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  EXCEL_CSV_MIME.xlsx,
-  EXCEL_CSV_MIME.xls,
-  EXCEL_CSV_MIME.csv,
-  // Some browsers report CSV this way.
-  "application/csv",
-]);
+export {
+  ATTACHMENTS_BUCKET,
+  ALLOWED_ATTACHMENT_MIME,
+  EXCEL_CSV_MIME,
+  MAX_ATTACHMENT_BYTES,
+  MAX_ATTACHMENT_LABEL,
+  attachmentKindFromMime,
+  resolveAttachmentMime,
+  sanitizeFileName,
+  validateAttachmentFile,
+} from "@/lib/attachment-rules";
 
 const SIGNED_URL_SECONDS = 60 * 60;
-
-/** HEIC/HEIF is allowed but not reliably previewable in browsers. */
-const NON_PREVIEWABLE_IMAGE = new Set(["image/heic", "image/heif"]);
-
-const DOCUMENT_MIME = new Set([
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  EXCEL_CSV_MIME.xlsx,
-  EXCEL_CSV_MIME.xls,
-  EXCEL_CSV_MIME.csv,
-  "application/csv",
-]);
-
-/**
- * Prefer browser MIME; fall back to extension for Excel/CSV when the
- * browser sends empty or application/octet-stream.
- */
-export function resolveAttachmentMime(file: {
-  type: string;
-  name: string;
-}): string {
-  const typed = file.type?.trim() || "";
-  if (typed && typed !== "application/octet-stream") {
-    return typed;
-  }
-  const ext = file.name.split(".").pop()?.toLowerCase();
-  if (ext === "xlsx") return EXCEL_CSV_MIME.xlsx;
-  if (ext === "xls") return EXCEL_CSV_MIME.xls;
-  if (ext === "csv") return EXCEL_CSV_MIME.csv;
-  return typed || "application/octet-stream";
-}
-
-export function attachmentKindFromMime(mime: string | null | undefined): AttachmentKind {
-  if (!mime) return "other";
-  if (NON_PREVIEWABLE_IMAGE.has(mime)) return "document";
-  if (mime.startsWith("image/")) return "image";
-  if (DOCUMENT_MIME.has(mime)) return "document";
-  return "other";
-}
 
 function mapAttachment(
   row: {
@@ -132,10 +78,4 @@ export async function getAttachmentsForTicket(
   } catch {
     return [];
   }
-}
-
-/** Safe filename segment for Storage object keys. */
-export function sanitizeFileName(name: string): string {
-  const base = name.split(/[/\\]/).pop() ?? "bestand";
-  return base.replace(/[^\w.\-()+ ]+/g, "_").slice(0, 120) || "bestand";
 }

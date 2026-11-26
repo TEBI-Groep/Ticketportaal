@@ -7,6 +7,7 @@ import {
   deleteAttachmentAction,
   uploadAttachmentAction,
 } from "@/app/actions/attachments";
+import { validateAttachmentFile } from "@/lib/attachment-rules";
 import styles from "./TicketAttachments.module.css";
 
 interface TicketAttachmentsProps {
@@ -44,20 +45,34 @@ export function TicketAttachments({
     const file = input?.files?.[0];
     if (!file || uploading) return;
 
-    setUploading(true);
-    setError(null);
-    const formData = new FormData();
-    formData.set("file", file);
-    const result = await uploadAttachmentAction(ticketId, formData);
-    setUploading(false);
-
-    if (!result.ok) {
-      setError(result.error);
+    // Fail fast in the browser so oversized/blocked types don’t hang on Uploaden…
+    const clientError = validateAttachmentFile(file);
+    if (clientError) {
+      setError(clientError);
       return;
     }
 
-    setItems((prev) => [...prev, result.attachment]);
-    if (input) input.value = "";
+    setUploading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const result = await uploadAttachmentAction(ticketId, formData);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setItems((prev) => [...prev, result.attachment]);
+      if (input) input.value = "";
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Upload mislukt. Probeer opnieuw of kies een kleiner bestand.",
+      );
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function handleDelete(attachment: TicketAttachment) {
@@ -78,8 +93,8 @@ export function TicketAttachments({
       <header className={styles.header}>
         <h2 id="attachments-heading">Bijlagen</h2>
         <p className="form-hint">
-          Screenshots of bestanden bij dit ticket. Max. 5 MB — JPG, PNG, GIF,
-          WebP, HEIC, PDF, Word, Excel of CSV.
+          Screenshots of bestanden bij dit ticket. Max. 10 MB — JPG, PNG, GIF,
+          WebP, HEIC, PDF, Word, Excel (xls/xlsx/xlsm) of CSV.
         </p>
       </header>
 
@@ -155,7 +170,7 @@ export function TicketAttachments({
           className={styles.fileInput}
           type="file"
           name="file"
-          accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,.doc,.docx,.xls,.xlsx,.csv,.heic,.heif"
+          accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12,text/csv,.doc,.docx,.xls,.xlsx,.xlsm,.csv,.heic,.heif"
           disabled={uploading}
         />
         {error ? (

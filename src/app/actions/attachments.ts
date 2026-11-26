@@ -34,7 +34,7 @@ export async function uploadAttachmentAction(
     return { ok: false, error: "Kies een bestand om te uploaden." };
   }
   if (file.size > MAX_ATTACHMENT_BYTES) {
-    return { ok: false, error: "Bestand is te groot (max. 5 MB)." };
+    return { ok: false, error: "Bestand is te groot (max. 10 MB)." };
   }
   const mime = resolveAttachmentMime(file);
   if (!ALLOWED_ATTACHMENT_MIME.has(mime)) {
