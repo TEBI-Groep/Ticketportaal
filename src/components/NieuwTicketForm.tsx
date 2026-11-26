@@ -13,6 +13,13 @@ import {
 import { searchSimilarTicketsAction } from "@/app/actions/search";
 import { createTicketAction } from "@/app/actions/tickets";
 import { SimilarTickets } from "@/components/SimilarTickets";
+import {
+  allowedTicketBedrijven,
+  BEDRIJF_LABEL,
+  forcesBedrijfsbreed,
+  type TicketBedrijf,
+  type UserBedrijf,
+} from "@/lib/bedrijf";
 import { SYSTEM_OPTIONS, TYPE_LABEL } from "@/lib/labels";
 import { uploadTicketAttachment } from "@/lib/upload-attachment";
 import type {
@@ -24,8 +31,10 @@ import type {
 
 interface NieuwTicketFormProps {
   departments: string[];
-  /** Pre-check the creator's own department when present. */
-  defaultAfdeling?: string | null;
+  /** Pre-check the creator's departments when present. */
+  defaultAfdelingen?: string[];
+  /** Default company from the creator's profile. */
+  defaultBedrijf?: UserBedrijf;
   canCreate: boolean;
 }
 
@@ -35,7 +44,8 @@ interface NieuwTicketFormProps {
  */
 export function NieuwTicketForm({
   departments,
-  defaultAfdeling,
+  defaultAfdelingen = [],
+  defaultBedrijf = "TEBI",
   canCreate,
 }: NieuwTicketFormProps) {
   const router = useRouter();
@@ -45,9 +55,16 @@ export function NieuwTicketForm({
   const [systeem, setSysteem] = useState<TicketSystem>("Netsuite");
   // Controlled so we can warn when the user picks Spoed.
   const [prioriteit, setPrioriteit] = useState<TicketPriority>("laag");
+  const [afdelingen, setAfdelingen] = useState<string[]>(() =>
+    defaultAfdelingen.filter((a) => departments.includes(a)),
+  );
+  const [bedrijf, setBedrijf] = useState<TicketBedrijf>(defaultBedrijf);
   const [similar, setSimilar] = useState<Ticket[]>([]);
   const [searchPending, startSearch] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lockedBedrijfsbreed = forcesBedrijfsbreed(afdelingen);
+  // Only own bedrijf or Bedrijfsbreed — never the other companies.
+  const bedrijfOptions = allowedTicketBedrijven(defaultBedrijf);
 
   const runSimilarSearch = useEffectEvent(
     (query: string, system: TicketSystem) => {
@@ -77,10 +94,6 @@ export function NieuwTicketForm({
     setSubmitting(true);
 
     const form = new FormData(event.currentTarget);
-    const afdelingen = form
-      .getAll("afdelingen")
-      .map((v) => String(v))
-      .filter((v) => v.length > 0);
     const prive = form.get("prive") === "on";
     const files = fileInputRef.current?.files
       ? Array.from(fileInputRef.current.files)
@@ -95,6 +108,7 @@ export function NieuwTicketForm({
       // User-selected Prioriteit (default Laag); Impact is no longer collected.
       prioriteit,
       prive,
+      bedrijf: lockedBedrijfsbreed ? "bedrijfsbreed" : bedrijf,
     });
 
     if (!result.ok) {
@@ -128,17 +142,12 @@ export function NieuwTicketForm({
           Alleen managers en uitvoerders (IT) mogen tickets aanmaken. Vraag je
           manager of IT om een ticket in te dienen.
         </p>
-        <Link href="/ranglijst" className="btn btn-secondary">
-          Terug naar ranglijst
+        <Link href="/netsuite" className="btn btn-secondary">
+          Terug naar Netsuite
         </Link>
       </div>
     );
   }
-
-  const prechecked =
-    defaultAfdeling && departments.includes(defaultAfdeling)
-      ? defaultAfdeling
-      : null;
 
   return (
     <form className="form-stack form-stack-wide" onSubmit={handleSubmit}>
@@ -216,14 +225,43 @@ export function NieuwTicketForm({
         />
       </div>
 
+      <div className="form-field">
+        <label htmlFor="bedrijf">Bedrijf</label>
+        <select
+          id="bedrijf"
+          className="select-input"
+          required
+          value={lockedBedrijfsbreed ? "bedrijfsbreed" : bedrijf}
+          disabled={lockedBedrijfsbreed}
+          onChange={(e) => setBedrijf(e.target.value as TicketBedrijf)}
+        >
+          {bedrijfOptions.map((option) => (
+            <option key={option} value={option}>
+              {BEDRIJF_LABEL[option]}
+            </option>
+          ))}
+        </select>
+        {lockedBedrijfsbreed ? (
+          <p className="form-hint">
+            IT, Marketing, Administratie, Directie, HR en Infra zijn altijd
+            Bedrijfsbreed.
+          </p>
+        ) : (
+          <p className="form-hint">
+            Alleen {defaultBedrijf} of Bedrijfsbreed (zichtbaar voor TEBI, VK en
+            SPL).
+          </p>
+        )}
+      </div>
+
       <fieldset className="form-field" style={{ border: 0, padding: 0 }}>
         <legend style={{ fontWeight: 600, marginBottom: "0.35rem" }}>
           Afdelingen
         </legend>
         <p className="form-hint" style={{ marginTop: 0 }}>
           Kies één of meer afdelingen die bij dit ticket horen.
-          {prechecked
-            ? ` Jouw afdeling (${prechecked}) staat standaard aan.`
+          {afdelingen.length > 0
+            ? ` Jouw afdeling(en) staan standaard aan.`
             : null}
         </p>
         <div
@@ -245,9 +283,14 @@ export function NieuwTicketForm({
             >
               <input
                 type="checkbox"
-                name="afdelingen"
-                value={afdeling}
-                defaultChecked={afdeling === prechecked}
+                checked={afdelingen.includes(afdeling)}
+                onChange={() => {
+                  setAfdelingen((prev) =>
+                    prev.includes(afdeling)
+                      ? prev.filter((a) => a !== afdeling)
+                      : [...prev, afdeling],
+                  );
+                }}
               />
               {afdeling}
             </label>
@@ -339,7 +382,7 @@ export function NieuwTicketForm({
       ) : null}
 
       <div className="form-actions">
-        <Link href="/ranglijst" className="btn btn-secondary">
+        <Link href="/netsuite" className="btn btn-secondary">
           Annuleren
         </Link>
         <button type="submit" className="btn btn-primary" disabled={submitting}>

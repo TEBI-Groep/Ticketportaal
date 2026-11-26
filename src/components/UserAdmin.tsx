@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import type { User, UserRole } from "@/lib/types";
+import { USER_BEDRIJVEN, type UserBedrijf } from "@/lib/bedrijf";
 import { ROLE_LABEL } from "@/lib/labels";
 import {
   createUserAction,
@@ -17,7 +18,8 @@ export interface UserDraft {
   naam: string;
   email: string;
   rol: UserRole;
-  afdeling: string;
+  afdelingen: string[];
+  bedrijf: UserBedrijf;
   actief: boolean;
   /** Create: required temp password. Edit: optional new password. */
   wachtwoord?: string;
@@ -45,7 +47,8 @@ export function UserAdmin({
     naam: "",
     email: "",
     rol: "gebruiker",
-    afdeling: defaultAfdeling,
+    afdelingen: defaultAfdeling ? [defaultAfdeling] : [],
+    bedrijf: "TEBI",
     actief: true,
     wachtwoord: "",
   };
@@ -78,6 +81,7 @@ export function UserAdmin({
         u.naam.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
         u.afdeling.toLowerCase().includes(q) ||
+        u.bedrijf.toLowerCase().includes(q) ||
         ROLE_LABEL[u.rol].toLowerCase().includes(q),
     );
   }, [users, filter]);
@@ -98,11 +102,29 @@ export function UserAdmin({
       naam: user.naam,
       email: user.email,
       rol: user.rol,
-      afdeling: user.afdeling,
+      afdelingen:
+        user.afdelingen.length > 0
+          ? [...user.afdelingen]
+          : user.afdeling
+            ? [user.afdeling]
+            : [],
+      bedrijf: user.bedrijf ?? "TEBI",
       actief: user.actief,
       wachtwoord: "",
     });
     setMode({ kind: "edit", userId: user.id });
+  }
+
+  function toggleAfdeling(naam: string) {
+    setDraft((d) => {
+      const has = d.afdelingen.includes(naam);
+      return {
+        ...d,
+        afdelingen: has
+          ? d.afdelingen.filter((a) => a !== naam)
+          : [...d.afdelingen, naam],
+      };
+    });
   }
 
   function backToList() {
@@ -162,12 +184,18 @@ export function UserAdmin({
         return;
       }
 
+      if (draft.afdelingen.length === 0) {
+        setError("Kies minstens één afdeling.");
+        return;
+      }
+
       setSaving(true);
       const result = await createUserAction({
         naam,
         email,
         rol: draft.rol,
-        afdeling: draft.afdeling,
+        afdelingen: draft.afdelingen,
+        bedrijf: draft.bedrijf,
         wachtwoord,
         actief: draft.actief,
       });
@@ -215,13 +243,19 @@ export function UserAdmin({
         return;
       }
 
+      if (draft.afdelingen.length === 0) {
+        setError("Kies minstens één afdeling.");
+        return;
+      }
+
       setSaving(true);
       const result = await updateUserAction({
         id: editing.id,
         naam,
         email,
         rol: draft.rol,
-        afdeling: draft.afdeling,
+        afdelingen: draft.afdelingen,
+        bedrijf: draft.bedrijf,
         actief: draft.actief,
       });
 
@@ -231,11 +265,16 @@ export function UserAdmin({
         return;
       }
 
+      const afdelingenSorted = [...draft.afdelingen].sort((a, b) =>
+        a.localeCompare(b, "nl"),
+      );
       const patchedUser = {
         naam,
         email,
         rol: draft.rol,
-        afdeling: draft.afdeling,
+        afdeling: afdelingenSorted.join(", "),
+        afdelingen: afdelingenSorted,
+        bedrijf: draft.bedrijf,
         actief: draft.actief,
       };
 
@@ -344,20 +383,52 @@ export function UserAdmin({
           </div>
 
           <div className="form-field">
-            <label htmlFor="user-afdeling">Afdeling</label>
+            <label htmlFor="user-bedrijf">Bedrijf</label>
             <select
-              id="user-afdeling"
+              id="user-bedrijf"
               className="select-input"
-              value={draft.afdeling}
-              onChange={(e) => setDraft((d) => ({ ...d, afdeling: e.target.value }))}
+              value={draft.bedrijf}
+              onChange={(e) =>
+                setDraft((d) => ({
+                  ...d,
+                  bedrijf: e.target.value as UserBedrijf,
+                }))
+              }
             >
-              {departments.map((a) => (
-                <option key={a} value={a}>
-                  {a}
+              {USER_BEDRIJVEN.map((b) => (
+                <option key={b} value={b}>
+                  {b}
                 </option>
               ))}
             </select>
           </div>
+
+          <fieldset className="form-field" style={{ border: 0, padding: 0 }}>
+            <legend style={{ fontWeight: 600, marginBottom: "0.35rem" }}>
+              Afdelingen
+            </legend>
+            <p className="form-hint" style={{ marginTop: 0 }}>
+              Kies één of meer afdelingen voor deze gebruiker.
+            </p>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(9rem, 1fr))",
+                gap: "0.35rem 0.75rem",
+              }}
+            >
+              {departments.map((a) => (
+                <label key={a} className={styles.checkRow}>
+                  <input
+                    type="checkbox"
+                    checked={draft.afdelingen.includes(a)}
+                    onChange={() => toggleAfdeling(a)}
+                  />
+                  {a}
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
           {!isCreate ? (
             <label className={styles.checkRow}>
@@ -490,6 +561,7 @@ export function UserAdmin({
                 <th scope="col">Naam</th>
                 <th scope="col">E-mail</th>
                 <th scope="col">Rol</th>
+                <th scope="col">Bedrijf</th>
                 <th scope="col">Afdeling</th>
                 <th scope="col">Status</th>
                 <th scope="col">
@@ -508,7 +580,8 @@ export function UserAdmin({
                   </td>
                   <td>{user.email}</td>
                   <td>{ROLE_LABEL[user.rol]}</td>
-                  <td>{user.afdeling}</td>
+                  <td>{user.bedrijf}</td>
+                  <td>{user.afdeling || "—"}</td>
                   <td>
                     <span
                       className={`badge ${user.actief ? "badge-ok" : "badge-warn"}`}

@@ -201,6 +201,7 @@ export async function processMissiveLabelToTicket(
     return { ok: false, error: inboundUpsertError.message };
   }
 
+  // Default to melder’s bedrijf; force_bedrijfsbreed afdelingen sync via trigger.
   const { data: ticket, error: ticketError } = await admin
     .from("tickets")
     .insert({
@@ -213,6 +214,7 @@ export async function processMissiveLabelToTicket(
       melder_id: melder.id,
       status: "nieuw",
       vertrouwelijk: false,
+      bedrijf: melder.bedrijf,
     })
     .select("id, ticketnummer, onderwerp")
     .single();
@@ -388,12 +390,13 @@ async function resolveMelder(
   email: string;
   naam: string;
   afdelingId: string | null;
+  bedrijf: "TEBI" | "VK" | "SPL";
   matchedByEmail: boolean;
 } | null> {
   if (fromAddress) {
     const { data: profile } = await admin
       .from("profiles")
-      .select("id, email, naam, afdeling_id, actief")
+      .select("id, email, naam, afdeling_id, actief, bedrijf")
       .ilike("email", fromAddress)
       .maybeSingle();
     if (profile?.id && profile.actief !== false) {
@@ -402,6 +405,7 @@ async function resolveMelder(
         email: (profile.email as string) ?? fromAddress,
         naam: (profile.naam as string) ?? fromAddress,
         afdelingId: (profile.afdeling_id as string | null) ?? null,
+        bedrijf: (profile.bedrijf as "TEBI" | "VK" | "SPL") ?? "TEBI",
         matchedByEmail: true,
       };
     }
@@ -411,7 +415,7 @@ async function resolveMelder(
   if (fallbackEmail) {
     const { data: fallback } = await admin
       .from("profiles")
-      .select("id, email, naam, afdeling_id, actief")
+      .select("id, email, naam, afdeling_id, actief, bedrijf")
       .ilike("email", fallbackEmail)
       .eq("actief", true)
       .maybeSingle();
@@ -421,6 +425,7 @@ async function resolveMelder(
         email: (fallback.email as string) ?? fallbackEmail,
         naam: (fallback.naam as string) ?? fallbackEmail,
         afdelingId: (fallback.afdeling_id as string | null) ?? null,
+        bedrijf: (fallback.bedrijf as "TEBI" | "VK" | "SPL") ?? "TEBI",
         matchedByEmail: false,
       };
     }
@@ -428,7 +433,7 @@ async function resolveMelder(
 
   const { data: uitvoerder } = await admin
     .from("profiles")
-    .select("id, email, naam, afdeling_id")
+    .select("id, email, naam, afdeling_id, bedrijf")
     .eq("rol", "uitvoerder")
     .eq("actief", true)
     .order("email", { ascending: true })
@@ -440,6 +445,7 @@ async function resolveMelder(
     email: (uitvoerder.email as string) ?? "",
     naam: (uitvoerder.naam as string) ?? "IT",
     afdelingId: (uitvoerder.afdeling_id as string | null) ?? null,
+    bedrijf: (uitvoerder.bedrijf as "TEBI" | "VK" | "SPL") ?? "TEBI",
     matchedByEmail: false,
   };
 }

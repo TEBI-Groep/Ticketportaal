@@ -34,6 +34,7 @@ export default async function AppLayout({
         id: user.id,
         rol: user.rol,
         afdelingId: user.afdelingId,
+        afdelingIds: user.afdelingIds,
       }),
       countUnreadNotifications(),
     ]);

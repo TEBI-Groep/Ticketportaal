@@ -32,6 +32,8 @@ export type TicketPriority = "spoed" | "hoog" | "gemiddeld" | "laag";
 export type TicketSize = "S" | "M" | "L" | "XL" | "XXL";
 export type UserRole = "gebruiker" | "manager" | "uitvoerder";
 
+export type { TicketBedrijf, UserBedrijf } from "@/lib/bedrijf";
+
 /** Star rating scale: 1 (laag) … 5 (hoog). */
 export type StarScore = 1 | 2 | 3 | 4 | 5;
 
@@ -40,7 +42,12 @@ export interface User {
   naam: string;
   email: string;
   rol: UserRole;
+  /** Display join of afdelingen (comma-separated). */
   afdeling: string;
+  /** One or more departments linked to this user. */
+  afdelingen: string[];
+  /** Company scope for ticket visibility (TEBI / VK / SPL). */
+  bedrijf: import("@/lib/bedrijf").UserBedrijf;
   /** Soft-disable; inactive users cannot sign in (when auth is wired). */
   actief: boolean;
 }
@@ -150,6 +157,8 @@ export interface Ticket {
   omschrijving: string;
   /** One or more departments linked to this ticket. */
   afdelingen: string[];
+  /** Company scope; Bedrijfsbreed = visible to TEBI, VK and SPL. */
+  bedrijf: import("@/lib/bedrijf").TicketBedrijf;
   type: TicketType;
   systeem: TicketSystem;
   impact: TicketImpact;
@@ -191,12 +200,15 @@ export function mijnRating(
   return ticket.beoordelingen.find((r) => r.userId === userId)?.score ?? null;
 }
 
-/** Types that belong on the public Ranglijst (when other rules match). */
+/** Types that belong on the public Netsuite list (when other rules match). */
 export const RANGLIJST_TYPES: readonly TicketType[] = [
   "wijziging",
   "idee",
   "procesverbetering",
 ] as const;
+
+/** Alias — preferred name after Ranglijst → Netsuite rename. */
+export const NETSUITE_TYPES = RANGLIJST_TYPES;
 
 /** True when the systeem name is a Netsuite variant (contains “Netsuite”). */
 export function isNetsuiteSysteem(systeem: string): boolean {
@@ -204,8 +216,8 @@ export function isNetsuiteSysteem(systeem: string): boolean {
 }
 
 /**
- * Netsuite* wijziging/idee/procesverbetering — belongs on the public Ranglijst
- * when open, not Spoed, and not Privé. Privé tickets stay melder+IT only.
+ * Netsuite* wijziging/idee/procesverbetering — belongs on the public Netsuite
+ * page when open, not Spoed, and not Privé. Privé tickets stay melder+IT only.
  */
 export function isRanglijstKandidaat(ticket: Ticket): boolean {
   const typeOk = (RANGLIJST_TYPES as readonly string[]).includes(ticket.type);
@@ -217,7 +229,10 @@ export function isRanglijstKandidaat(ticket: Ticket): boolean {
   );
 }
 
-/** True when rating is allowed: public ranglijst-eligible + open. */
+/** Alias for isRanglijstKandidaat. */
+export const isNetsuiteKandidaat = isRanglijstKandidaat;
+
+/** True when rating is allowed: public Netsuite-eligible + open. */
 export function isStembaar(ticket: Ticket): boolean {
   const open =
     ticket.status !== "afgerond" && ticket.status !== "afgewezen";

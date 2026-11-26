@@ -26,7 +26,7 @@ export function ItTicketDelete({ ticket }: { ticket: Ticket }) {
       setError(result.error);
       return;
     }
-    router.push("/ranglijst");
+    router.push("/netsuite");
     router.refresh();
   }
 

@@ -55,7 +55,7 @@ export async function loginAction(
     };
   }
 
-  redirect("/ranglijst");
+  redirect("/netsuite");
 }
 
 /** Clear the Auth session and return to login. */

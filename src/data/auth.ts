@@ -4,8 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
 import type { User, UserRole } from "@/lib/types";
+import type { UserBedrijf } from "@/lib/bedrijf";
 
-export type AppUser = User & { afdelingId?: string | null };
+export type AppUser = User & {
+  /** Primary afdeling (first alphabetically) for Missive / create defaults. */
+  afdelingId?: string | null;
+  /** All department ids linked via profile_departments. */
+  afdelingIds: string[];
+};
 
 /**
  * Current signed-in profile from Supabase Auth + profiles.
@@ -27,36 +33,76 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
       return null;
     }
 
-    const { data: profile } = await supabase
+    // Keep embeds simple: nested profile_departments→departments can fail
+    // PostgREST (ambiguous FK) and used to fall through as “medewerker”.
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("id, naam, email, rol, actief, afdeling_id, departments(naam)")
+      .select(
+        "id, naam, email, rol, actief, afdeling_id, bedrijf, departments!profiles_afdeling_id_fkey ( naam )",
+      )
       .eq("id", user.id)
       .maybeSingle();
 
+    if (profileError) {
+      console.error("getCurrentUser profile", profileError.message);
+      return null;
+    }
     if (!profile) {
-      return {
-        id: user.id,
-        naam: user.email?.split("@")[0] ?? "Gebruiker",
-        email: user.email ?? "",
-        rol: "gebruiker",
-        afdeling: "",
-        actief: true,
-      };
+      // Auth session without a profiles row — do not invent a medewerker.
+      return null;
     }
 
     if (!profile.actief) {
       return null;
     }
 
-    const dept = one(profile.departments);
+    const { data: linkRows, error: linkError } = await supabase
+      .from("profile_departments")
+      .select("department_id, departments ( naam )")
+      .eq("profile_id", user.id);
+    if (linkError) {
+      console.error("getCurrentUser profile_departments", linkError.message);
+    }
+
+    const links = (linkRows ?? []) as unknown as Array<{
+      department_id: string;
+      departments: { naam: string } | Array<{ naam: string }> | null;
+    }>;
+    const afdelingen = [
+      ...new Set(
+        links
+          .map((l) => one(l.departments)?.naam ?? "")
+          .filter((n) => n.length > 0),
+      ),
+    ].sort((a, b) => a.localeCompare(b, "nl"));
+    const afdelingIds = links.map((l) => l.department_id);
+    // Fallback to legacy single FK when junction is empty.
+    const legacyDept = one(profile.departments);
+    const afdeling =
+      afdelingen.length > 0
+        ? afdelingen.join(", ")
+        : (legacyDept?.naam ?? "");
 
     return {
       id: profile.id,
       naam: profile.naam,
       email: profile.email,
       rol: profile.rol as UserRole,
-      afdeling: dept?.naam ?? "",
-      afdelingId: profile.afdeling_id,
+      afdeling,
+      afdelingen:
+        afdelingen.length > 0
+          ? afdelingen
+          : legacyDept?.naam
+            ? [legacyDept.naam]
+            : [],
+      bedrijf: (profile.bedrijf as UserBedrijf) ?? "TEBI",
+      afdelingId: profile.afdeling_id ?? afdelingIds[0] ?? null,
+      afdelingIds:
+        afdelingIds.length > 0
+          ? afdelingIds
+          : profile.afdeling_id
+            ? [profile.afdeling_id]
+            : [],
       actief: profile.actief,
     };
   } catch {
@@ -114,7 +160,7 @@ export async function requireUser(): Promise<AppUser> {
 export async function requireUitvoerder(): Promise<AppUser> {
   const user = await requireUser();
   if (user.rol !== "uitvoerder") {
-    redirect("/ranglijst");
+    redirect("/netsuite");
   }
   return user;
 }

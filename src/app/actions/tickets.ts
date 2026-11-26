@@ -10,6 +10,13 @@ import {
   resolveTicketNotifyRecipients,
 } from "@/data/notifications";
 import { getTicketById } from "@/data/tickets";
+import {
+  isAllowedCreateTicketBedrijf,
+  isTicketBedrijf,
+  resolveTicketBedrijf,
+  type TicketBedrijf,
+  type UserBedrijf,
+} from "@/lib/bedrijf";
 import { STATUS_LABEL } from "@/lib/labels";
 import type {
   TicketImpact,
@@ -30,6 +37,8 @@ export interface CreateTicketInput {
   prioriteit: TicketPriority;
   /** Privé: hide from leidinggevenden (maps to vertrouwelijk). */
   prive?: boolean;
+  /** Company scope; forced to Bedrijfsbreed for certain afdelingen. */
+  bedrijf?: TicketBedrijf;
 }
 
 /** Allowed create-time prioriteit values (rejects forged form input). */
@@ -59,6 +68,8 @@ export interface UpdateTicketItInput {
   omschrijving?: string;
   /** Privé: hide from leidinggevenden (maps to vertrouwelijk). */
   prive: boolean;
+  /** Company scope; forced to Bedrijfsbreed for certain afdelingen. */
+  bedrijf: TicketBedrijf;
 }
 
 /** Partial IT patch for blur-to-save inline editors (merged with current row). */
@@ -103,6 +114,7 @@ async function resolveDepartmentIds(
 
 function revalidateTicketPaths(id: string) {
   revalidatePath(`/ticket/${id}`);
+  revalidatePath("/netsuite");
   revalidatePath("/ranglijst");
   revalidatePath("/werkvoorraad");
   revalidatePath("/spoed");
@@ -143,6 +155,27 @@ export async function createTicketAction(
       ? input.prioriteit
       : "laag";
 
+    const userBedrijf = (user.bedrijf as UserBedrijf) ?? "TEBI";
+    // Create: only own bedrijf or Bedrijfsbreed (Beheer can change later).
+    if (
+      input.bedrijf &&
+      !isAllowedCreateTicketBedrijf(
+        input.bedrijf,
+        userBedrijf,
+        input.afdelingen,
+      )
+    ) {
+      return {
+        ok: false,
+        error: "Je mag alleen je eigen bedrijf of Bedrijfsbreed kiezen.",
+      };
+    }
+    const bedrijf = resolveTicketBedrijf(
+      input.bedrijf,
+      input.afdelingen,
+      userBedrijf,
+    );
+
     const { data, error } = await supabase
       .from("tickets")
       .insert({
@@ -156,6 +189,7 @@ export async function createTicketAction(
         melder_id: user.id,
         status: "nieuw",
         vertrouwelijk: Boolean(input.prive),
+        bedrijf,
       })
       .select("id, ticketnummer, onderwerp")
       .single();
@@ -243,6 +277,7 @@ export async function patchTicketItAction(
     onderwerp: input.onderwerp ?? current.onderwerp,
     omschrijving: input.omschrijving ?? current.omschrijving,
     prive: input.prive ?? current.prive,
+    bedrijf: input.bedrijf ?? current.bedrijf,
   });
 }
 
@@ -280,9 +315,21 @@ export async function updateTicketItAction(
     // Snapshot before update so we can notify watchers on status change.
     const { data: before } = await supabase
       .from("tickets")
-      .select("status, ticketnummer, onderwerp, melder_id, eigenaar_id")
+      .select("status, ticketnummer, onderwerp, melder_id, eigenaar_id, bedrijf")
       .eq("id", input.id)
       .maybeSingle();
+
+    const userBedrijf = (user.bedrijf as UserBedrijf) ?? "TEBI";
+    // Beheer may set any TEBI / VK / SPL / Bedrijfsbreed on the ticket.
+    if (input.bedrijf && !isTicketBedrijf(input.bedrijf)) {
+      return { ok: false, error: "Ongeldig bedrijf." };
+    }
+    const bedrijf = resolveTicketBedrijf(
+      input.bedrijf,
+      input.afdelingen,
+      userBedrijf,
+      { allowAnyBedrijf: true },
+    );
 
     const patch: Record<string, unknown> = {
       type: input.type,
@@ -295,6 +342,7 @@ export async function updateTicketItAction(
       omvang: input.omvang,
       oplossing_samenvatting: input.oplossingSamenvatting?.trim() || null,
       vertrouwelijk: Boolean(input.prive),
+      bedrijf,
     };
 
     if (input.onderwerp !== undefined) {

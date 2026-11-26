@@ -6,8 +6,8 @@ export default function TicketNotFound() {
     <div className="page">
       <div className="empty-state">
         <p>Dit ticket bestaat niet (of nog niet) in de demodata.</p>
-        <Link href="/ranglijst" className="btn btn-primary">
-          Naar ranglijst
+        <Link href="/netsuite" className="btn btn-primary">
+          Naar Netsuite
         </Link>
       </div>
     </div>

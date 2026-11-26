@@ -37,6 +37,7 @@ type TicketRow = {
   omvang: Ticket["omvang"] | null;
   oplossing_samenvatting: string | null;
   vertrouwelijk: boolean;
+  bedrijf: Ticket["bedrijf"];
   created_at: string;
   updated_at: string;
   ticket_departments:
@@ -52,12 +53,21 @@ type TicketRow = {
 };
 
 function mapTicket(row: TicketRow): Ticket {
-  const beoordelingen: TicketRating[] = (row.ratings ?? []).map((r) => ({
-    userId: r.user_id,
-    naam: r.profiles?.naam ?? "Onbekend",
-    afdeling: r.profiles?.departments?.naam ?? "",
-    score: r.score as TicketRating["score"],
-  }));
+  const beoordelingen: TicketRating[] = (row.ratings ?? []).map((r) => {
+    const dept = one(
+      r.profiles?.departments as
+        | { naam: string }
+        | Array<{ naam: string }>
+        | null
+        | undefined,
+    );
+    return {
+      userId: r.user_id,
+      naam: r.profiles?.naam ?? "Onbekend",
+      afdeling: dept?.naam ?? "",
+      score: r.score as TicketRating["score"],
+    };
+  });
 
   const afdelingen = [
     ...new Set(
@@ -73,6 +83,7 @@ function mapTicket(row: TicketRow): Ticket {
     onderwerp: row.onderwerp,
     omschrijving: row.omschrijving,
     afdelingen,
+    bedrijf: row.bedrijf ?? "TEBI",
     type: row.type,
     systeem: row.systeem,
     impact: row.impact,
@@ -92,14 +103,25 @@ function mapTicket(row: TicketRow): Ticket {
   };
 }
 
+/**
+ * Shared ticket embed. After profile_departments, profiles→departments is
+ * ambiguous — always disambiguate with !profiles_afdeling_id_fkey.
+ */
 const TICKET_SELECT = `
   id, ticketnummer, onderwerp, omschrijving, type, systeem, impact, status, prioriteit,
-  melder_id, eigenaar_id, streefdatum, omvang, oplossing_samenvatting, vertrouwelijk,
+  melder_id, eigenaar_id, streefdatum, omvang, oplossing_samenvatting, vertrouwelijk, bedrijf,
   created_at, updated_at,
   ticket_departments ( departments ( naam ) ),
   melder:profiles!tickets_melder_id_fkey ( id, naam ),
   eigenaar:profiles!tickets_eigenaar_id_fkey ( id, naam ),
-  ratings ( user_id, score, profiles ( naam, departments ( naam ) ) )
+  ratings (
+    user_id,
+    score,
+    profiles (
+      naam,
+      departments!profiles_afdeling_id_fkey ( naam )
+    )
+  )
 `;
 
 function sortOpenTickets(tickets: Ticket[]): Ticket[] {
@@ -125,7 +147,11 @@ export async function getTicketById(id: string): Promise<Ticket | undefined> {
       .select(TICKET_SELECT)
       .eq("id", id)
       .maybeSingle();
-    if (error || !data) return undefined;
+    if (error) {
+      console.error("getTicketById", error.message);
+      return undefined;
+    }
+    if (!data) return undefined;
     return mapTicket(data as unknown as TicketRow);
   } catch {
     return undefined;
@@ -186,7 +212,12 @@ export async function searchSimilarTickets(
   }
 }
 
+/** Public Netsuite wishlist (formerly Ranglijst). RLS scopes by bedrijf. */
 export async function getRanglijstTickets(): Promise<Ticket[]> {
+  return getNetsuiteTickets();
+}
+
+export async function getNetsuiteTickets(): Promise<Ticket[]> {
   if (!isSupabaseConfigured()) return [];
   try {
     const supabase = await createClient();
@@ -199,7 +230,11 @@ export async function getRanglijstTickets(): Promise<Ticket[]> {
       .neq("prioriteit", "spoed")
       .eq("vertrouwelijk", false)
       .not("status", "in", '("afgerond","afgewezen")');
-    if (error || !data) return [];
+    if (error) {
+      console.error("getNetsuiteTickets", error.message);
+      return [];
+    }
+    if (!data) return [];
     return (data as unknown as TicketRow[])
       .map(mapTicket)
       .sort((a, b) => {
@@ -233,8 +268,15 @@ export async function getSpoedTickets(): Promise<Ticket[]> {
 export type MijnTicketsUser = {
   id: string;
   rol: UserRole;
+  /** @deprecated Prefer afdelingIds for multi-afdeling managers. */
   afdelingId?: string | null;
+  afdelingIds?: string[];
 };
+
+function managerDepartmentIds(user: MijnTicketsUser): string[] {
+  if (user.afdelingIds && user.afdelingIds.length > 0) return user.afdelingIds;
+  return user.afdelingId ? [user.afdelingId] : [];
+}
 
 /** Open spoed count for the nav badge (afgerond/afgewezen excluded). */
 export async function countOpenSpoedTickets(): Promise<number> {
@@ -312,11 +354,12 @@ export async function countWachtOpMelderTickets(
     if (ownError) return 0;
     const ids = new Set((ownData ?? []).map((row) => row.id));
 
-    if (user.rol === "manager" && user.afdelingId) {
+    const deptIds = managerDepartmentIds(user);
+    if (user.rol === "manager" && deptIds.length > 0) {
       const { data: links, error: linkError } = await supabase
         .from("ticket_departments")
         .select("ticket_id")
-        .eq("department_id", user.afdelingId);
+        .in("department_id", deptIds);
       if (!linkError && links && links.length > 0) {
         const { data: deptData, error: deptError } = await supabase
           .from("tickets")
@@ -351,7 +394,11 @@ export async function getOverzichtTickets(): Promise<Ticket[]> {
       .from("tickets")
       .select(TICKET_SELECT)
       .not("status", "in", '("afgerond","afgewezen")');
-    if (error || !data) return [];
+    if (error) {
+      console.error("getOverzichtTickets", error.message);
+      return [];
+    }
+    if (!data) return [];
     return sortOpenTickets(
       (data as unknown as TicketRow[]).map(mapTicket),
     );
@@ -401,14 +448,15 @@ export async function getMijnTickets(user: MijnTicketsUser): Promise<Ticket[]> {
     if (ownError) return [];
     const own = (ownData as unknown as TicketRow[] | null)?.map(mapTicket) ?? [];
 
-    if (user.rol !== "manager" || !user.afdelingId) {
+    const deptIds = managerDepartmentIds(user);
+    if (user.rol !== "manager" || deptIds.length === 0) {
       return sortOpenTickets(own);
     }
 
     const { data: links, error: linkError } = await supabase
       .from("ticket_departments")
       .select("ticket_id")
-      .eq("department_id", user.afdelingId);
+      .in("department_id", deptIds);
     if (linkError || !links || links.length === 0) {
       return sortOpenTickets(own);
     }
@@ -489,14 +537,15 @@ export async function getAfgerondeTickets(
     if (ownError) return [];
     const own = (ownData as unknown as TicketRow[] | null)?.map(mapTicket) ?? [];
 
-    if (user.rol !== "manager" || !user.afdelingId) {
+    const deptIds = managerDepartmentIds(user);
+    if (user.rol !== "manager" || deptIds.length === 0) {
       return sortOpenTickets(own);
     }
 
     const { data: links, error: linkError } = await supabase
       .from("ticket_departments")
       .select("ticket_id")
-      .eq("department_id", user.afdelingId);
+      .in("department_id", deptIds);
     if (linkError || !links || links.length === 0) {
       return sortOpenTickets(own);
     }
