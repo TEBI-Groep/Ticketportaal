@@ -37,3 +37,19 @@ export function isMissiveConfigured(): boolean {
 export function getMissiveWebhookSecret(): string | undefined {
   return process.env.MISSIVE_WEBHOOK_SECRET?.trim() || undefined;
 }
+
+/**
+ * Shared Missive label that turns a conversation into a ticket (Phase D).
+ * Default matches the planned label name in Missive.
+ */
+export function getMissiveTicketLabel(): string {
+  return process.env.MISSIVE_TICKET_LABEL?.trim() || "Ticketportaal";
+}
+
+/**
+ * Optional profile email used as melder when the mail sender is unknown.
+ * When unset, the first active uitvoerder (by email) is used.
+ */
+export function getMissiveFallbackMelderEmail(): string | undefined {
+  return process.env.MISSIVE_FALLBACK_MELDER_EMAIL?.trim() || undefined;
+}

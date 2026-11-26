@@ -27,13 +27,17 @@ App routes require a Supabase Auth session. Without URL/anon keys, login is the 
 | `MISSIVE_FROM_EMAIL` | From-address; must be a Missive alias on that account |
 | `MISSIVE_FROM_NAME` | Optional display name (default `Tebi Ticketportaal`) |
 | `MISSIVE_WEBHOOK_SECRET` | Optional HMAC secret for inbound Missive webhooks (`X-Hook-Signature`) |
+| `MISSIVE_TICKET_LABEL` | Shared Missive label that creates a ticket (default `Ticketportaal`) |
+| `MISSIVE_FALLBACK_MELDER_EMAIL` | Optional profile email used as melder when the sender is unknown |
 | `APP_BASE_URL` | Public site origin for ticket links in e-mails (e.g. `https://ticketportaal.vercel.app`) |
 
 All ticket and user data comes from Supabase. On **Vercel**, set at least `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Project → Settings → Environment Variables), then redeploy.
 
 **Missive Phase A:** ticket create (ontvangstbevestiging), status changes, and Updates & vragen comments queue `notification_deliveries` and send via Missive when the token/from address are set. Without Missive env, deliveries are marked `skipped` and the app keeps working.
 
-**Missive Phase C (reply-by-mail):** replies in an existing ticket conversation create an Updates & vragen comment. Webhook URL: `POST /api/webhooks/missive`. In Missive: Settings → Rules → trigger **Incoming email** → action **Webhook** → that URL (+ optional signature secret = `MISSIVE_WEBHOOK_SECRET`). Only conversations stored in `ticket_email_threads` are imported (unknown inbox mail stays for Phase D).
+**Missive Phase C (reply-by-mail):** replies in an existing ticket conversation create an Updates & vragen comment. Webhook URL: `POST /api/webhooks/missive`. In Missive: Settings → Rules → trigger **Incoming email** → action **Webhook** → that URL (+ optional signature secret = `MISSIVE_WEBHOOK_SECRET`). Only conversations stored in `ticket_email_threads` are imported.
+
+**Missive Phase D (label → ticket):** apply the shared label `Ticketportaal` (or `MISSIVE_TICKET_LABEL`) in Missive. Rule: **User action / label change** → condition **Added label name** = that label → **Webhook** → same URL. Creates a ticket (defaults: type `vraag`, systeem `Overig`, prioriteit `laag`), links the conversation for Phase C replies, and sends an in-thread ontvangstbevestiging with `TP-…` + Open ticket.
 
 ## Scripts
 
