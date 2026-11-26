@@ -97,7 +97,7 @@ function updateMailBody(
   <p style="margin:0 0 12px;">${escapeHtml(headline)}</p>
   ${
     bodyText
-      ? `<p style="margin:0;color:#444;">${escapeHtml(bodyText)}</p>`
+      ? `<p style="margin:0;color:#1a1a1a;"><strong>${escapeHtml(bodyText)}</strong></p>`
       : ""
   }`.trim();
 }
