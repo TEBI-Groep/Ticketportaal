@@ -11,10 +11,13 @@ export function verifyMissiveWebhookSignature(
     // No secret configured — accept (dev / first setup).
     return true;
   }
-  if (!signatureHeader || !signatureHeader.startsWith("sha256=")) {
-    return false;
-  }
-  const received = signatureHeader.slice("sha256=".length).toLowerCase();
+  if (!signatureHeader) return false;
+
+  // Missive docs: "sha256=" + HMAC hexdigest. Accept any casing on the prefix.
+  const normalized = signatureHeader.trim();
+  const prefix = "sha256=";
+  if (!normalized.toLowerCase().startsWith(prefix)) return false;
+  const received = normalized.slice(prefix.length).toLowerCase();
   const expected = createHmac("sha256", secret)
     .update(rawBody, "utf8")
     .digest("hex");
@@ -29,7 +32,11 @@ export function verifyMissiveWebhookSignature(
 
 export type MissiveWebhookPayload = {
   rule?: { id?: string; type?: string; description?: string };
-  conversation?: { id?: string; subject?: string | null };
+  conversation?: {
+    id?: string;
+    subject?: string | null;
+    latest_message_subject?: string | null;
+  };
   latest_message?: {
     id?: string;
     subject?: string | null;
@@ -39,6 +46,8 @@ export type MissiveWebhookPayload = {
     in_reply_to?: string[] | null;
     from_field?: { name?: string | null; address?: string | null } | null;
   };
+  /** Some Missive payloads nest the message under `message`. */
+  message?: MissiveWebhookPayload["latest_message"];
 };
 
 export function parseMissiveWebhookPayload(
@@ -48,9 +57,23 @@ export function parseMissiveWebhookPayload(
   return value as MissiveWebhookPayload;
 }
 
-/** True when the payload looks like a real conversation event (not rule validation). */
+/** Prefer latest_message; fall back to message. */
+export function getWebhookMessage(
+  payload: MissiveWebhookPayload,
+): NonNullable<MissiveWebhookPayload["latest_message"]> | null {
+  return payload.latest_message ?? payload.message ?? null;
+}
+
+/**
+ * True when the payload looks like a real conversation event (not rule validation).
+ * Message id OR email Message-ID is enough together with a conversation id.
+ */
 export function isMissiveConversationEvent(
   payload: MissiveWebhookPayload,
 ): boolean {
-  return Boolean(payload.conversation?.id && payload.latest_message?.id);
+  const message = getWebhookMessage(payload);
+  return Boolean(
+    payload.conversation?.id &&
+      (message?.id || message?.email_message_id),
+  );
 }
