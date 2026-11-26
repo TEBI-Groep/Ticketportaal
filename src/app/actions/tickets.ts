@@ -503,9 +503,10 @@ export async function deleteTicketItAction(
       await supabase.storage.from(ATTACHMENTS_BUCKET).remove(paths);
     }
 
+    // Null both FKs: ticket delete cascades comments, and comment_id would block that.
     await supabase
       .from("inbound_messages")
-      .update({ ticket_id: null })
+      .update({ ticket_id: null, comment_id: null })
       .eq("ticket_id", ticketId);
     await supabase
       .from("knowledge_articles")
