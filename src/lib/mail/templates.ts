@@ -93,13 +93,13 @@ function updateMailBody(
   bodyText: string | null,
 ): string {
   const headline = `${title} op ${label}:`;
-  // Same font size as the update body; blank line between headline and text.
+  // Both lines at 17px (previous larger headline size); blank line between them.
   return `
-  <p style="margin:0 0 12px;">${escapeHtml(headline)}</p>
+  <p style="margin:0 0 12px;font-size:17px;line-height:1.4;">${escapeHtml(headline)}</p>
   ${
     bodyText
       ? `<p style="margin:0 0 12px;">&nbsp;</p>
-  <p style="margin:0;color:#1a1a1a;"><strong>${escapeHtml(bodyText)}</strong></p>`
+  <p style="margin:0;color:#1a1a1a;font-size:17px;line-height:1.4;"><strong>${escapeHtml(bodyText)}</strong></p>`
       : ""
   }`.trim();
 }
