@@ -30,12 +30,21 @@ export function verifyMissiveWebhookSignature(
   }
 }
 
+export type MissiveSharedLabel = {
+  id?: string;
+  name?: string | null;
+};
+
 export type MissiveWebhookPayload = {
   rule?: { id?: string; type?: string; description?: string };
   conversation?: {
     id?: string;
     subject?: string | null;
     latest_message_subject?: string | null;
+    /** Present on label_change payloads — current shared labels. */
+    shared_labels?: MissiveSharedLabel[] | null;
+    shared_label_names?: string | null;
+    authors?: Array<{ name?: string | null; address?: string | null }> | null;
   };
   latest_message?: {
     id?: string;
@@ -45,10 +54,30 @@ export type MissiveWebhookPayload = {
     email_message_id?: string | null;
     in_reply_to?: string[] | null;
     from_field?: { name?: string | null; address?: string | null } | null;
+    to_fields?: Array<{ name?: string | null; address?: string | null }> | null;
   };
   /** Some Missive payloads nest the message under `message`. */
   message?: MissiveWebhookPayload["latest_message"];
 };
+
+/** True when the conversation currently has the given shared label (case-insensitive). */
+export function conversationHasSharedLabel(
+  payload: MissiveWebhookPayload,
+  labelName: string,
+): boolean {
+  const wanted = labelName.trim().toLowerCase();
+  if (!wanted) return false;
+  const labels = payload.conversation?.shared_labels ?? [];
+  if (labels.some((l) => (l.name ?? "").trim().toLowerCase() === wanted)) {
+    return true;
+  }
+  const names = payload.conversation?.shared_label_names ?? "";
+  return names
+    .split(",")
+    .map((n) => n.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(wanted);
+}
 
 export function parseMissiveWebhookPayload(
   value: unknown,

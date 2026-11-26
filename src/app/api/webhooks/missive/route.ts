@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { processMissiveIncomingEmail } from "@/data/inbound-mail";
-import { getMissiveWebhookSecret } from "@/lib/missive/env";
+import { processMissiveLabelToTicket } from "@/data/missive-label-ticket";
+import {
+  getMissiveTicketLabel,
+  getMissiveWebhookSecret,
+} from "@/lib/missive/env";
 import {
   isMissiveConversationEvent,
   parseMissiveWebhookPayload,
@@ -8,8 +12,9 @@ import {
 } from "@/lib/missive/webhook";
 
 /**
- * Missive rule webhook (Phase C reply-by-mail).
- * Configure in Missive: Settings → Rules → incoming email → Webhook → this URL.
+ * Missive rule webhook:
+ * - Phase C: incoming_email → comment on linked ticket
+ * - Phase D: label_change (Ticketportaal label) → create ticket
  */
 export async function POST(request: Request) {
   const rawBody = await request.text();
@@ -22,7 +27,13 @@ export async function POST(request: Request) {
   }
 
   const payload = parseMissiveWebhookPayload(json);
-  const isEvent = payload ? isMissiveConversationEvent(payload) : false;
+  // Label-change may omit a full message payload; conversation id is enough for Phase D.
+  const isLabelEvent = Boolean(
+    payload?.rule?.type === "label_change" && payload.conversation?.id,
+  );
+  const isEvent = payload
+    ? isMissiveConversationEvent(payload) || isLabelEvent
+    : false;
   const signature = request.headers.get("x-hook-signature");
   const secret = getMissiveWebhookSecret();
 
@@ -59,12 +70,16 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await processMissiveIncomingEmail(payload);
+    const ruleType = payload.rule?.type ?? null;
+    const result =
+      ruleType === "label_change"
+        ? await processMissiveLabelToTicket(payload)
+        : await processMissiveIncomingEmail(payload);
     console.info("missive inbound result", {
       status: result.ok ? result.status : "error",
       detail: result.ok ? result.detail : result.error,
       conversationId: payload.conversation?.id ?? null,
-      ruleType: payload.rule?.type ?? null,
+      ruleType,
     });
     if (!result.ok) {
       // Return 200 so Missive does not disable the rule on transient app errors;
@@ -87,5 +102,6 @@ export async function GET() {
     ok: true,
     service: "missive-webhook",
     secretConfigured: Boolean(getMissiveWebhookSecret()),
+    ticketLabel: getMissiveTicketLabel(),
   });
 }
