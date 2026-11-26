@@ -163,3 +163,83 @@ export async function requireUitvoerderAction(): Promise<
   }
   return { ok: true, user: gate.user };
 }
+
+const MIN_PASSWORD_LENGTH = 8;
+
+/**
+ * Logged-in user changes their own password via the session client.
+ * Verifies the current password first; does not use the service-role admin API.
+ */
+export async function changeOwnPassword(
+  currentPassword: string,
+  newPassword: string,
+  confirmPassword: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured()) {
+    return {
+      ok: false,
+      error: "Supabase is niet geconfigureerd op deze omgeving.",
+    };
+  }
+
+  const trimmedNew = newPassword.trim();
+  const trimmedConfirm = confirmPassword.trim();
+
+  if (!currentPassword || !trimmedNew || !trimmedConfirm) {
+    return { ok: false, error: "Vul alle wachtwoordvelden in." };
+  }
+  if (trimmedNew.length < MIN_PASSWORD_LENGTH) {
+    return {
+      ok: false,
+      error: `Nieuw wachtwoord moet minimaal ${MIN_PASSWORD_LENGTH} tekens zijn.`,
+    };
+  }
+  if (trimmedNew !== trimmedConfirm) {
+    return { ok: false, error: "Nieuwe wachtwoorden komen niet overeen." };
+  }
+  if (currentPassword === trimmedNew) {
+    return {
+      ok: false,
+      error: "Het nieuwe wachtwoord moet anders zijn dan het huidige.",
+    };
+  }
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user?.email) {
+      return { ok: false, error: "Je bent niet ingelogd." };
+    }
+
+    // Confirm the caller knows the current password before updating.
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    });
+    if (verifyError) {
+      return { ok: false, error: "Huidig wachtwoord is onjuist." };
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: trimmedNew,
+    });
+    if (updateError) {
+      return {
+        ok: false,
+        error: updateError.message || "Wachtwoord wijzigen mislukt.",
+      };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err instanceof Error ? err.message : "Wachtwoord wijzigen mislukt.",
+    };
+  }
+}
