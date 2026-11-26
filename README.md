@@ -26,11 +26,14 @@ App routes require a Supabase Auth session. Without URL/anon keys, login is the 
 | `MISSIVE_API_TOKEN` | Missive REST API bearer token (Productive plan) |
 | `MISSIVE_FROM_EMAIL` | From-address; must be a Missive alias on that account |
 | `MISSIVE_FROM_NAME` | Optional display name (default `Tebi Ticketportaal`) |
+| `MISSIVE_WEBHOOK_SECRET` | Optional HMAC secret for inbound Missive webhooks (`X-Hook-Signature`) |
 | `APP_BASE_URL` | Public site origin for ticket links in e-mails (e.g. `https://ticketportaal.vercel.app`) |
 
 All ticket and user data comes from Supabase. On **Vercel**, set at least `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Project → Settings → Environment Variables), then redeploy.
 
 **Missive Phase A:** ticket create (ontvangstbevestiging), status changes, and Updates & vragen comments queue `notification_deliveries` and send via Missive when the token/from address are set. Without Missive env, deliveries are marked `skipped` and the app keeps working.
+
+**Missive Phase C (reply-by-mail):** replies in an existing ticket conversation create an Updates & vragen comment. Webhook URL: `POST /api/webhooks/missive`. In Missive: Settings → Rules → trigger **Incoming email** → action **Webhook** → that URL (+ optional signature secret = `MISSIVE_WEBHOOK_SECRET`). Only conversations stored in `ticket_email_threads` are imported (unknown inbox mail stays for Phase D).
 
 ## Scripts
 

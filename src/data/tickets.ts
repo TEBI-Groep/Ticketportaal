@@ -533,7 +533,7 @@ export async function getCommentsForTicket(
     const { data, error } = await supabase
       .from("comments")
       .select(
-        "id, ticket_id, user_id, body, created_at, profiles ( naam, rol )",
+        "id, ticket_id, user_id, body, source, created_at, profiles ( naam, rol )",
       )
       .eq("ticket_id", ticketId)
       .order("created_at", { ascending: true });
@@ -543,15 +543,22 @@ export async function getCommentsForTicket(
         naam: string;
         rol: TicketComment["auteurRol"];
       } | null;
+      const source =
+        c.source === "email" || c.source === "system" || c.source === "portal"
+          ? c.source
+          : "portal";
       return {
         id: c.id,
         ticketId: c.ticket_id,
         userId: c.user_id ?? "",
-        auteurNaam: profile?.naam ?? "Systeem",
+        auteurNaam:
+          profile?.naam ??
+          (source === "email" ? "E-mail" : "Systeem"),
         auteurRol: profile?.rol ?? "gebruiker",
         tekst: c.body,
         // Keep full ISO timestamp so the UI can show date + time.
         createdAt: c.created_at,
+        source,
       };
     });
   } catch {

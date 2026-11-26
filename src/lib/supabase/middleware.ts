@@ -3,7 +3,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseAnonKey, getSupabaseUrl } from "./env";
 
 function isPublicPath(pathname: string): boolean {
-  return pathname === "/login" || pathname === "/";
+  return (
+    pathname === "/login" ||
+    pathname === "/" ||
+    // Missive inbound webhooks (Phase C) — no Auth session.
+    pathname.startsWith("/api/webhooks/")
+  );
 }
 
 /** Copy refreshed Auth cookies onto a redirect without dropping attributes. */
