@@ -2,7 +2,10 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { flushPendingEmailDeliveries } from "@/data/mail";
 import { notificationSnippet } from "@/data/notifications";
-import { htmlEmailToCommentText } from "@/lib/missive/email-text";
+import {
+  htmlEmailToCommentText,
+  stripQuotedReply,
+} from "@/lib/missive/email-text";
 import { getMissiveFromEmail } from "@/lib/missive/env";
 import { fetchMissiveMessage } from "@/lib/missive/messages";
 import {
@@ -118,9 +121,10 @@ export async function processMissiveIncomingEmail(
   const full = messageId ? await fetchMissiveMessage(messageId) : null;
   const rawHtml = full?.body ?? null;
   const previewFallback = latest.preview ?? "";
+  // Prefer HTML → text (strips quotes + signature); fall back to preview.
   let bodyText = htmlEmailToCommentText(rawHtml);
   if (!bodyText) {
-    bodyText = previewFallback.trim();
+    bodyText = stripQuotedReply(previewFallback);
   }
   if (bodyText.length > MAX_COMMENT_CHARS) {
     bodyText = `${bodyText.slice(0, MAX_COMMENT_CHARS - 1)}…`;
