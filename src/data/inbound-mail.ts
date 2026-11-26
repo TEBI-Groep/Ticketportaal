@@ -5,7 +5,10 @@ import { notificationSnippet } from "@/data/notifications";
 import { htmlEmailToCommentText } from "@/lib/missive/email-text";
 import { getMissiveFromEmail } from "@/lib/missive/env";
 import { fetchMissiveMessage } from "@/lib/missive/messages";
-import type { MissiveWebhookPayload } from "@/lib/missive/webhook";
+import {
+  getWebhookMessage,
+  type MissiveWebhookPayload,
+} from "@/lib/missive/webhook";
 
 const MAX_COMMENT_CHARS = 2000;
 
@@ -17,7 +20,8 @@ type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>;
 
 /**
  * Phase C: map a Missive incoming_email webhook onto a ticket Update
- * when the conversation is one we opened via ticket_email_threads.
+ * when the conversation is one we opened via ticket_email_threads
+ * (or the subject still contains a TP-… ticketnummer).
  */
 export async function processMissiveIncomingEmail(
   payload: MissiveWebhookPayload,
@@ -27,10 +31,11 @@ export async function processMissiveIncomingEmail(
     return { ok: true, status: "ignored", detail: `rule type ${ruleType}` };
   }
 
-  const conversationId = payload.conversation?.id?.trim();
-  const latest = payload.latest_message;
-  const messageId = latest?.id?.trim();
-  if (!conversationId || !latest || !messageId) {
+  const conversationId = payload.conversation?.id?.trim() ?? null;
+  const latest = getWebhookMessage(payload);
+  const messageId = latest?.id?.trim() || null;
+  const emailMessageId = latest?.email_message_id?.trim() || null;
+  if (!conversationId || !latest || (!messageId && !emailMessageId)) {
     return {
       ok: true,
       status: "ignored",
@@ -47,41 +52,51 @@ export async function processMissiveIncomingEmail(
   const fromName = (latest.from_field?.name ?? "").trim();
   const ourFrom = (getMissiveFromEmail() ?? "").toLowerCase();
   if (fromAddress && ourFrom && fromAddress === ourFrom) {
+    await auditInbound(admin, {
+      externalId: messageId ?? emailMessageId!,
+      fromAddress,
+      subject: latest.subject ?? payload.conversation?.subject ?? null,
+      preview: latest.preview ?? null,
+      ticketId: null,
+      status: "ignored",
+      error: "own outbound address",
+      raw: payload,
+    });
     return { ok: true, status: "ignored", detail: "own outbound address" };
   }
 
-  // Only conversations we already mailed into (Phase A threads).
-  const { data: thread, error: threadError } = await admin
-    .from("ticket_email_threads")
-    .select("ticket_id, user_id")
-    .eq("missive_conversation_id", conversationId)
-    .limit(1)
-    .maybeSingle();
+  const subject =
+    latest.subject ??
+    payload.conversation?.latest_message_subject ??
+    payload.conversation?.subject ??
+    null;
 
-  if (threadError) {
-    return { ok: false, error: threadError.message };
-  }
-  if (!thread?.ticket_id) {
-    // Unknown conversation → leave for Phase D (create ticket from inbox).
-    return { ok: true, status: "ignored", detail: "no matching ticket thread" };
+  // 1) Preferred: conversation id from Phase A send.
+  let ticketId = await findTicketIdByConversation(admin, conversationId);
+
+  // 2) Fallback: subject still contains TP-123 (new Missive conversation).
+  if (!ticketId) {
+    ticketId = await findTicketIdBySubject(admin, subject);
   }
 
-  const ticketId = thread.ticket_id as string;
-  const externalId = messageId;
-
-  // Idempotent audit row.
+  const externalId = messageId ?? `email:${emailMessageId}`;
   const receivedAt = new Date().toISOString();
+
+  // Always audit — including unmatched — so ops can see webhook delivery.
   const { error: inboundInsertError } = await admin
     .from("inbound_messages")
     .insert({
       channel: "missive",
       external_id: externalId,
       from_address: fromAddress || null,
-      subject: latest.subject ?? payload.conversation?.subject ?? null,
+      subject,
       body_text: latest.preview ?? null,
       received_at: receivedAt,
       ticket_id: ticketId,
-      status: "pending",
+      status: ticketId ? "pending" : "ignored",
+      error: ticketId
+        ? null
+        : `no matching ticket (conversation ${conversationId})`,
       raw: payload as unknown as Record<string, unknown>,
     });
 
@@ -92,7 +107,15 @@ export async function processMissiveIncomingEmail(
     return { ok: false, error: inboundInsertError.message };
   }
 
-  const full = await fetchMissiveMessage(messageId);
+  if (!ticketId) {
+    return {
+      ok: true,
+      status: "ignored",
+      detail: `no matching ticket thread (${conversationId})`,
+    };
+  }
+
+  const full = messageId ? await fetchMissiveMessage(messageId) : null;
   const rawHtml = full?.body ?? null;
   const previewFallback = latest.preview ?? "";
   let bodyText = htmlEmailToCommentText(rawHtml);
@@ -175,6 +198,20 @@ export async function processMissiveIncomingEmail(
     return { ok: false, error: commentError.message };
   }
 
+  // If we matched via subject, remember this conversation for next replies.
+  if (conversationId) {
+    await admin.from("ticket_email_threads").upsert(
+      {
+        ticket_id: ticketId,
+        user_id: userId ?? (await firstWatcherUserId(admin, ticketId)),
+        missive_conversation_id: conversationId,
+        root_subject: (subject ?? "Ticket").replace(/^Re:\s*/i, ""),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "ticket_id,user_id" },
+    );
+  }
+
   await admin
     .from("inbound_messages")
     .update({
@@ -185,7 +222,11 @@ export async function processMissiveIncomingEmail(
     })
     .eq("external_id", externalId);
 
-  const recipients = await resolveInboundNotifyRecipients(admin, ticketId, userId);
+  const recipients = await resolveInboundNotifyRecipients(
+    admin,
+    ticketId,
+    userId,
+  );
   const snippet = notificationSnippet(bodyText);
   const { data: inserted, error: notifyError } = await admin.rpc(
     "notify_ticket_users_system",
@@ -221,6 +262,94 @@ export async function processMissiveIncomingEmail(
   return { ok: true, status: "created" };
 }
 
+async function findTicketIdByConversation(
+  admin: AdminClient,
+  conversationId: string,
+): Promise<string | null> {
+  const { data: thread, error } = await admin
+    .from("ticket_email_threads")
+    .select("ticket_id")
+    .eq("missive_conversation_id", conversationId)
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error("ticket_email_threads lookup failed", error.message);
+    return null;
+  }
+  return (thread?.ticket_id as string | undefined) ?? null;
+}
+
+/** Extract TP-123 from subject and resolve tickets.ticketnummer. */
+async function findTicketIdBySubject(
+  admin: AdminClient,
+  subject: string | null,
+): Promise<string | null> {
+  if (!subject) return null;
+  const match = subject.match(/\b(TP-\d+)\b/i);
+  if (!match) return null;
+  const ticketnummer = match[1].toUpperCase();
+  const { data, error } = await admin
+    .from("tickets")
+    .select("id")
+    .eq("ticketnummer", ticketnummer)
+    .maybeSingle();
+  if (error) {
+    console.error("ticketnummer lookup failed", error.message);
+    return null;
+  }
+  return (data?.id as string | undefined) ?? null;
+}
+
+async function firstWatcherUserId(
+  admin: AdminClient,
+  ticketId: string,
+): Promise<string> {
+  const { data } = await admin
+    .from("ticket_watchers")
+    .select("user_id")
+    .eq("ticket_id", ticketId)
+    .limit(1)
+    .maybeSingle();
+  if (data?.user_id) return data.user_id as string;
+  const { data: ticket } = await admin
+    .from("tickets")
+    .select("melder_id")
+    .eq("id", ticketId)
+    .maybeSingle();
+  return (ticket?.melder_id as string) ?? ticketId;
+}
+
+async function auditInbound(
+  admin: AdminClient,
+  input: {
+    externalId: string;
+    fromAddress: string;
+    subject: string | null;
+    preview: string | null;
+    ticketId: string | null;
+    status: string;
+    error: string;
+    raw: MissiveWebhookPayload;
+  },
+): Promise<void> {
+  await admin.from("inbound_messages").upsert(
+    {
+      channel: "missive",
+      external_id: input.externalId,
+      from_address: input.fromAddress || null,
+      subject: input.subject,
+      body_text: input.preview,
+      received_at: new Date().toISOString(),
+      ticket_id: input.ticketId,
+      status: input.status,
+      error: input.error,
+      processed_at: new Date().toISOString(),
+      raw: input.raw as unknown as Record<string, unknown>,
+    },
+    { onConflict: "external_id" },
+  );
+}
+
 /** Watchers ∪ melder ∪ eigenaar − actor, with privé narrowing (admin path). */
 async function resolveInboundNotifyRecipients(
   admin: AdminClient,
@@ -247,7 +376,6 @@ async function resolveInboundNotifyRecipients(
     return [...set];
   }
 
-  // Privé: only Beheerder + melder.
   if (set.size === 0) return [];
   const { data: profiles } = await admin
     .from("profiles")

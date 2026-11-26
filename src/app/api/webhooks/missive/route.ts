@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { processMissiveIncomingEmail } from "@/data/inbound-mail";
-import {
-  getMissiveWebhookSecret,
-} from "@/lib/missive/env";
+import { getMissiveWebhookSecret } from "@/lib/missive/env";
 import {
   isMissiveConversationEvent,
   parseMissiveWebhookPayload,
@@ -32,10 +30,26 @@ export async function POST(request: Request) {
   if (secret) {
     if (signature) {
       if (!verifyMissiveWebhookSignature(rawBody, signature)) {
-        return NextResponse.json({ ok: false, error: "Invalid signature" }, { status: 401 });
+        console.error("missive webhook invalid signature", {
+          hasSecret: true,
+          signaturePrefix: signature.slice(0, 12),
+          bodyBytes: rawBody.length,
+          isEvent,
+        });
+        return NextResponse.json(
+          { ok: false, error: "Invalid signature" },
+          { status: 401 },
+        );
       }
     } else if (isEvent) {
-      return NextResponse.json({ ok: false, error: "Missing signature" }, { status: 401 });
+      console.error("missive webhook missing signature on event", {
+        conversationId: payload?.conversation?.id ?? null,
+        ruleType: payload?.rule?.type ?? null,
+      });
+      return NextResponse.json(
+        { ok: false, error: "Missing signature" },
+        { status: 401 },
+      );
     }
   }
 
@@ -46,10 +60,15 @@ export async function POST(request: Request) {
 
   try {
     const result = await processMissiveIncomingEmail(payload);
+    console.info("missive inbound result", {
+      status: result.ok ? result.status : "error",
+      detail: result.ok ? result.detail : result.error,
+      conversationId: payload.conversation?.id ?? null,
+      ruleType: payload.rule?.type ?? null,
+    });
     if (!result.ok) {
       // Return 200 so Missive does not disable the rule on transient app errors;
-      // failures are stored on inbound_messages.
-      console.error("missive inbound failed", result.error);
+      // failures are stored on inbound_messages when possible.
       return NextResponse.json({ ok: false, error: result.error });
     }
     return NextResponse.json(result);
@@ -64,5 +83,9 @@ export async function POST(request: Request) {
 
 /** Health check for ops / Missive rule save probes that use GET. */
 export async function GET() {
-  return NextResponse.json({ ok: true, service: "missive-webhook" });
+  return NextResponse.json({
+    ok: true,
+    service: "missive-webhook",
+    secretConfigured: Boolean(getMissiveWebhookSecret()),
+  });
 }
