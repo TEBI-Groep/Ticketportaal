@@ -164,9 +164,26 @@ export async function processMissiveIncomingEmail(
   if (fromAddress) {
     const { data: profile } = await admin
       .from("profiles")
-      .select("id, naam")
+      .select("id, naam, actief")
       .ilike("email", fromAddress)
       .maybeSingle();
+    // Inactive portal users must not post Updates via reply-by-mail.
+    if (profile && profile.actief === false) {
+      await admin
+        .from("inbound_messages")
+        .update({
+          status: "ignored",
+          error: "Afzender-account is inactief.",
+          processed_at: new Date().toISOString(),
+          body_text: bodyText,
+        })
+        .eq("external_id", externalId);
+      return {
+        ok: true,
+        status: "ignored",
+        detail: "inactive sender",
+      };
+    }
     if (profile) {
       userId = profile.id;
       auteurNaam = profile.naam || auteurNaam;

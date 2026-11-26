@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireActiveUserAction } from "@/data/auth";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
 import { flushPendingEmailDeliveries } from "@/data/mail";
 import {
@@ -20,22 +20,13 @@ export async function addCommentAction(
   if (!tekst) {
     return { ok: false, error: "Bericht mag niet leeg zijn." };
   }
-  if (!isSupabaseConfigured()) {
-    return {
-      ok: false,
-      error:
-        "Supabase is niet geconfigureerd (NEXT_PUBLIC_SUPABASE_URL / anon key of SUPABASE_URL / SUPABASE_ANON_KEY ontbreken).",
-    };
-  }
+
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
 
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
 
     const { data, error } = await supabase
       .from("comments")

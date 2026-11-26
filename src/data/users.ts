@@ -216,6 +216,32 @@ export async function updateUserAccount(
     }
     return { ok: false, error: error.message };
   }
+
+  // Stop queued mail and sessions when IT deactivates an account.
+  if (!input.actief) {
+    const { data: notifIds } = await admin
+      .from("notifications")
+      .select("id")
+      .eq("user_id", input.id);
+    const ids = (notifIds ?? []).map((n) => n.id);
+    if (ids.length > 0) {
+      await admin
+        .from("notification_deliveries")
+        .update({
+          status: "skipped",
+          error: "Account is inactief.",
+        })
+        .eq("channel", "email")
+        .eq("status", "pending")
+        .in("notification_id", ids);
+    }
+    try {
+      await admin.auth.admin.signOut(input.id, "global");
+    } catch {
+      // Best-effort — profile actief + action gates still block.
+    }
+  }
+
   return { ok: true };
 }
 

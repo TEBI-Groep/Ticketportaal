@@ -119,10 +119,14 @@ export async function requireUitvoerder(): Promise<AppUser> {
   return user;
 }
 
+const INACTIVE_ACCOUNT_ACTION_MESSAGE =
+  "Dit account is inactief. Neem contact op met IT.";
+
 /**
- * Server-action gate: must be a real Supabase session with uitvoerder rol.
+ * Server-action gate: signed-in user with an active profile.
+ * Clears a stale Auth cookie when the profile was deactivated.
  */
-export async function requireUitvoerderAction(): Promise<
+export async function requireActiveUserAction(): Promise<
   { ok: true; user: AppUser } | { ok: false; error: string }
 > {
   if (!isSupabaseConfigured()) {
@@ -133,11 +137,29 @@ export async function requireUitvoerderAction(): Promise<
   }
 
   const user = await getCurrentUser();
-  if (!user) {
-    return { ok: false, error: "Je bent niet ingelogd." };
+  if (user) {
+    return { ok: true, user };
   }
-  if (user.rol !== "uitvoerder") {
+
+  // Stale session after IT set actief=false — drop cookie so actions can't proceed.
+  if (await hasInactiveSession()) {
+    await clearSessionQuietly();
+    return { ok: false, error: INACTIVE_ACCOUNT_ACTION_MESSAGE };
+  }
+
+  return { ok: false, error: "Je bent niet ingelogd." };
+}
+
+/**
+ * Server-action gate: must be a real Supabase session with uitvoerder rol.
+ */
+export async function requireUitvoerderAction(): Promise<
+  { ok: true; user: AppUser } | { ok: false; error: string }
+> {
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  if (gate.user.rol !== "uitvoerder") {
     return { ok: false, error: "Alleen uitvoerders mogen dit doen." };
   }
-  return { ok: true, user };
+  return { ok: true, user: gate.user };
 }

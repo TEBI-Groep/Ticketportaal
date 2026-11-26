@@ -159,12 +159,32 @@ export async function resolveTicketNotifyRecipients(
   set.delete(actorId);
 
   const prive = await privateNotifyAllowlist(ticketId);
-  if (!prive) return [...set];
+  if (!prive) {
+    // Drop inactive recipients in TS too (SQL RPC also filters actief).
+    return filterActiveRecipientIds([...set]);
+  }
 
   const melderId = extras?.melderId ?? prive.melderId;
   if (melderId) set.add(melderId);
   set.delete(actorId);
   return filterPrivateNotifyRecipients([...set], melderId);
+}
+
+/** Keep only profiles with actief = true. */
+async function filterActiveRecipientIds(recipientIds: string[]): Promise<string[]> {
+  if (recipientIds.length === 0) return [];
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id")
+      .in("id", recipientIds)
+      .eq("actief", true);
+    if (error || !data) return [];
+    return data.map((row) => row.id as string);
+  } catch {
+    return [];
+  }
 }
 
 /**

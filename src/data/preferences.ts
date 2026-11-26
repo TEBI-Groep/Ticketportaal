@@ -1,3 +1,4 @@
+import { requireActiveUserAction } from "@/data/auth";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import {
@@ -52,17 +53,12 @@ export async function getMyNotificationPreferences(): Promise<NotificationPrefer
 export async function saveMyNotificationPreferences(
   prefs: NotificationPreferences,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Supabase is niet geconfigureerd." };
-  }
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
+
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
 
     const { error } = await supabase.from("notification_preferences").upsert(
       {

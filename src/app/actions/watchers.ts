@@ -1,25 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireActiveUserAction } from "@/data/auth";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 /** Subscribe the signed-in user to ticket updates (mailing later). */
 export async function subscribeToTicketAction(
   ticketId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Supabase is niet geconfigureerd." };
-  }
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
 
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
 
     const { data: existing } = await supabase
       .from("ticket_watchers")
@@ -53,18 +47,12 @@ export async function subscribeToTicketAction(
 export async function unsubscribeFromTicketAction(
   ticketId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Supabase is niet geconfigureerd." };
-  }
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
 
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
 
     const { error } = await supabase
       .from("ticket_watchers")

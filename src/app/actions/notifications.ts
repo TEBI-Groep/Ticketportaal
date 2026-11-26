@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireActiveUserAction } from "@/data/auth";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
 import {
   countUnreadNotifications,
   listMyNotifications,
@@ -22,9 +22,9 @@ export async function countUnreadNotificationsAction(): Promise<number> {
 export async function markNotificationReadAction(
   notificationId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Supabase is niet geconfigureerd." };
-  }
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+
   try {
     const supabase = await createClient();
     const { error } = await supabase
@@ -49,17 +49,12 @@ export async function markNotificationReadAction(
 export async function markAllNotificationsReadAction(): Promise<
   { ok: true } | { ok: false; error: string }
 > {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Supabase is niet geconfigureerd." };
-  }
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
+
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
     const { error } = await supabase
       .from("notifications")
       .update({ read_at: new Date().toISOString() })
@@ -82,17 +77,12 @@ export async function markAllNotificationsReadAction(): Promise<
 export async function deleteNotificationAction(
   notificationId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Supabase is niet geconfigureerd." };
-  }
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
+
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
     const { error } = await supabase
       .from("notifications")
       .delete()
@@ -115,17 +105,12 @@ export async function deleteNotificationAction(
 export async function deleteAllNotificationsAction(): Promise<
   { ok: true } | { ok: false; error: string }
 > {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, error: "Supabase is niet geconfigureerd." };
-  }
+  const gate = await requireActiveUserAction();
+  if (!gate.ok) return gate;
+  const user = gate.user;
+
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { ok: false, error: "Je bent niet ingelogd." };
-    }
     const { error } = await supabase
       .from("notifications")
       .delete()

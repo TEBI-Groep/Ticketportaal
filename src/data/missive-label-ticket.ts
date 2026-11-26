@@ -98,6 +98,22 @@ export async function processMissiveLabelToTicket(
     };
   }
 
+  // Inactive portal senders must not create tickets or get confirmation mail.
+  if (fromAddress) {
+    const { data: senderProfile } = await admin
+      .from("profiles")
+      .select("id, actief")
+      .ilike("email", fromAddress)
+      .maybeSingle();
+    if (senderProfile && senderProfile.actief === false) {
+      return {
+        ok: true,
+        status: "ignored",
+        detail: "inactive sender",
+      };
+    }
+  }
+
   const subjectRaw =
     latest?.subject ??
     payload.conversation?.latest_message_subject ??
