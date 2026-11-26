@@ -36,13 +36,21 @@ type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>;
 export async function processMissiveLabelToTicket(
   payload: MissiveWebhookPayload,
 ): Promise<InboundProcessResult> {
-  const ruleType = payload.rule?.type;
-  if (ruleType && ruleType !== "label_change") {
-    return { ok: true, status: "ignored", detail: `rule type ${ruleType}` };
-  }
-
+  const ruleType = (payload.rule?.type ?? "").toLowerCase();
   const labelName = getMissiveTicketLabel();
-  if (!conversationHasSharedLabel(payload, labelName)) {
+  const hasLabel = conversationHasSharedLabel(payload, labelName);
+  // Accept label_change and any rule.type containing "label"; otherwise require
+  // the Ticketportaal label to already be present on the conversation.
+  const looksLikeLabelRule =
+    ruleType === "label_change" || ruleType.includes("label");
+  if (!looksLikeLabelRule && !hasLabel) {
+    return {
+      ok: true,
+      status: "ignored",
+      detail: `not a label create event (rule type ${ruleType || "unknown"})`,
+    };
+  }
+  if (!hasLabel) {
     return {
       ok: true,
       status: "ignored",
