@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { ChangePasswordForm } from "@/components/ChangePasswordForm";
 import { VoorkeurenForm } from "@/components/VoorkeurenForm";
+import styles from "@/components/VoorkeurenForm.module.css";
 import { requireUser } from "@/data/auth";
 import { getMyNotificationPreferences } from "@/data/preferences";
 
@@ -16,14 +18,17 @@ async function VoorkeurenContent() {
     <>
       <header className="page-header">
         <h1>Voorkeuren</h1>
-        <p>Beheer hoe je updates uit het Ticketportaal ontvangt.</p>
+        <p>Beheer meldingen en je inlogwachtwoord.</p>
       </header>
-      <VoorkeurenForm initial={prefs} />
+      <div className={styles.wrap}>
+        <VoorkeurenForm initial={prefs} />
+        <ChangePasswordForm />
+      </div>
     </>
   );
 }
 
-/** Account preferences — mail toggles first (Phase B). */
+/** Account preferences — mail toggles + self-service password. */
 export default function VoorkeurenPage() {
   return (
     <div className="page">
