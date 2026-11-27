@@ -17,6 +17,7 @@ import { ItTicketDelete } from "@/components/ItTicketDelete";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
 import { TicketAttachments } from "@/components/TicketAttachments";
+import { TicketLinks } from "@/components/TicketLinks";
 import { TicketWatchBell } from "@/components/TicketWatchBell";
 import {
   BEDRIJF_LABEL,
@@ -38,6 +39,7 @@ import type {
   Ticket,
   TicketAttachment,
   TicketComment,
+  TicketLink,
   TicketPriority,
   TicketSize,
   TicketStatus,
@@ -61,6 +63,7 @@ interface TicketItDetailProps {
   comments: TicketComment[];
   itNotes: ItNote[];
   attachments: TicketAttachment[];
+  links: TicketLink[];
   uitvoerders: User[];
   melders: User[];
   departments: string[];
@@ -82,6 +85,7 @@ export function TicketItDetail({
   comments,
   itNotes,
   attachments,
+  links,
   uitvoerders,
   melders,
   departments,
@@ -466,6 +470,12 @@ export function TicketItDetail({
           initialAttachments={attachments}
           currentUserId={currentUserId}
           canDeleteAny
+        />
+
+        <TicketLinks
+          ticketId={ticket.id}
+          initialLinks={links}
+          canEdit
         />
 
         {canVote ? (

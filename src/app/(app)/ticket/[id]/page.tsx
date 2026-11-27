@@ -7,10 +7,12 @@ import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
 import { TicketAttachments } from "@/components/TicketAttachments";
 import { TicketItDetail } from "@/components/TicketItDetail";
+import { TicketLinks } from "@/components/TicketLinks";
 import { TicketWatchBell } from "@/components/TicketWatchBell";
 import layoutStyles from "@/components/TicketInlineEdit.module.css";
 import { requireUser } from "@/data/auth";
 import { getAttachmentsForTicket } from "@/data/attachments";
+import { getLinksForTicket } from "@/data/ticket-links";
 import {
   getCommentsForTicket,
   getItNotesForTicket,
@@ -71,6 +73,7 @@ async function TicketDetailContent({
     comments,
     itNotes,
     attachments,
+    links,
     uitvoerders,
     melders,
     departments,
@@ -79,6 +82,7 @@ async function TicketDetailContent({
     getCommentsForTicket(ticket.id),
     isIt ? getItNotesForTicket(ticket.id) : Promise.resolve([]),
     getAttachmentsForTicket(ticket.id),
+    getLinksForTicket(ticket.id),
     isIt ? listUitvoerders() : Promise.resolve([]),
     isIt ? listUsers() : Promise.resolve([]),
     isIt ? listDepartments() : Promise.resolve([]),
@@ -108,6 +112,7 @@ async function TicketDetailContent({
           comments={comments}
           itNotes={itNotes}
           attachments={attachments}
+          links={links}
           uitvoerders={uitvoerders}
           melders={activeMelders}
           departments={departments}
@@ -214,6 +219,12 @@ async function TicketDetailContent({
               initialAttachments={attachments}
               currentUserId={user.id}
               canDeleteAny={false}
+            />
+
+            <TicketLinks
+              ticketId={ticket.id}
+              initialLinks={links}
+              canEdit={false}
             />
 
             {canVote ? (
