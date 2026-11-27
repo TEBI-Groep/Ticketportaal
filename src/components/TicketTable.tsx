@@ -138,6 +138,25 @@ const RANKING_SORT_DIR: SortDir = "desc";
 /** Empty placeholder stored as a stable filter token. */
 const EMPTY_TOKEN = "__empty__";
 
+/**
+ * True when streefdatum is before today (local calendar day).
+ * Date-only strings (YYYY-MM-DD) are parsed as local midnight to avoid UTC skew.
+ */
+function isStreefdatumOverdue(streefdatum?: string | null): boolean {
+  if (!streefdatum) return false;
+  const day = streefdatum.slice(0, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  if (!match) return false;
+  const due = new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+  );
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return due.getTime() < today.getTime();
+}
+
 /** First click direction when activating a column as primary sort. */
 function initialSortDir(key: TicketSortKey): SortDir {
   return key === "updatedAt" || key === "rating" ? "desc" : "asc";
@@ -982,9 +1001,11 @@ export function TicketTable({
                   }
                 }
 
-                // Soft blue row tint for Nieuw — Spoed and Overige share TicketTable.
-                const rowClass =
-                  ticket.status === "nieuw"
+                // Soft row tints: overdue (past streefdatum) wins over Nieuw.
+                const overdue = isStreefdatumOverdue(ticket.streefdatum);
+                const rowClass = overdue
+                  ? `${styles.dataRow} ${styles.dataRowOverdue}`
+                  : ticket.status === "nieuw"
                     ? `${styles.dataRow} ${styles.dataRowNieuw}`
                     : styles.dataRow;
 
