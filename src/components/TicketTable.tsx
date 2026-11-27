@@ -141,8 +141,13 @@ const EMPTY_TOKEN = "__empty__";
 /**
  * True when streefdatum is before today (local calendar day).
  * Date-only strings (YYYY-MM-DD) are parsed as local midnight to avoid UTC skew.
+ * Afgerond / Afgewezen are finished — past streefdatum does not tint those rows.
  */
-function isStreefdatumOverdue(streefdatum?: string | null): boolean {
+function isStreefdatumOverdue(
+  streefdatum: string | null | undefined,
+  status: TicketStatus,
+): boolean {
+  if (status === "afgerond" || status === "afgewezen") return false;
   if (!streefdatum) return false;
   const day = streefdatum.slice(0, 10);
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
@@ -1002,7 +1007,10 @@ export function TicketTable({
                 }
 
                 // Soft row tints: overdue (past streefdatum) wins over Nieuw.
-                const overdue = isStreefdatumOverdue(ticket.streefdatum);
+                const overdue = isStreefdatumOverdue(
+                  ticket.streefdatum,
+                  ticket.status,
+                );
                 const rowClass = overdue
                   ? `${styles.dataRow} ${styles.dataRowOverdue}`
                   : ticket.status === "nieuw"
