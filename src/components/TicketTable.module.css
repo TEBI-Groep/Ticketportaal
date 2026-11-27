@@ -186,6 +186,11 @@
   background: color-mix(in srgb, var(--status-nieuw-soft) 32%, transparent);
 }
 
+/* Soft overdue tint — same red family as Spoed; wins over Nieuw when both apply. */
+.dataRowOverdue td {
+  background: color-mix(in srgb, var(--spoed-soft) 40%, transparent);
+}
+
 .dataRow:hover td,
 .dataRow:focus-visible td {
   background: color-mix(in srgb, var(--brand-soft) 35%, transparent);
@@ -194,6 +199,11 @@
 .dataRowNieuw:hover td,
 .dataRowNieuw:focus-visible td {
   background: color-mix(in srgb, var(--status-nieuw-soft) 48%, var(--brand-soft));
+}
+
+.dataRowOverdue:hover td,
+.dataRowOverdue:focus-visible td {
+  background: color-mix(in srgb, var(--spoed-soft) 58%, var(--brand-soft));
 }
 
 .dataRow:focus-visible {
