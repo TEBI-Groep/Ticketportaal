@@ -18,21 +18,21 @@ export {
 
 const SIGNED_URL_SECONDS = 60 * 60;
 
-function mapAttachment(
-  row: {
-    id: string;
-    ticket_id: string;
-    uploaded_by: string;
-    storage_path: string;
-    file_name: string;
-    mime_type: string | null;
-    byte_size: number | null;
-    kind: AttachmentKind;
-    created_at: string;
-    profiles: { naam: string } | { naam: string }[] | null;
-  },
-  url?: string,
-): TicketAttachment {
+type AttachmentRow = {
+  id: string;
+  ticket_id: string;
+  uploaded_by: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  byte_size: number | null;
+  kind: AttachmentKind;
+  created_at: string;
+  comment_id?: string | null;
+  profiles: { naam: string } | { naam: string }[] | null;
+};
+
+function mapAttachment(row: AttachmentRow, url?: string): TicketAttachment {
   const profile = one(row.profiles);
   return {
     id: row.id,
@@ -45,11 +45,33 @@ function mapAttachment(
     byteSize: row.byte_size,
     kind: row.kind,
     createdAt: row.created_at.slice(0, 10),
+    commentId: row.comment_id ?? null,
     url,
   };
 }
 
-/** List attachments for a ticket, with signed URLs for preview/download. */
+const ATTACHMENT_SELECT =
+  "id, ticket_id, uploaded_by, storage_path, file_name, mime_type, byte_size, kind, created_at, comment_id, profiles!ticket_attachments_uploaded_by_fkey ( naam )";
+
+async function withSignedUrls(
+  rows: AttachmentRow[],
+): Promise<TicketAttachment[]> {
+  if (rows.length === 0) return [];
+  const supabase = await createClient();
+  return Promise.all(
+    rows.map(async (row) => {
+      const { data: signed } = await supabase.storage
+        .from(ATTACHMENTS_BUCKET)
+        .createSignedUrl(row.storage_path, SIGNED_URL_SECONDS);
+      return mapAttachment(row, signed?.signedUrl);
+    }),
+  );
+}
+
+/**
+ * All bijlagen for a ticket (Bijlagen section), including files added via
+ * Updates & vragen. Comment-linked files also still render under the update.
+ */
 export async function getAttachmentsForTicket(
   ticketId: string,
 ): Promise<TicketAttachment[]> {
@@ -58,23 +80,32 @@ export async function getAttachmentsForTicket(
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("ticket_attachments")
-      .select(
-        "id, ticket_id, uploaded_by, storage_path, file_name, mime_type, byte_size, kind, created_at, profiles!ticket_attachments_uploaded_by_fkey ( naam )",
-      )
+      .select(ATTACHMENT_SELECT)
       .eq("ticket_id", ticketId)
       .order("created_at", { ascending: true });
     if (error || !data) return [];
+    return withSignedUrls(data as unknown as AttachmentRow[]);
+  } catch {
+    return [];
+  }
+}
 
-    const rows = data as unknown as Array<Parameters<typeof mapAttachment>[0]>;
-    const withUrls = await Promise.all(
-      rows.map(async (row) => {
-        const { data: signed } = await supabase.storage
-          .from(ATTACHMENTS_BUCKET)
-          .createSignedUrl(row.storage_path, SIGNED_URL_SECONDS);
-        return mapAttachment(row, signed?.signedUrl);
-      }),
-    );
-    return withUrls;
+/** Bijlagen linked to specific Updates & vragen comments. */
+export async function getAttachmentsForComments(
+  ticketId: string,
+  commentIds: string[],
+): Promise<TicketAttachment[]> {
+  if (!isSupabaseConfigured() || commentIds.length === 0) return [];
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("ticket_attachments")
+      .select(ATTACHMENT_SELECT)
+      .eq("ticket_id", ticketId)
+      .in("comment_id", commentIds)
+      .order("created_at", { ascending: true });
+    if (error || !data) return [];
+    return withSignedUrls(data as unknown as AttachmentRow[]);
   } catch {
     return [];
   }

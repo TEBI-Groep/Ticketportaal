@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { one } from "@/lib/supabase/embed";
+import { getAttachmentsForComments } from "@/data/attachments";
 import type {
   ItNote,
   Ticket,
@@ -587,7 +588,8 @@ export async function getCommentsForTicket(
       .eq("ticket_id", ticketId)
       .order("created_at", { ascending: true });
     if (error || !data) return [];
-    return data.map((c) => {
+
+    const comments = data.map((c) => {
       const profile = one(c.profiles) as {
         naam: string;
         rol: TicketComment["auteurRol"];
@@ -608,8 +610,30 @@ export async function getCommentsForTicket(
         // Keep full ISO timestamp so the UI can show date + time.
         createdAt: c.created_at,
         source,
+        attachments: [] as TicketComment["attachments"],
       };
     });
+
+    // Attach comment-linked bijlagen (also listed in the ticket Bijlagen section).
+    const linked = await getAttachmentsForComments(
+      ticketId,
+      comments.map((c) => c.id),
+    );
+    if (linked.length > 0) {
+      const byComment = new Map<string, typeof linked>();
+      for (const file of linked) {
+        const key = file.commentId;
+        if (!key) continue;
+        const list = byComment.get(key) ?? [];
+        list.push(file);
+        byComment.set(key, list);
+      }
+      for (const comment of comments) {
+        comment.attachments = byComment.get(comment.id) ?? [];
+      }
+    }
+
+    return comments;
   } catch {
     return [];
   }

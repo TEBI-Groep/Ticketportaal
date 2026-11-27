@@ -8,6 +8,11 @@ import { ATTACHMENTS_BUCKET, validateAttachmentFile } from "@/lib/attachment-rul
 import { createClient } from "@/lib/supabase/client";
 import type { TicketAttachment } from "@/lib/types";
 
+export type UploadTicketAttachmentOptions = {
+  /** Link the file to an Updates & vragen comment after upload. */
+  commentId?: string | null;
+};
+
 /**
  * Upload a ticket bijlage via signed Storage URL (browser → Supabase),
  * so files up to MAX_ATTACHMENT_BYTES are not blocked by Vercel/Next body limits.
@@ -15,6 +20,7 @@ import type { TicketAttachment } from "@/lib/types";
 export async function uploadTicketAttachment(
   ticketId: string,
   file: File,
+  options: UploadTicketAttachmentOptions = {},
 ): Promise<{ ok: true; attachment: TicketAttachment } | { ok: false; error: string }> {
   const clientError = validateAttachmentFile(file);
   if (clientError) {
@@ -48,6 +54,7 @@ export async function uploadTicketAttachment(
       fileName: file.name,
       mimeType: prepared.mimeType,
       byteSize: file.size,
+      commentId: options.commentId ?? null,
     });
   } catch (err) {
     const message =

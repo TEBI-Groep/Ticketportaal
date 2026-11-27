@@ -71,6 +71,8 @@ export interface TicketComment {
   createdAt: string;
   /** portal = UI; email = Missive reply-by-mail (Phase C). */
   source?: "portal" | "email" | "system";
+  /** Bijlagen uploaded with this update (empty when none). */
+  attachments?: TicketAttachment[];
 }
 
 /** Beheerder tagged on an IT note. */
@@ -146,6 +148,8 @@ export interface TicketAttachment {
   byteSize: number | null;
   kind: AttachmentKind;
   createdAt: string;
+  /** When set, this file belongs to an Updates & vragen comment. */
+  commentId?: string | null;
   /** Short-lived signed URL for preview/download (set when listing). */
   url?: string;
 }

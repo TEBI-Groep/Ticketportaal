@@ -15,9 +15,11 @@ import type { TicketComment } from "@/lib/types";
 export async function addCommentAction(
   ticketId: string,
   body: string,
+  options: { hasAttachments?: boolean } = {},
 ): Promise<{ ok: true; comment: TicketComment } | { ok: false; error: string }> {
   const tekst = body.trim();
-  if (!tekst) {
+  // Text-only updates are allowed when the client will attach bijlagen next.
+  if (!tekst && !options.hasAttachments) {
     return { ok: false, error: "Bericht mag niet leeg zijn." };
   }
 
@@ -33,6 +35,7 @@ export async function addCommentAction(
       .insert({
         ticket_id: ticketId,
         user_id: user.id,
+        // Empty string when the update is bijlagen-only.
         body: tekst,
         source: "portal",
       })
@@ -58,6 +61,7 @@ export async function addCommentAction(
       auteurRol: profile?.rol ?? "gebruiker",
       tekst: data.body,
       createdAt: data.created_at,
+      attachments: [],
     };
 
     // Notify watchers / melder / eigenaar (same set as status changes).
@@ -72,7 +76,9 @@ export async function addCommentAction(
       eigenaarId: ticket?.eigenaar_id,
     });
     // Body is the update text only — mail template already shows ticketnummer · onderwerp.
-    const snippet = notificationSnippet(tekst);
+    const snippet = notificationSnippet(
+      tekst || (options.hasAttachments ? "Bijlage(n) toegevoegd" : ""),
+    );
     const inserted = await notifyTicketUsers({
       ticketId,
       recipientIds: recipients,

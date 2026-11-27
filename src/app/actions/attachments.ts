@@ -28,6 +28,8 @@ type FinalizeInput = {
   fileName: string;
   mimeType: string;
   byteSize: number;
+  /** When set, link the bijlage to an Updates & vragen comment. */
+  commentId?: string | null;
 };
 
 /**
@@ -147,6 +149,20 @@ export async function finalizeAttachmentUploadAction(
   try {
     const supabase = await createClient();
 
+    // Optional comment link: must belong to this ticket when provided.
+    let commentId: string | null = input.commentId ?? null;
+    if (commentId) {
+      const { data: comment } = await supabase
+        .from("comments")
+        .select("id")
+        .eq("id", commentId)
+        .eq("ticket_id", ticketId)
+        .maybeSingle();
+      if (!comment) {
+        return { ok: false, error: "Update niet gevonden voor deze bijlage." };
+      }
+    }
+
     const kind = attachmentKindFromMime(input.mimeType);
     const safeName = sanitizeFileName(input.fileName);
     const { data, error } = await supabase
@@ -159,9 +175,10 @@ export async function finalizeAttachmentUploadAction(
         mime_type: input.mimeType,
         byte_size: input.byteSize,
         kind,
+        comment_id: commentId,
       })
       .select(
-        "id, ticket_id, uploaded_by, storage_path, file_name, mime_type, byte_size, kind, created_at, profiles!ticket_attachments_uploaded_by_fkey ( naam )",
+        "id, ticket_id, uploaded_by, storage_path, file_name, mime_type, byte_size, kind, created_at, comment_id, profiles!ticket_attachments_uploaded_by_fkey ( naam )",
       )
       .single();
 
@@ -186,6 +203,7 @@ export async function finalizeAttachmentUploadAction(
       byteSize: data.byte_size,
       kind: data.kind as TicketAttachment["kind"],
       createdAt: data.created_at.slice(0, 10),
+      commentId: data.comment_id ?? null,
       url: signed?.signedUrl,
     };
 
