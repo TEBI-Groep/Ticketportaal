@@ -84,6 +84,48 @@
   white-space: pre-wrap;
 }
 
+/* Compact bijlagen under an update — same preview language as Bijlagen. */
+.attachments {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+.thumbLink {
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fileLink {
+  display: block;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.fileLink:hover {
+  border-color: var(--brand-ink);
+}
+
 .compose {
   display: grid;
   gap: var(--space-2);
@@ -91,6 +133,12 @@
 
 .input {
   width: 100%;
+}
+
+.fileInput {
+  width: 100%;
+  font: inherit;
+  font-size: 0.875rem;
 }
 
 .actions {

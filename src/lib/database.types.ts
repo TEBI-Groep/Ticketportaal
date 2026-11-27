@@ -200,6 +200,7 @@ export interface Database {
           byte_size: number | null;
           kind: "image" | "document" | "other";
           created_at: string;
+          comment_id: string | null;
         };
         Insert: {
           id?: string;
@@ -211,6 +212,7 @@ export interface Database {
           byte_size?: number | null;
           kind?: "image" | "document" | "other";
           created_at?: string;
+          comment_id?: string | null;
         };
       };
     };
