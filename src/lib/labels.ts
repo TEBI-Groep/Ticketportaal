@@ -29,10 +29,11 @@ export const TYPE_LABEL: Record<TicketType, string> = {
   procesverbetering: "Procesverbetering",
 };
 
-/** Labels for ticket_links (viewer-oriented for related/duplicate). */
+/** Labels for ticket_links (viewer-oriented where useful). */
 export const LINK_TYPE_LABEL: Record<TicketLinkType, string> = {
   related: "Gerelateerd",
   duplicate: "Duplicaat",
+  parent: "Hoofdticket",
   blocks: "Blokkeert",
   blocked_by: "Geblokkeerd door",
 };

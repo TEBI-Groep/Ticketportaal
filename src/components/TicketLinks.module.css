@@ -88,7 +88,7 @@
 
 .composeRow {
   display: grid;
-  grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 8.75rem) minmax(0, 1fr);
   gap: 0.35rem;
 }
 

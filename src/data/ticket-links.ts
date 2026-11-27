@@ -18,11 +18,15 @@ type TicketLite = {
   status: TicketStatus;
 };
 
-/** Part 1 link kinds exposed in the UI. */
-export const EDITABLE_LINK_TYPES: TicketLinkType[] = ["related", "duplicate"];
+/** Link kinds exposed in the IT UI. */
+export const EDITABLE_LINK_TYPES: TicketLinkType[] = [
+  "related",
+  "duplicate",
+  "parent",
+];
 
 /**
- * Links involving this ticket (related + duplicate for now), oriented for display.
+ * Links involving this ticket, oriented for display on the open detail.
  */
 export async function getLinksForTicket(ticketId: string): Promise<TicketLink[]> {
   if (!isSupabaseConfigured() || !ticketId) return [];
@@ -59,10 +63,15 @@ export async function getLinksForTicket(ticketId: string): Promise<TicketLink[]>
       const other = byId.get(otherId);
       if (!other) continue;
 
-      // Duplicate convention: from = duplicate, to = canonical original.
+      // Duplicate: from = duplicate, to = canonical original.
       const otherIsCanonical =
         row.link_type === "duplicate"
           ? row.from_ticket_id === ticketId
+          : undefined;
+      // Parent: from = hoofdticket, to = onderliggend.
+      const otherIsParent =
+        row.link_type === "parent"
+          ? row.to_ticket_id === ticketId
           : undefined;
 
       links.push({
@@ -73,6 +82,7 @@ export async function getLinksForTicket(ticketId: string): Promise<TicketLink[]>
         otherOnderwerp: other.onderwerp,
         otherStatus: other.status,
         otherIsCanonical,
+        otherIsParent,
         createdAt: row.created_at,
       });
     }
