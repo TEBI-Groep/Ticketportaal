@@ -614,7 +614,7 @@ export async function getCommentsForTicket(
       };
     });
 
-    // Attach comment-linked bijlagen (ticket-level stay in Bijlagen section).
+    // Attach comment-linked bijlagen (also listed in the ticket Bijlagen section).
     const linked = await getAttachmentsForComments(
       ticketId,
       comments.map((c) => c.id),
