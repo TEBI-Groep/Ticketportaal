@@ -137,14 +137,21 @@ export interface AppNotification {
 export type AttachmentKind = "image" | "document" | "other";
 
 /**
- * Ticket-to-ticket link kinds used in part 1 (related / duplicate).
+ * Ticket-to-ticket link kinds.
+ * parent: from = hoofdticket, to = onderliggend.
  * DB also has blocks / blocked_by for later.
  */
-export type TicketLinkType = "related" | "duplicate" | "blocks" | "blocked_by";
+export type TicketLinkType =
+  | "related"
+  | "duplicate"
+  | "parent"
+  | "blocks"
+  | "blocked_by";
 
 /**
  * One edge from ticket_links, oriented for the ticket currently being viewed.
  * For duplicate: otherIsCanonical means “this ticket is a duplicate of other”.
+ * For parent: otherIsParent means “other is the hoofdticket of this ticket”.
  */
 export interface TicketLink {
   id: string;
@@ -155,6 +162,8 @@ export interface TicketLink {
   otherStatus: TicketStatus;
   /** Duplicate only: true when the other ticket is the canonical original. */
   otherIsCanonical?: boolean;
+  /** Parent only: true when the other ticket is the hoofdticket. */
+  otherIsParent?: boolean;
   createdAt: string;
 }
 

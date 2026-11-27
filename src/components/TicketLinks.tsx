@@ -6,9 +6,10 @@ import {
   addTicketLinkAction,
   removeTicketLinkAction,
   searchTicketsForLinkAction,
+  type TicketLinkComposeType,
 } from "@/app/actions/ticket-links";
 import { LINK_TYPE_LABEL } from "@/lib/labels";
-import type { Ticket, TicketLink, TicketLinkType } from "@/lib/types";
+import type { Ticket, TicketLink } from "@/lib/types";
 import styles from "./TicketLinks.module.css";
 
 interface TicketLinksProps {
@@ -16,23 +17,25 @@ interface TicketLinksProps {
   initialLinks: TicketLink[];
 }
 
-type ComposeType = "related" | "duplicate";
-
 function linkRelationLabel(link: TicketLink): string {
   if (link.linkType === "duplicate") {
     return link.otherIsCanonical ? "Duplicaat van" : "Heeft duplicaat";
+  }
+  if (link.linkType === "parent") {
+    return link.otherIsParent ? "Hoofdticket" : "Onderliggend";
   }
   return LINK_TYPE_LABEL[link.linkType];
 }
 
 /**
  * Compact gekoppelde tickets for the IT rail (under Interne notities).
- * Beheerder-only — write + view live in this panel.
+ * Beheerder-only — related, duplicate, parent/child.
  */
 export function TicketLinks({ ticketId, initialLinks }: TicketLinksProps) {
   const [links, setLinks] = useState(initialLinks);
   const [query, setQuery] = useState("");
-  const [linkType, setLinkType] = useState<ComposeType>("related");
+  const [composeType, setComposeType] =
+    useState<TicketLinkComposeType>("related");
   const [hits, setHits] = useState<Ticket[]>([]);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,9 +72,9 @@ export function TicketLinks({ ticketId, initialLinks }: TicketLinksProps) {
     setError(null);
     startTransition(async () => {
       const result = await addTicketLinkAction({
-        fromTicketId: ticketId,
-        toTicketId: otherId,
-        linkType: linkType as TicketLinkType,
+        viewerTicketId: ticketId,
+        otherTicketId: otherId,
+        composeType,
       });
       if (!result.ok) {
         setError(result.error);
@@ -140,13 +143,17 @@ export function TicketLinks({ ticketId, initialLinks }: TicketLinksProps) {
           <select
             id={`link-type-${ticketId}`}
             className={`select-input ${styles.select}`}
-            value={linkType}
+            value={composeType}
             disabled={pending}
             aria-label="Koppeltype"
-            onChange={(e) => setLinkType(e.target.value as ComposeType)}
+            onChange={(e) =>
+              setComposeType(e.target.value as TicketLinkComposeType)
+            }
           >
             <option value="related">Gerelateerd</option>
             <option value="duplicate">Duplicaat van</option>
+            <option value="child">Onderliggend</option>
+            <option value="parent">Hoofdticket</option>
           </select>
           <input
             id={`link-search-${ticketId}`}

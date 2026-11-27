@@ -220,7 +220,12 @@ export interface Database {
           id: string;
           from_ticket_id: string;
           to_ticket_id: string;
-          link_type: "duplicate" | "related" | "blocks" | "blocked_by";
+          link_type:
+            | "duplicate"
+            | "related"
+            | "parent"
+            | "blocks"
+            | "blocked_by";
           created_by: string | null;
           created_at: string;
         };
@@ -228,7 +233,12 @@ export interface Database {
           id?: string;
           from_ticket_id: string;
           to_ticket_id: string;
-          link_type: "duplicate" | "related" | "blocks" | "blocked_by";
+          link_type:
+            | "duplicate"
+            | "related"
+            | "parent"
+            | "blocks"
+            | "blocked_by";
           created_by?: string | null;
           created_at?: string;
         };

@@ -10,8 +10,20 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import type { Ticket, TicketLink, TicketLinkType } from "@/lib/types";
 
-function isEditableLinkType(value: string): value is TicketLinkType {
-  return (EDITABLE_LINK_TYPES as string[]).includes(value);
+/** UI intents — parent/child both store DB link_type = parent. */
+export type TicketLinkComposeType =
+  | "related"
+  | "duplicate"
+  | "child"
+  | "parent";
+
+function isComposeType(value: string): value is TicketLinkComposeType {
+  return (
+    value === "related" ||
+    value === "duplicate" ||
+    value === "child" ||
+    value === "parent"
+  );
 }
 
 /** Search tickets to link from the detail UI (IT). */
@@ -25,14 +37,16 @@ export async function searchTicketsForLinkAction(
 }
 
 /**
- * Create a related or duplicate link.
- * Duplicate: fromTicketId is the duplicate, toTicketId is the canonical original.
- * Related: stored as from=current → to=other (either direction counts as related).
+ * Create a related, duplicate, or parent/child link.
+ * - related: viewer ↔ other
+ * - duplicate: viewer is duplicate of other
+ * - child: other becomes onderliggend of viewer
+ * - parent: other becomes hoofdticket of viewer
  */
 export async function addTicketLinkAction(input: {
-  fromTicketId: string;
-  toTicketId: string;
-  linkType: TicketLinkType;
+  viewerTicketId: string;
+  otherTicketId: string;
+  composeType: TicketLinkComposeType;
 }): Promise<{ ok: true; links: TicketLink[] } | { ok: false; error: string }> {
   const gate = await requireActiveUserAction();
   if (!gate.ok) return gate;
@@ -40,15 +54,30 @@ export async function addTicketLinkAction(input: {
     return { ok: false, error: "Alleen uitvoerders mogen tickets koppelen." };
   }
 
-  const { fromTicketId, toTicketId, linkType } = input;
-  if (!fromTicketId || !toTicketId) {
+  const { viewerTicketId, otherTicketId, composeType } = input;
+  if (!viewerTicketId || !otherTicketId) {
     return { ok: false, error: "Kies een ticket om te koppelen." };
   }
-  if (fromTicketId === toTicketId) {
+  if (viewerTicketId === otherTicketId) {
     return { ok: false, error: "Een ticket kan niet aan zichzelf gekoppeld worden." };
   }
-  if (!isEditableLinkType(linkType)) {
+  if (!isComposeType(composeType)) {
     return { ok: false, error: "Onbekend koppeltype." };
+  }
+
+  let fromTicketId = viewerTicketId;
+  let toTicketId = otherTicketId;
+  let linkType: TicketLinkType = composeType === "child" || composeType === "parent"
+    ? "parent"
+    : composeType;
+
+  // Parent DB edge: from = hoofdticket, to = onderliggend.
+  if (composeType === "child") {
+    fromTicketId = viewerTicketId;
+    toTicketId = otherTicketId;
+  } else if (composeType === "parent") {
+    fromTicketId = otherTicketId;
+    toTicketId = viewerTicketId;
   }
 
   try {
@@ -75,6 +104,40 @@ export async function addTicketLinkAction(input: {
       }
     }
 
+    if (linkType === "parent") {
+      // Child may only have one parent.
+      const { data: existingParent } = await supabase
+        .from("ticket_links")
+        .select("id")
+        .eq("link_type", "parent")
+        .eq("to_ticket_id", toTicketId)
+        .maybeSingle();
+      if (existingParent) {
+        return {
+          ok: false,
+          error: "Dit ticket heeft al een hoofdticket.",
+        };
+      }
+      // Avoid obvious one-level cycles (other is already a child of viewer, etc.).
+      const { data: reverseParent } = await supabase
+        .from("ticket_links")
+        .select("id")
+        .eq("link_type", "parent")
+        .eq("from_ticket_id", toTicketId)
+        .eq("to_ticket_id", fromTicketId)
+        .maybeSingle();
+      if (reverseParent) {
+        return {
+          ok: false,
+          error: "Die koppeling zou een lus maken.",
+        };
+      }
+    }
+
+    if (!(EDITABLE_LINK_TYPES as string[]).includes(linkType)) {
+      return { ok: false, error: "Onbekend koppeltype." };
+    }
+
     const { error } = await supabase.from("ticket_links").insert({
       from_ticket_id: fromTicketId,
       to_ticket_id: toTicketId,
@@ -83,14 +146,20 @@ export async function addTicketLinkAction(input: {
     });
     if (error) {
       if (error.code === "23505") {
-        return { ok: false, error: "Deze koppeling bestaat al." };
+        return {
+          ok: false,
+          error:
+            linkType === "parent"
+              ? "Dit ticket heeft al een hoofdticket."
+              : "Deze koppeling bestaat al.",
+        };
       }
       return { ok: false, error: error.message };
     }
 
     revalidatePath(`/ticket/${fromTicketId}`);
     revalidatePath(`/ticket/${toTicketId}`);
-    const links = await getLinksForTicket(fromTicketId);
+    const links = await getLinksForTicket(viewerTicketId);
     return { ok: true, links };
   } catch (err) {
     return {
@@ -100,7 +169,7 @@ export async function addTicketLinkAction(input: {
   }
 }
 
-/** Remove a link; viewerTicketId is used to refresh the list for the open detail. */
+/** Remove a link; viewerTicketId refreshes the open detail list. */
 export async function removeTicketLinkAction(
   linkId: string,
   viewerTicketId: string,
