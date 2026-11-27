@@ -2,6 +2,7 @@
 
 import type {
   TicketImpact,
+  TicketLinkType,
   TicketPriority,
   TicketSize,
   TicketStatus,
@@ -26,6 +27,14 @@ export const TYPE_LABEL: Record<TicketType, string> = {
   vraag: "Vraag",
   idee: "Idee",
   procesverbetering: "Procesverbetering",
+};
+
+/** Labels for ticket_links (viewer-oriented for related/duplicate). */
+export const LINK_TYPE_LABEL: Record<TicketLinkType, string> = {
+  related: "Gerelateerd",
+  duplicate: "Duplicaat",
+  blocks: "Blokkeert",
+  blocked_by: "Geblokkeerd door",
 };
 
 /** Ordered systeem choices for create + IT inline edit. */

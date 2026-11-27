@@ -11,6 +11,7 @@ import { TicketWatchBell } from "@/components/TicketWatchBell";
 import layoutStyles from "@/components/TicketInlineEdit.module.css";
 import { requireUser } from "@/data/auth";
 import { getAttachmentsForTicket } from "@/data/attachments";
+import { getLinksForTicket } from "@/data/ticket-links";
 import {
   getCommentsForTicket,
   getItNotesForTicket,
@@ -71,6 +72,7 @@ async function TicketDetailContent({
     comments,
     itNotes,
     attachments,
+    links,
     uitvoerders,
     melders,
     departments,
@@ -79,6 +81,8 @@ async function TicketDetailContent({
     getCommentsForTicket(ticket.id),
     isIt ? getItNotesForTicket(ticket.id) : Promise.resolve([]),
     getAttachmentsForTicket(ticket.id),
+    // Links UI is beheerder-only (under Interne notities).
+    isIt ? getLinksForTicket(ticket.id) : Promise.resolve([]),
     isIt ? listUitvoerders() : Promise.resolve([]),
     isIt ? listUsers() : Promise.resolve([]),
     isIt ? listDepartments() : Promise.resolve([]),
@@ -108,6 +112,7 @@ async function TicketDetailContent({
           comments={comments}
           itNotes={itNotes}
           attachments={attachments}
+          links={links}
           uitvoerders={uitvoerders}
           melders={activeMelders}
           departments={departments}

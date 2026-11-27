@@ -17,6 +17,7 @@ import { ItTicketDelete } from "@/components/ItTicketDelete";
 import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
 import { TicketAttachments } from "@/components/TicketAttachments";
+import { TicketLinks } from "@/components/TicketLinks";
 import { TicketWatchBell } from "@/components/TicketWatchBell";
 import {
   BEDRIJF_LABEL,
@@ -38,6 +39,7 @@ import type {
   Ticket,
   TicketAttachment,
   TicketComment,
+  TicketLink,
   TicketPriority,
   TicketSize,
   TicketStatus,
@@ -61,6 +63,7 @@ interface TicketItDetailProps {
   comments: TicketComment[];
   itNotes: ItNote[];
   attachments: TicketAttachment[];
+  links: TicketLink[];
   uitvoerders: User[];
   melders: User[];
   departments: string[];
@@ -82,6 +85,7 @@ export function TicketItDetail({
   comments,
   itNotes,
   attachments,
+  links,
   uitvoerders,
   melders,
   departments,
@@ -502,7 +506,7 @@ export function TicketItDetail({
         />
       </aside>
 
-      {/* Interne notities — to the right of Updates & vragen (IT only). */}
+      {/* Interne notities + gekoppelde tickets — IT rail only. */}
       <aside className="detail-panel" aria-label="Interne notities">
         <ItNotes
           ticketId={ticket.id}
@@ -512,6 +516,7 @@ export function TicketItDetail({
           uitvoerders={uitvoerders}
           highlightNoteId={highlightNoteId}
         />
+        <TicketLinks ticketId={ticket.id} initialLinks={links} />
       </aside>
     </div>
   );

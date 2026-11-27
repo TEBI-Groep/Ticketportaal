@@ -1,0 +1,149 @@
+/* Compact IT-rail block under Interne notities. */
+
+.wrap {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.empty {
+  margin: 0 0 0.5rem;
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+}
+
+.list {
+  list-style: none;
+  display: grid;
+  gap: 0.2rem;
+  margin: 0 0 0.65rem;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 0.35rem 0.45rem;
+  min-width: 0;
+  font-size: 0.8125rem;
+}
+
+.kind {
+  color: var(--ink-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ticketLink {
+  min-width: 0;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ticketLink:hover {
+  color: var(--brand-ink);
+  text-decoration: underline;
+}
+
+.onderwerp {
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.removeBtn {
+  margin: 0;
+  padding: 0 0.3rem;
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.removeBtn:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.removeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.compose {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.composeRow {
+  display: grid;
+  grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr);
+  gap: 0.35rem;
+}
+
+.select,
+.search {
+  width: 100%;
+  min-width: 0;
+  font-size: 0.8125rem;
+  padding: 0.35rem 0.45rem;
+}
+
+.hits {
+  list-style: none;
+  display: grid;
+  gap: 0.2rem;
+  max-height: 9rem;
+  overflow: auto;
+}
+
+.hitBtn {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hitBtn:hover:not(:disabled) {
+  border-color: var(--brand-ink);
+}
+
+.hitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.hint {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
+.error {
+  margin: 0;
+  color: var(--danger, #b42318);
+  font-size: 0.75rem;
+}

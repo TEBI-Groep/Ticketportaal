@@ -215,6 +215,24 @@ export interface Database {
           comment_id?: string | null;
         };
       };
+      ticket_links: {
+        Row: {
+          id: string;
+          from_ticket_id: string;
+          to_ticket_id: string;
+          link_type: "duplicate" | "related" | "blocks" | "blocked_by";
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          from_ticket_id: string;
+          to_ticket_id: string;
+          link_type: "duplicate" | "related" | "blocks" | "blocked_by";
+          created_by?: string | null;
+          created_at?: string;
+        };
+      };
     };
   };
 }

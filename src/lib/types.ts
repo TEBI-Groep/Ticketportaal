@@ -136,6 +136,28 @@ export interface AppNotification {
 
 export type AttachmentKind = "image" | "document" | "other";
 
+/**
+ * Ticket-to-ticket link kinds used in part 1 (related / duplicate).
+ * DB also has blocks / blocked_by for later.
+ */
+export type TicketLinkType = "related" | "duplicate" | "blocks" | "blocked_by";
+
+/**
+ * One edge from ticket_links, oriented for the ticket currently being viewed.
+ * For duplicate: otherIsCanonical means “this ticket is a duplicate of other”.
+ */
+export interface TicketLink {
+  id: string;
+  linkType: TicketLinkType;
+  otherTicketId: string;
+  otherTicketnummer: string;
+  otherOnderwerp: string;
+  otherStatus: TicketStatus;
+  /** Duplicate only: true when the other ticket is the canonical original. */
+  otherIsCanonical?: boolean;
+  createdAt: string;
+}
+
 /** File attached to a ticket (screenshot, PDF, …). */
 export interface TicketAttachment {
   id: string;
