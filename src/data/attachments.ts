@@ -69,8 +69,8 @@ async function withSignedUrls(
 }
 
 /**
- * Ticket-level bijlagen (Bijlagen section).
- * Comment-linked files are shown under Updates & vragen instead.
+ * All bijlagen for a ticket (Bijlagen section), including files added via
+ * Updates & vragen. Comment-linked files also still render under the update.
  */
 export async function getAttachmentsForTicket(
   ticketId: string,
@@ -82,7 +82,6 @@ export async function getAttachmentsForTicket(
       .from("ticket_attachments")
       .select(ATTACHMENT_SELECT)
       .eq("ticket_id", ticketId)
-      .is("comment_id", null)
       .order("created_at", { ascending: true });
     if (error || !data) return [];
     return withSignedUrls(data as unknown as AttachmentRow[]);
