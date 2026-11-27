@@ -7,7 +7,6 @@ import { PriorityBadge, StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
 import { TicketAttachments } from "@/components/TicketAttachments";
 import { TicketItDetail } from "@/components/TicketItDetail";
-import { TicketLinks } from "@/components/TicketLinks";
 import { TicketWatchBell } from "@/components/TicketWatchBell";
 import layoutStyles from "@/components/TicketInlineEdit.module.css";
 import { requireUser } from "@/data/auth";
@@ -82,7 +81,8 @@ async function TicketDetailContent({
     getCommentsForTicket(ticket.id),
     isIt ? getItNotesForTicket(ticket.id) : Promise.resolve([]),
     getAttachmentsForTicket(ticket.id),
-    getLinksForTicket(ticket.id),
+    // Links UI is beheerder-only (under Interne notities).
+    isIt ? getLinksForTicket(ticket.id) : Promise.resolve([]),
     isIt ? listUitvoerders() : Promise.resolve([]),
     isIt ? listUsers() : Promise.resolve([]),
     isIt ? listDepartments() : Promise.resolve([]),
@@ -219,12 +219,6 @@ async function TicketDetailContent({
               initialAttachments={attachments}
               currentUserId={user.id}
               canDeleteAny={false}
-            />
-
-            <TicketLinks
-              ticketId={ticket.id}
-              initialLinks={links}
-              canEdit={false}
             />
 
             {canVote ? (

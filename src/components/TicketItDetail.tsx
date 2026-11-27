@@ -472,12 +472,6 @@ export function TicketItDetail({
           canDeleteAny
         />
 
-        <TicketLinks
-          ticketId={ticket.id}
-          initialLinks={links}
-          canEdit
-        />
-
         {canVote ? (
           <div style={{ marginTop: "1.5rem" }}>
             <h2>Beoordeling</h2>
@@ -512,7 +506,7 @@ export function TicketItDetail({
         />
       </aside>
 
-      {/* Interne notities — to the right of Updates & vragen (IT only). */}
+      {/* Interne notities + gekoppelde tickets — IT rail only. */}
       <aside className="detail-panel" aria-label="Interne notities">
         <ItNotes
           ticketId={ticket.id}
@@ -522,6 +516,7 @@ export function TicketItDetail({
           uitvoerders={uitvoerders}
           highlightNoteId={highlightNoteId}
         />
+        <TicketLinks ticketId={ticket.id} initialLinks={links} />
       </aside>
     </div>
   );

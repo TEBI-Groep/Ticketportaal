@@ -1,72 +1,53 @@
-/* Gekoppelde tickets — list + IT compose, same quiet detail language. */
+/* Compact IT-rail block under Interne notities. */
 
 .wrap {
-  margin-top: var(--space-6);
-  padding-top: var(--space-5);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
   border-top: 1px solid var(--border);
 }
 
-.header {
-  margin-bottom: var(--space-4);
-}
-
-.header h2 {
-  margin-bottom: var(--space-2);
+.heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
 }
 
 .empty {
+  margin: 0 0 0.5rem;
   color: var(--ink-muted);
-  font-size: 0.875rem;
-  margin-bottom: var(--space-4);
+  font-size: 0.8125rem;
 }
 
 .list {
   list-style: none;
   display: grid;
-  gap: 0;
-  margin-bottom: var(--space-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-raised);
-  overflow: hidden;
+  gap: 0.2rem;
+  margin: 0 0 0.65rem;
 }
 
 .item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem 0.75rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.item:last-child {
-  border-bottom: none;
-}
-
-.itemMain {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem 0.65rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 0.35rem 0.45rem;
   min-width: 0;
+  font-size: 0.8125rem;
 }
 
 .kind {
-  font-size: 0.75rem;
-  font-weight: 600;
   color: var(--ink-muted);
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .ticketLink {
+  min-width: 0;
   color: var(--ink);
   font-weight: 600;
-  font-size: 0.9375rem;
   text-decoration: none;
-  min-width: 0;
-  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ticketLink:hover {
@@ -74,61 +55,76 @@
   text-decoration: underline;
 }
 
+.onderwerp {
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
 .removeBtn {
   margin: 0;
-  padding: 0.25rem 0.55rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  padding: 0 0.3rem;
+  border: none;
   background: transparent;
   color: var(--ink-muted);
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: 1rem;
+  line-height: 1;
   cursor: pointer;
 }
 
 .removeBtn:hover:not(:disabled) {
   color: var(--ink);
-  border-color: var(--ink-muted);
 }
 
 .removeBtn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .compose {
   display: grid;
-  gap: var(--space-2);
+  gap: 0.35rem;
+}
+
+.composeRow {
+  display: grid;
+  grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr);
+  gap: 0.35rem;
 }
 
 .select,
 .search {
   width: 100%;
-  max-width: 28rem;
+  min-width: 0;
+  font-size: 0.8125rem;
+  padding: 0.35rem 0.45rem;
 }
 
 .hits {
   list-style: none;
   display: grid;
-  gap: 0.35rem;
-  max-width: 28rem;
+  gap: 0.2rem;
+  max-height: 9rem;
+  overflow: auto;
 }
 
 .hitBtn {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.35rem 0.65rem;
+  display: block;
   width: 100%;
   margin: 0;
-  padding: 0.55rem 0.7rem;
+  padding: 0.35rem 0.45rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--surface-raised);
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hitBtn:hover:not(:disabled) {
@@ -140,10 +136,14 @@
   cursor: not-allowed;
 }
 
-.hitLabel {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--ink);
-  min-width: 0;
-  word-break: break-word;
+.hint {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
+.error {
+  margin: 0;
+  color: var(--danger, #b42318);
+  font-size: 0.75rem;
 }
